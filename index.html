@@ -1,0 +1,312 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="description" content="AI와 일하는 법을 중요도 순서로 정리하는 블로그">
+<title>삼색펜</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Gothic+A1:wght@700;900&family=IBM+Plex+Sans+KR:wght@400;500;700&family=IBM+Plex+Mono:wght@500&display=swap">
+<style>
+/* 레이아웃: 상단 고정 헤더 → 대표 글 → 카테고리 필터 → 글 목록 + 사이드바, 모바일은 한 줄
+   강조 3단계: 빨강(1순위, 꼭 누를 곳) > 주황(2순위, 함께 볼 곳) > 민트(3순위, 참고 표시) */
+:root{
+  --bg:#FFFFFF;
+  --fg:#0B0B0B;
+  --muted:#545454;
+  --line:#E2E2E2;
+  --soft:#F4F4F4;
+  --red:#D2141B;        --on-red:#FFFFFF;
+  --orange:#C2410C;     /* 글자용 주황 */
+  --orange-fill:#FF7A1A;--on-orange:#0B0B0B;
+  --mint:#0A7A68;       /* 글자용 민트 */
+  --mint-fill:#7EEBD0;  --on-mint:#0B0B0B;
+  --f-display:"Gothic A1","Apple SD Gothic Neo","Malgun Gothic",sans-serif;
+  --f-body:"IBM Plex Sans KR","Apple SD Gothic Neo","Malgun Gothic",sans-serif;
+  --f-mono:"IBM Plex Mono",ui-monospace,Menlo,monospace;
+  --wrap:1180px;
+}
+@media (prefers-color-scheme: dark){
+  :root:not([data-theme="light"]){
+    --bg:#0D0D0D;--fg:#F5F5F5;--muted:#B0B0B0;--line:#2B2B2B;--soft:#181818;
+    --red:#FF4A4F;--on-red:#0D0D0D;
+    --orange:#FF9B50;--orange-fill:#FF8A3D;--on-orange:#0D0D0D;
+    --mint:#5EEAD4;--mint-fill:#2DD4B0;--on-mint:#0D0D0D;
+    color-scheme:dark;
+  }
+}
+:root[data-theme="dark"]{
+  --bg:#0D0D0D;--fg:#F5F5F5;--muted:#B0B0B0;--line:#2B2B2B;--soft:#181818;
+  --red:#FF4A4F;--on-red:#0D0D0D;
+  --orange:#FF9B50;--orange-fill:#FF8A3D;--on-orange:#0D0D0D;
+  --mint:#5EEAD4;--mint-fill:#2DD4B0;--on-mint:#0D0D0D;
+  color-scheme:dark;
+}
+
+*{box-sizing:border-box}
+html{color-scheme:light}
+body{margin:0}
+img{max-width:100%}
+[hidden]{display:none!important}
+body{background:var(--bg);color:var(--fg);font-family:var(--f-body);font-size:17px;line-height:1.7;word-break:keep-all;overflow-wrap:break-word}
+a{color:inherit}
+:focus-visible{outline:3px solid var(--red);outline-offset:3px;border-radius:2px}
+.wrap{max-width:var(--wrap);margin:0 auto;padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px))}
+.skip{position:absolute;left:-999px;top:8px;background:var(--red);color:var(--on-red);padding:10px 16px;z-index:50;font-weight:700}
+.skip:focus{left:16px}
+.sr{position:absolute;left:-999px}
+.label{font-family:var(--f-mono);font-size:13px;letter-spacing:.08em;text-transform:uppercase;color:var(--muted);display:flex;align-items:center;gap:8px}
+.label::before{content:"";width:8px;height:8px;background:var(--red)}
+
+/* 헤더 */
+body::before{content:"";position:fixed;inset:0 0 auto;height:env(safe-area-inset-top,0px);z-index:10;background:var(--bg)}
+header.site{position:sticky;top:env(safe-area-inset-top,0px);z-index:20;background:var(--bg);border-bottom:2px solid var(--fg)}
+.bar{display:flex;align-items:center;gap:24px;min-height:68px}
+.logo{display:flex;align-items:center;gap:12px;text-decoration:none;font-family:var(--f-display);font-weight:900;font-size:23px;letter-spacing:-.02em}
+.pens{display:flex;gap:3px;align-items:flex-end}
+.pens i{display:block;width:6px;border-radius:1px}
+.pens i:nth-child(1){height:20px;background:var(--red)}
+.pens i:nth-child(2){height:15px;background:var(--orange-fill)}
+.pens i:nth-child(3){height:10px;background:var(--mint-fill)}
+nav.main{display:flex;gap:4px;margin-left:auto}
+nav.main a{text-decoration:none;padding:10px 12px;font-weight:500;min-height:44px;display:flex;align-items:center}
+nav.main a[aria-current="page"]{box-shadow:inset 0 -3px 0 var(--orange-fill)}
+nav.main a:hover{color:var(--orange)}
+.search{display:flex;align-items:center;border:2px solid var(--fg);height:44px;width:220px}
+.search input{flex:1;min-width:0;border:0;background:transparent;color:var(--fg);font:inherit;font-size:15px;padding:0 12px;height:100%}
+.search input:focus{outline:none}
+.search:focus-within{border-color:var(--red)}
+.search svg{width:18px;height:18px;margin-right:12px;flex:none}
+.menu-btn{display:none}
+
+/* 대표 글 */
+.hero{padding-block:56px 48px;border-bottom:1px solid var(--line)}
+.hero-grid{display:grid;grid-template-columns:1.35fr 1fr;gap:48px;align-items:end}
+.hero h1{font-family:var(--f-display);font-weight:900;font-size:clamp(34px,5.4vw,64px);line-height:1.15;letter-spacing:-.03em;margin:14px 0 0;text-wrap:balance}
+.hero h1 mark{background:linear-gradient(transparent 62%,var(--red) 62%,var(--red) 90%,transparent 90%);color:inherit;padding:0 2px}
+.hero p.lead{font-size:19px;color:var(--muted);margin:0 0 20px;max-width:36ch}
+.meta{display:flex;flex-wrap:wrap;gap:6px 14px;font-size:14px;color:var(--muted);font-family:var(--f-mono);font-variant-numeric:tabular-nums}
+.btn{display:inline-flex;align-items:center;gap:10px;min-height:48px;padding:0 22px;background:var(--red);color:var(--on-red);text-decoration:none;border:0;font:inherit;font-weight:700;cursor:pointer}
+.btn:hover{background:var(--fg);color:var(--bg)}
+.btn.sub{background:var(--orange-fill);color:var(--on-orange)}
+.btn.sub:hover{background:var(--bg);color:var(--fg)}
+.link2{font-weight:700;text-decoration:none;color:var(--orange);border-bottom:2px solid currentColor;padding-block:4px}
+.link2:hover{color:var(--fg)}
+.hero-actions{display:flex;gap:20px;align-items:center;flex-wrap:wrap;margin-top:24px}
+
+/* 카테고리 */
+.cats{display:flex;gap:8px;flex-wrap:wrap;padding-block:28px 8px}
+.chip{font:inherit;font-size:15px;font-weight:500;min-height:40px;padding:0 16px;border:1.5px solid var(--fg);background:transparent;color:var(--fg);cursor:pointer}
+.chip:hover{border-color:var(--orange);color:var(--orange)}
+.chip[aria-pressed="true"]{background:var(--fg);color:var(--bg)}
+.chip .n{font-family:var(--f-mono);font-size:12px;margin-left:6px;opacity:.7}
+
+/* 본문 2단 */
+.body-grid{display:grid;grid-template-columns:minmax(0,1fr) 320px;gap:56px;padding-block:20px 72px}
+.posts{list-style:none;margin:0;padding:0}
+.post{display:grid;grid-template-columns:120px minmax(0,1fr);gap:24px;padding-block:28px;border-bottom:1px solid var(--line)}
+.post .side{display:flex;flex-direction:column;gap:6px;align-items:flex-start}
+.post .cat{font-size:14px;font-weight:700;color:var(--orange)}
+.post time{font-family:var(--f-mono);font-size:13px;color:var(--muted);font-variant-numeric:tabular-nums}
+.badge{font-size:12px;font-weight:700;padding:1px 8px;background:var(--mint-fill);color:var(--on-mint)}
+.post h3{font-family:var(--f-display);font-weight:700;font-size:23px;line-height:1.4;letter-spacing:-.02em;margin:0 0 8px;text-wrap:balance}
+.post h3 a{text-decoration:none;background:linear-gradient(var(--orange-fill),var(--orange-fill)) 0 100%/0 3px no-repeat;transition:background-size .25s}
+.post h3 a:hover{background-size:100% 3px}
+.post p{margin:0 0 10px;color:var(--muted);max-width:62ch}
+.post .read{font-family:var(--f-mono);font-size:13px;color:var(--mint)}
+.empty{padding:40px 0;color:var(--muted)}
+.more{margin-top:32px;width:100%;min-height:52px;font:inherit;font-weight:700;background:transparent;color:var(--fg);border:2px solid var(--fg);cursor:pointer}
+.more:hover{border-color:var(--orange);color:var(--orange)}
+
+aside{display:flex;flex-direction:column;gap:40px}
+aside h2{font-family:var(--f-display);font-weight:900;font-size:18px;margin:0 0 14px;padding-bottom:10px;border-bottom:2px solid var(--fg)}
+.rank{list-style:none;margin:0;padding:0;display:flex;flex-direction:column}
+.rank li{display:grid;grid-template-columns:32px 1fr;gap:10px;padding-block:12px;border-bottom:1px solid var(--line)}
+.rank b{font-family:var(--f-mono);font-size:18px;color:var(--muted);font-variant-numeric:tabular-nums}
+.rank li:nth-child(1) b{color:var(--red)}
+.rank li:nth-child(2) b,.rank li:nth-child(3) b{color:var(--orange)}
+.rank a{text-decoration:none;font-weight:500;line-height:1.5}
+.rank a:hover{color:var(--orange)}
+.news{background:var(--fg);color:var(--bg);padding:24px}
+.news h2{border-color:var(--bg)}
+.news p{margin:0 0 16px;font-size:15px;opacity:.85}
+.news form{display:flex;flex-direction:column;gap:10px}
+.news label{font-size:14px}
+.news input{font:inherit;font-size:16px;height:48px;padding:0 14px;border:0;background:var(--bg);color:var(--fg)}
+.news .btn{justify-content:center}
+.news .msg{font-size:14px;margin:4px 0 0;min-height:1.5em}
+.tags{display:flex;flex-wrap:wrap;gap:8px}
+.tags a{font-size:14px;padding:6px 10px;background:var(--soft);text-decoration:none;min-height:36px;display:flex;align-items:center}
+.tags a:hover{background:var(--mint-fill);color:var(--on-mint)}
+
+footer{border-top:2px solid var(--fg)}
+.foot{display:flex;flex-wrap:wrap;justify-content:space-between;gap:12px;padding-block:28px;font-size:14px;color:var(--muted)}
+
+@media (max-width:900px){
+  .hero-grid,.body-grid{grid-template-columns:1fr;gap:32px}
+  .search{width:auto;flex:1}
+  nav.main{display:none}
+  nav.main.open{display:flex;position:absolute;left:0;right:0;top:100%;flex-direction:column;background:var(--bg);border-bottom:2px solid var(--fg);padding:8px max(16px,env(safe-area-inset-left,0px))}
+  .menu-btn{display:flex;align-items:center;justify-content:center;width:44px;height:44px;border:2px solid var(--fg);background:transparent;color:var(--fg);cursor:pointer;flex:none}
+  .bar{gap:12px;position:relative}
+}
+@media (max-width:560px){
+  body{font-size:16px}
+  .post{grid-template-columns:1fr;gap:6px}
+  .post .side{flex-direction:row;gap:12px;align-items:center;flex-wrap:wrap}
+  .logo .name{display:none}
+  .hero{padding-block:36px 32px}
+}
+@media (prefers-reduced-motion:reduce){*{transition:none!important}}
+</style>
+</head>
+<body>
+
+<a class="skip" href="#posts">본문으로 바로가기</a>
+
+<header class="site">
+  <div class="wrap bar">
+    <a class="logo" href="#" aria-label="삼색펜 홈"><span class="pens" aria-hidden="true"><i></i><i></i><i></i></span><span class="name">삼색펜</span></a>
+    <nav class="main" id="mainnav" aria-label="주 메뉴">
+      <a href="#" aria-current="page">홈</a>
+      <a href="#">전체 글</a>
+      <a href="#">시리즈</a>
+      <a href="#">소개</a>
+    </nav>
+    <label class="search" for="q">
+      <span class="sr">글 검색</span>
+      <input id="q" type="search" placeholder="글 제목·내용 검색" autocomplete="off">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" aria-hidden="true"><circle cx="10.5" cy="10.5" r="6.5"/><path d="M15.5 15.5 21 21"/></svg>
+    </label>
+    <button class="menu-btn" id="menuBtn" aria-controls="mainnav" aria-expanded="false" aria-label="메뉴 열기">
+      <svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="2.4" aria-hidden="true"><path d="M3 6h18M3 12h18M3 18h18"/></svg>
+    </button>
+  </div>
+</header>
+
+<main>
+  <section class="hero">
+    <div class="wrap hero-grid">
+      <div>
+        <div class="label">이번 주 대표 글</div>
+        <h1>AI에게 일을 맡기기 전, <mark>꼭 정해야 할</mark> 세 가지</h1>
+      </div>
+      <div>
+        <p class="lead">목표, 판단 기준, 끝나는 조건. 이 셋만 먼저 적어 두면 결과물을 고치는 시간이 절반으로 줄어듭니다.</p>
+        <div class="meta"><span>업무 활용</span><span>2026.11.16 (KST)</span><span>읽는 시간 7분</span></div>
+        <div class="hero-actions">
+          <a class="btn" href="#">글 읽기
+            <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2.6" aria-hidden="true"><path d="M5 12h14M13 6l6 6-6 6"/></svg>
+          </a>
+          <a class="link2" href="#">이 시리즈 전체 보기</a>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <div class="wrap">
+    <div class="cats" role="group" aria-label="카테고리 선택" id="cats"></div>
+  </div>
+
+  <div class="wrap body-grid">
+    <section aria-label="최신 글">
+      <ul class="posts" id="posts" tabindex="-1"></ul>
+      <p class="empty" id="empty" hidden>검색 결과가 없습니다. 다른 단어로 찾아보세요.</p>
+      <button class="more" id="more">글 더 보기</button>
+    </section>
+
+    <aside>
+      <section>
+        <h2>많이 읽은 글</h2>
+        <ol class="rank">
+          <li><b>1</b><a href="#">프롬프트보다 중요한 건 업무 쪼개기</a></li>
+          <li><b>2</b><a href="#">월 3만 원으로 만드는 1인 업무 자동화</a></li>
+          <li><b>3</b><a href="#">회의록 정리를 AI에 맡겨 본 4주 기록</a></li>
+          <li><b>4</b><a href="#">엑셀 함수 몰라도 되는 시대일까</a></li>
+          <li><b>5</b><a href="#">초보자를 위한 생성형 AI 용어 20개</a></li>
+        </ol>
+      </section>
+
+      <section class="news">
+        <h2>뉴스레터</h2>
+        <p>매주 목요일 오전 8시, 새 글 1편과 실습 팁을 메일로 보내 드립니다.</p>
+        <form id="newsForm" novalidate>
+          <label for="email">이메일 주소</label>
+          <input id="email" type="email" placeholder="name@example.com" required>
+          <button class="btn sub" type="submit">구독하기</button>
+          <p class="msg" id="newsMsg" role="status"></p>
+        </form>
+      </section>
+
+      <section>
+        <h2>태그</h2>
+        <div class="tags">
+          <a href="#">#프롬프트</a><a href="#">#자동화</a><a href="#">#엑셀</a><a href="#">#회의록</a>
+          <a href="#">#기획</a><a href="#">#메일쓰기</a><a href="#">#초보</a><a href="#">#도구비교</a>
+        </div>
+      </section>
+    </aside>
+  </div>
+</main>
+
+<footer>
+  <div class="wrap foot">
+    <span>© 2026 삼색펜</span>
+    <span>새 글은 매주 화·목 오전에 올라옵니다 (KST)</span>
+  </div>
+</footer>
+
+<script>
+const POSTS=[
+  {c:"업무 활용",t:"보고서 초안을 30분 만에 끝내는 순서",d:"자료 모으기, 뼈대 잡기, 문장 다듬기를 나눠서 시키면 결과가 훨씬 안정적입니다.",dt:"2026.11.13",m:6,n:true},
+  {c:"도구 비교",t:"요금제별로 따져 본 AI 도구 한 달 비용",d:"무료, 월 2만 9천 원, 월 4만 원대 요금제를 실제 사용량 기준으로 비교했습니다.",dt:"2026.11.11",m:9,n:true},
+  {c:"기초 개념",t:"토큰이 뭐길래 답변이 중간에 끊길까",d:"글자 수와 토큰의 차이를 과자 봉지에 비유해 쉽게 풀었습니다.",dt:"2026.11.06",m:5},
+  {c:"업무 활용",t:"고객 메일 답장, 어디까지 맡겨도 될까",d:"사람이 꼭 확인해야 하는 문장 유형 네 가지를 정리했습니다.",dt:"2026.11.04",m:7},
+  {c:"실습 기록",t:"블로그 첫 화면을 AI와 함께 다시 만든 과정",d:"흑백 바탕에 강조색 세 가지를 중요도 순서로 쓰기로 한 이유를 남깁니다.",dt:"2026.10.30",m:8},
+  {c:"기초 개념",t:"검색과 생성은 무엇이 다를까",d:"정답을 찾아오는 일과 새로 쓰는 일의 차이를 예시로 비교합니다.",dt:"2026.10.28",m:4},
+  {c:"실습 기록",t:"일주일 동안 모든 메일을 AI로 초안 써 보기",d:"절약한 시간과 오히려 늘어난 확인 시간을 숫자로 기록했습니다.",dt:"2026.10.23",m:10},
+  {c:"도구 비교",t:"문서 요약 도구 다섯 개, 같은 글로 시험",d:"30쪽짜리 계약서를 넣고 빠진 내용이 있는지 하나씩 확인했습니다.",dt:"2026.10.21",m:11}
+];
+const CATS=["전체",...new Set(POSTS.map(p=>p.c))];
+let cat="전체",q="",shown=5;
+const $=id=>document.getElementById(id);
+
+function renderCats(){
+  $("cats").innerHTML=CATS.map(c=>{
+    const n=c==="전체"?POSTS.length:POSTS.filter(p=>p.c===c).length;
+    return `<button class="chip" aria-pressed="${c===cat}" data-c="${c}">${c}<span class="n">${n}</span></button>`;
+  }).join("");
+}
+function render(){
+  const list=POSTS.filter(p=>(cat==="전체"||p.c===cat)&&(!q||(p.t+p.d).toLowerCase().includes(q)));
+  $("posts").innerHTML=list.slice(0,shown).map(p=>`
+    <li class="post">
+      <div class="side"><span class="cat">${p.c}</span><time>${p.dt}</time>${p.n?'<span class="badge">새 글</span>':''}</div>
+      <div><h3><a href="#">${p.t}</a></h3><p>${p.d}</p><span class="read">읽는 시간 ${p.m}분</span></div>
+    </li>`).join("");
+  $("empty").hidden=list.length>0;
+  $("more").hidden=list.length<=shown;
+}
+$("cats").addEventListener("click",e=>{
+  const b=e.target.closest(".chip"); if(!b)return;
+  cat=b.dataset.c; shown=5; renderCats(); render();
+});
+$("q").addEventListener("input",e=>{q=e.target.value.trim().toLowerCase(); shown=5; render();});
+$("more").addEventListener("click",()=>{shown+=5; render();});
+$("menuBtn").addEventListener("click",e=>{
+  const open=$("mainnav").classList.toggle("open");
+  e.currentTarget.setAttribute("aria-expanded",open);
+  e.currentTarget.setAttribute("aria-label",open?"메뉴 닫기":"메뉴 열기");
+});
+$("newsForm").addEventListener("submit",e=>{
+  e.preventDefault();
+  const v=$("email").value.trim();
+  $("newsMsg").textContent=/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(v)
+    ?"예시 화면입니다. 실제 구독은 뉴스레터 서비스 연결 후 동작합니다."
+    :"이메일 형식을 확인해 주세요. 예: name@example.com";
+});
+renderCats(); render();
+</script>
+</body>
+</html>
