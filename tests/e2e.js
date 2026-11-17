@@ -76,7 +76,7 @@ const tests = [
   }],
   ["C", "T23", "다른 회원의 댓글에는 수정, 삭제 버튼이 없다", async () => {
     await logout(); await login("lee@test.kr"); await goto("#" + postUrl);
-    const n = await count(".comment [data-act]"); return expect(n === 0, "버튼 수: " + n);
+    const n = await count(".comment [data-act=editComment], .comment [data-act=delComment]"); return expect(n === 0, "수정, 삭제 버튼 수: " + n + " (답글 버튼은 있어야 함)");
   }],
   ["C", "T24", "관리자는 댓글을 두 번 눌러 지운다", async () => {
     await page.fill("#cBody", "lee 의 댓글"); await page.click("#cSubmit"); await wait(500);
@@ -118,9 +118,63 @@ const tests = [
     return expect(t.includes("경고 0/3") && guest === 1, `${t.replace(/\s+/g, " ").trim()} / 방문자에게 댓글 ${guest}개`);
   }],
 
+  ["D", "T35", "관리자 댓글 현황에 모든 댓글과 숨김 상태가 보인다", async () => {
+    await logout(); await login("lee@test.kr"); await goto("#" + postUrl); await page.fill("#cBody", "lee 의 두 번째 댓글"); await page.click("#cSubmit"); await wait(500);
+    await logout(); await login("boss@test.kr", true); await goto("#admin-comments"); await wait(500);
+    const n = await count(".ac-item"), tab = await text(".admin-tabs [aria-current]"), post = await text(".ac-item .ac-post");
+    await shot("admin-comments");
+    return expect(n === 2 && tab.includes("댓글 현황") && post.includes("테스트 글"), `댓글 ${n}개, 글 제목 표시: ${post}`);
+  }],
+  ["D", "T36", "댓글 현황에서 오늘, 숨겨진 댓글로 거를 수 있다", async () => {
+    await page.click("[data-acf=today]"); await wait(); const today = await count(".ac-item");
+    await page.click("[data-acf=hidden]"); await wait(); const hidden = await count(".ac-item");
+    await page.click("[data-acf=all]"); await wait();
+    return expect(today === 2 && hidden === 0, `오늘 ${today}개, 숨겨진 댓글 ${hidden}개`);
+  }],
+  ["D", "T37", "댓글 현황에서 두 번 눌러 댓글을 지운다", async () => {
+    const del = page.locator(".ac-item", { hasText: "lee 의 두 번째 댓글" }).locator("[data-act=adminDelComment]");
+    await del.click(); await wait(200); const mid = await count(".ac-item"); await del.click(); await wait(600);
+    const after = await count(".ac-item"), m = await text("#acMsg");
+    return expect(mid === 2 && after === 1 && m.includes("지웠습니다"), `2 → 한 번 눌러도 ${mid} → ${after}개`);
+  }],
+  ["D", "T38", "회원 관리에 회원별 댓글 수가 보인다", async () => { await goto("#admin"); const t = await page.locator(".members li", { hasText: "kim@test.kr" }).textContent(); return expect(t.includes("댓글 1개"), t.replace(/\s+/g, " ").trim()); }],
+
+  // C. 답글 (공지 글에서 시험해 다른 테스트의 댓글 수에 영향을 주지 않음)
+  ["C", "T25", "회원이 댓글에 답글을 단다", async () => {
+    await logout(); await login("lee@test.kr"); await goto("#post-notice"); await page.fill("#cBody", "공지 잘 읽었습니다"); await page.click("#cSubmit"); await wait(500);
+    await logout(); await login("kim@test.kr"); await goto("#post-notice");
+    await page.click("[data-act=replyComment]"); await wait(); await page.fill("#rBody", "저도 잘 읽었어요"); await page.click("#rSubmit"); await wait(500);
+    const n = await count(".c-replies .comment"), badge = await text(".c-replies .c-rbadge"); await shot("comment-replies");
+    return expect(n === 1 && badge === "답글", `답글 ${n}개, 표시: ${badge}`);
+  }],
+  ["C", "T26", "답글에는 다시 답글 버튼이 없고 빈 답글은 거절된다", async () => {
+    const nb = await count(".c-replies [data-act=replyComment]");
+    await page.click("[data-act=replyComment]"); await wait(); await page.click("#rSubmit"); await wait();
+    const m = await text("#rMsg"); await page.click("[data-act=cancelReply]"); await wait();
+    return expect(nb === 0 && m.includes("입력"), `답글 안의 답글 버튼 ${nb}개, ${m.trim()}`);
+  }],
+  ["C", "T27", "답글이 달린 댓글을 지우면 자리 표시가 남고 답글은 유지된다", async () => {
+    await logout(); await login("lee@test.kr"); await goto("#post-notice");
+    const del = page.locator(".c-list > .comment").first().locator(":scope > .c-actions [data-act=delComment]");
+    await del.click(); await wait(200); await del.click(); await wait(600);
+    const top = await text(".c-list > .comment > .c-body"), n = await count(".c-replies .comment");
+    return expect(top.includes("삭제된 댓글") && n === 1, `${top.trim()} / 답글 ${n}개 유지`);
+  }],
+  ["C", "T28", "방문자에게는 답글 버튼이 없지만 답글은 보인다", async () => {
+    await logout(); await goto("#post-notice"); const n = await count("[data-act=replyComment]"), r = await count(".c-replies .comment");
+    return expect(n === 0 && r === 1, `답글 버튼 ${n}개, 보이는 답글 ${r}개`);
+  }],
+  ["C", "T29", "관리자 댓글 현황에 답글과 삭제 상태가 표시된다", async () => {
+    await login("boss@test.kr", true); await goto("#admin-comments"); await wait(500);
+    const t = await page.locator(".ac-item", { hasText: "저도 잘 읽었어요" }).textContent();
+    const d = await page.locator(".ac-item", { hasText: "삭제된 댓글" }).textContent();
+    await logout();
+    return expect(t.includes("답글") && d.includes("삭제됨"), "답글 표시, 삭제됨 표시");
+  }],
+
   // E. 첨부 파일
   ["E", "T40", "JPG, PNG, GIF, PDF 4종을 고를 수 있다", async () => {
-    await login("boss@test.kr", true); await goto("#write"); await page.fill("#wTitle", "첨부 테스트"); await page.fill("#wBody", "첨부 본문");
+    await logout(); await login("boss@test.kr", true); await goto("#write"); await page.fill("#wTitle", "첨부 테스트"); await page.fill("#wBody", "첨부 본문");
     await page.setInputFiles("#wFiles", ["red.png", "orange.jpg", "mint.gif", "note.pdf"].map(f => path.join(FIX, f))); await wait(600);
     const n = await page.$$eval("#attPick .nm", a => a.map(x => x.textContent)); return expect(n.length === 4, n.join(", "));
   }],

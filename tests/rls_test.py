@@ -151,6 +151,35 @@ def main():
             return r == "10485760|image/jpeg,image/png,image/gif,application/pdf", f"보관함 설정: {r}"
         case("S18", "파일 보관함은 10MB, 4가지 형식만 받는다", s18)
 
+        def s20():
+            ok, a, err = as_user("authenticated", KIM, "insert into public.comments(post_id, body) values ('1','부모 댓글') returning id;")
+            ok2, b, err2 = as_user("authenticated", LEE, f"insert into public.comments(post_id, body, parent_id) values ('1','답글', {a}) returning parent_id;")
+            ok3, c, err3 = as_user("authenticated", KIM, f"insert into public.comments(post_id, body, parent_id) values ('1','답글의 답글', (select id from public.comments where body='답글')) returning parent_id;")
+            return ok2 and b == a and ok3 and c == a, f"부모 {a}, 답글의 부모 {b}, 답글의 답글의 부모 {c or err3}"
+        case("S20", "회원은 답글을 달고, 답글의 답글은 한 단계로 모인다", s20)
+
+        def s21():
+            ok, _, err = as_user("authenticated", LEE, "insert into public.comments(post_id, body, parent_id) values ('2','다른 글', (select id from public.comments where body='부모 댓글'));")
+            return not ok and "찾을 수 없습니다" in err, "다른 글의 댓글에 답글 거절" if not ok else "거절 안 됨"
+        case("S21", "다른 글의 댓글에는 답글을 달 수 없다", s21)
+
+        def s22():
+            ok, out, _ = as_user("authenticated", KIM, "delete from public.comments where body='부모 댓글' returning id;")
+            ok2, out2, err2 = as_user("authenticated", KIM, "update public.comments set deleted=true where body='부모 댓글' returning deleted, body;")
+            n = psql("select count(*) from public.comments where parent_id is not null")[1]
+            return out == "" and out2 == "t|삭제된 댓글입니다" and n == "2", f"완전 삭제 {('거절' if out == '' else '허용')}, 삭제 표시 {out2 or err2}, 남은 답글 {n}개"
+        case("S22", "답글이 달린 내 댓글은 지우지 못하고 삭제 표시로 바뀐다", s22)
+
+        def s23():
+            ok, out, err = as_user("authenticated", ADMIN, "update public.comments set body='관리자가 고친 글' where body='답글' returning deleted, body;")
+            return ok and out == "t|삭제된 댓글입니다", f"관리자 수정 시도 결과: {out or err}"
+        case("S23", "관리자가 남의 댓글을 고치면 삭제 표시로만 바뀐다", s23)
+
+        def s24():
+            ok, _, err = as_user("authenticated", KIM, "update public.comments set body='되살리기' where body='삭제된 댓글입니다' and author_id = auth.uid();")
+            return not ok and "고칠 수 없습니다" in err, "삭제된 댓글 고치기 거절" if not ok else "거절 안 됨"
+        case("S24", "삭제된 댓글은 다시 고칠 수 없다", s24)
+
         def s19():
             code = subprocess.run(["psql", "-X", "-q", "-v", "ON_ERROR_STOP=1", "-d", DB, "-f",
                                    os.path.join(ROOT, "supabase-setup.sql")], capture_output=True, text=True).returncode

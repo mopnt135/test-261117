@@ -134,24 +134,55 @@ create table if not exists public.comments (
   updated_at timestamptz
 );
 create index if not exists comments_post_idx on public.comments (post_id, created_at);
+-- 답글: 부모 댓글 번호. 답글의 답글은 한 단계로 모은다
+alter table public.comments add column if not exists parent_id bigint references public.comments(id) on delete cascade;
+-- 답글이 달린 댓글을 지우면 줄은 남기고 "삭제된 댓글입니다"로 바꾼다
+alter table public.comments add column if not exists deleted boolean not null default false;
+create index if not exists comments_parent_idx on public.comments (parent_id);
+
+-- 이 댓글에 답글이 있는가 (지우기 규칙에서 씀)
+create or replace function public.has_replies(cid bigint) returns boolean
+language sql stable security definer set search_path = public
+as $$ select exists (select 1 from public.comments where parent_id = cid) $$;
 alter table public.comments enable row level security;
 
 -- 댓글 쓴 사람 이름은 서버가 정함: 이메일 앞 3글자 + ***
 create or replace function public.comments_fill() returns trigger
 language plpgsql security definer set search_path = public
 as $$
+declare
+  par record;
 begin
   if tg_op = 'INSERT' then
     new.author_id := auth.uid();
     new.author_name := coalesce(left(split_part((select email from auth.users where id = auth.uid()), '@', 1), 3), '회원') || '***';
     new.created_at := now();
     new.updated_at := null;
+    new.deleted := false;
+    if new.parent_id is not null then
+      select id, post_id, parent_id into par from public.comments where id = new.parent_id;
+      if not found or par.post_id <> new.post_id then
+        raise exception '답글을 달 댓글을 찾을 수 없습니다';
+      end if;
+      if par.parent_id is not null then
+        new.parent_id := par.parent_id;
+      end if;
+    end if;
   else
+    if old.deleted then
+      raise exception '삭제된 댓글은 고칠 수 없습니다';
+    end if;
     new.author_id := old.author_id;
     new.author_name := old.author_name;
     new.post_id := old.post_id;
+    new.parent_id := old.parent_id;
     new.created_at := old.created_at;
     new.updated_at := now();
+    -- 관리자가 남의 댓글을 고치는 것은 "삭제 표시"만 허용
+    if auth.uid() is distinct from old.author_id or new.deleted then
+      new.deleted := true;
+      new.body := '삭제된 댓글입니다';
+    end if;
   end if;
   return new;
 end $$;
@@ -179,11 +210,19 @@ create policy "comments_update" on public.comments
   using (author_id = auth.uid() and public.my_role() in ('member', 'admin'))
   with check (author_id = auth.uid());
 
--- 지우기: 내 댓글, 또는 관리자는 모든 댓글
+-- 관리자는 남의 댓글을 "삭제 표시"로 바꿀 수 있음 (본문 수정은 트리거가 막음)
+drop policy if exists "comments_admin_update" on public.comments;
+create policy "comments_admin_update" on public.comments
+  for update to authenticated
+  using (public.my_role() = 'admin')
+  with check (public.my_role() = 'admin');
+
+-- 지우기: 답글이 없는 내 댓글, 또는 관리자는 모든 댓글
+-- 답글이 달린 내 댓글은 지우는 대신 삭제 표시로 바꾼다 (답글을 지키기 위해)
 drop policy if exists "comments_delete" on public.comments;
 create policy "comments_delete" on public.comments
   for delete to authenticated
-  using (author_id = auth.uid() or public.my_role() = 'admin');
+  using ((author_id = auth.uid() and not public.has_replies(id)) or public.my_role() = 'admin');
 
 -- 4. 첨부 파일: JPG, PNG, GIF, PDF만, 파일당 10MB, 글 하나에 5개까지
 alter table public.posts add column if not exists attachments jsonb not null default '[]'::jsonb;

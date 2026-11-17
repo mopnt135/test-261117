@@ -23,8 +23,8 @@ AI 코딩 에이전트가 이 저장소에서 일할 때 가장 먼저 읽는 �
 | --- | --- |
 | `index.html` | 블로그 전체. CSS, 화면, 로직이 한 파일에 있음 |
 | `supabase-setup.sql` | 서버 표, 권한 규칙(RLS), 파일 보관함 설정. 여러 번 실행해도 안전해야 함 |
-| `tests/e2e.js` | 화면 테스트 (Playwright, 체험 모드) |
-| `tests/rls_test.py` | 서버 권한 테스트 (로컬 PostgreSQL) |
+| `tests/e2e.js` | 화면 테스트 47건 (Playwright, 체험 모드) |
+| `tests/rls_test.py` | 서버 권한 테스트 24건 (로컬 PostgreSQL) |
 | `tests/stub_supabase.sql` | 로컬에서 Supabase 를 흉내 내는 준비 파일 |
 | `tests/fixtures/` | 첨부 테스트용 파일 |
 | `docs/reports/` | 테스트 보고서 PDF |

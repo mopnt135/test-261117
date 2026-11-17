@@ -37,6 +37,7 @@ flowchart LR
 | `#write` / `#edit-<글번호>` | 글쓰기 / 글 수정 (관리자만) |
 | `#login` | 로그인과 회원가입 |
 | `#admin` | 관리자 로그인과 회원 관리 |
+| `#admin-comments` | 관리자 댓글 현황 (전체, 오늘, 숨겨진 댓글) |
 
 ### store 함수
 
@@ -45,7 +46,8 @@ flowchart LR
 | `session`, `signIn`, `signUp`, `signOut`, `role` | 로그인과 등급 |
 | `members`, `setMember` | 회원 목록, 경고와 추방 |
 | `list`, `create`, `update`, `remove` | 글 |
-| `comments`, `addComment`, `editComment`, `removeComment` | 댓글 |
+| `comments`, `addComment(postId, body, parentId)`, `editComment`, `removeComment(id, soft)` | 댓글과 답글. soft 는 삭제 표시 |
+| `allComments` | 관리자 댓글 현황용 전체 댓글 |
 | `uploadFiles`, `removeFiles`, `fileUrls`, `attMax` | 첨부 파일 |
 
 ## 3. 데이터 표 (supabase-setup.sql)
@@ -77,6 +79,8 @@ flowchart LR
 | post_id | 글 번호. 공지 댓글을 위해 글자로 저장 (`notice`, `notice-rules`) |
 | author_id, author_name | 쓴 사람, 가린 이름. **둘 다 서버 트리거가 정한다** |
 | body | 1000자까지 |
+| parent_id | 답글이면 부모 댓글 번호. 한 단계만 (트리거가 모음) |
+| deleted | 답글이 달린 댓글을 지우면 true, 본문은 "삭제된 댓글입니다" |
 
 ### storage: attachments 보관함
 - 비공개 보관함. 파일당 10MB, `image/jpeg`, `image/png`, `image/gif`, `application/pdf` 만 받는다.
@@ -89,10 +93,12 @@ flowchart LR
 | --- | --- | --- | --- | --- |
 | profiles | 본인, 관리자 | 트리거만 | 관리자 | 없음 |
 | posts | 공개글은 누구나, 초안은 관리자 | 관리자 | 관리자 | 관리자 |
-| comments | 누구나. 단 추방된 회원 댓글은 관리자만 | 회원, 관리자 | 본인 (추방되면 불가) | 본인, 관리자 |
+| comments | 누구나. 단 추방된 회원 댓글은 관리자만 | 회원, 관리자 | 본인 (추방되면 불가), 관리자는 삭제 표시만 | 답글 없는 본인 댓글, 관리자 |
 | storage.objects | 공개글 파일은 누구나, 초안 파일은 관리자 | 관리자 | 없음 | 관리자 |
 
-보조 함수: `my_role()` 지금 사용자의 등급, `role_of(uid)` 특정 사용자의 등급. 둘 다 security definer.
+보조 함수: `my_role()` 지금 사용자의 등급, `role_of(uid)` 특정 사용자의 등급, `has_replies(id)` 답글 여부. 모두 security definer.
+
+`comments_fill` 트리거: 작성자와 이름을 서버가 정하고, 답글의 답글을 부모로 모으고, 다른 글의 댓글에 단 답글을 거절하고, 남이 고치면 삭제 표시로 바꾸고, 삭제 표시된 댓글은 고치지 못하게 한다.
 
 ## 5. 첨부 파일 검사
 
