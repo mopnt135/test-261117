@@ -268,6 +268,31 @@ nav.main a[hidden]{display:none}
 .c-label{font-weight:700;font-size:15px}
 .c-login{margin-top:20px;padding:16px;background:var(--soft);display:flex;flex-wrap:wrap;gap:12px;align-items:center;justify-content:space-between}
 .c-login p{margin:0}
+.att-pick{list-style:none;margin:6px 0 0;padding:0;display:flex;flex-direction:column;gap:6px}
+.att-pick li{display:flex;align-items:center;gap:10px;padding:8px 10px;border:1.5px solid var(--line);font-size:15px;min-width:0}
+.att-pick .nm{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.att-pick .sz{font-family:var(--f-mono);font-size:13px;color:var(--muted);flex:none}
+.att-pick button{flex:none;background:none;border:0;color:var(--muted);text-decoration:underline;cursor:pointer;min-height:36px;font-size:14px}
+.att-pick button:hover{color:var(--red)}
+.att-kind{flex:none;font-size:12px;font-weight:700;padding:1px 8px;background:var(--soft)}
+.att-kind.pdf{background:var(--red);color:var(--on-red)}
+.att-kind.img{background:var(--mint-fill);color:var(--on-mint)}
+.att-kind.keep{background:transparent;border:1.5px solid var(--line)}
+.file-btn{display:inline-flex;align-items:center;gap:8px;min-height:44px;padding:0 16px;border:2px dashed var(--fg);cursor:pointer;font-weight:700;width:fit-content}
+.file-btn:hover{border-color:var(--orange);color:var(--orange)}
+.file-btn:focus-within{outline:3px solid var(--red);outline-offset:3px}
+.file-btn input{position:absolute;width:1px;height:1px;opacity:0}
+.atts{margin-top:32px;padding-top:16px;border-top:1px solid var(--line)}
+.atts h2{font-family:var(--f-display);font-weight:900;font-size:18px;margin:0 0 12px}
+.att-imgs{display:grid;grid-template-columns:repeat(auto-fill,minmax(min(100%,220px),1fr));gap:12px;margin-bottom:12px}
+.att-imgs figure{margin:0;min-width:0}
+.att-imgs img{display:block;width:100%;height:180px;object-fit:cover;border:1px solid var(--line);background:var(--soft)}
+.att-imgs figcaption{font-size:13px;color:var(--muted);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;margin-top:4px}
+.att-files{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:8px}
+.att-file{display:flex;align-items:center;gap:12px;padding:12px 14px;border:2px solid var(--fg);text-decoration:none;min-width:0}
+.att-file:hover{border-color:var(--orange)}
+.att-file .nm{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-weight:700}
+.att-file .sz{font-family:var(--f-mono);font-size:13px;color:var(--muted);flex:none}
 </style>
 </head>
 <body>
@@ -373,6 +398,23 @@ const $ = id => document.getElementById(id);
 const esc = s => String(s ?? "").replace(/[&<>"']/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
 const fmt = iso => new Date(iso).toLocaleDateString("ko-KR",{timeZone:"Asia/Seoul",year:"numeric",month:"2-digit",day:"2-digit"}).replace(/\.\s?/g,".").replace(/\.$/,"");
 const fmtTime = iso => fmt(iso) + " " + new Date(iso).toLocaleTimeString("ko-KR",{timeZone:"Asia/Seoul",hour:"2-digit",minute:"2-digit",hour12:false});
+/* 첨부 파일: JPG, PNG, GIF, PDF만 허용 */
+const ATT_TYPES = {jpg:"image/jpeg", jpeg:"image/jpeg", png:"image/png", gif:"image/gif", pdf:"application/pdf"};
+const ATT_MAX_COUNT = 5;
+const fmtSize = n => n >= 1048576 ? (n/1048576).toFixed(1) + "MB" : Math.max(1, Math.round(n/1024)) + "KB";
+const attExt = name => (String(name).split(".").pop() || "").toLowerCase();
+const isImage = a => String(a.type).startsWith("image/");
+async function checkFile(f, maxBytes){
+  const ext = attExt(f.name), want = ATT_TYPES[ext];
+  if (!want) return `${f.name}: JPG, PNG, GIF, PDF 파일만 올릴 수 있어요.`;
+  if (f.type && f.type !== want && !(want === "image/jpeg" && f.type === "image/jpg")) return `${f.name}: 파일 이름과 실제 형식이 달라요.`;
+  if (f.size > maxBytes) return `${f.name}: ${fmtSize(maxBytes)}보다 큰 파일은 올릴 수 없어요.`;
+  if (!f.size) return `${f.name}: 빈 파일이에요.`;
+  const head = new Uint8Array(await f.slice(0, 8).arrayBuffer());
+  const sig = {"image/jpeg":[0xFF,0xD8,0xFF], "image/png":[0x89,0x50,0x4E,0x47], "image/gif":[0x47,0x49,0x46,0x38], "application/pdf":[0x25,0x50,0x44,0x46]}[want];
+  if (!sig.every((b, i) => head[i] === b)) return `${f.name}: 파일 내용이 ${ext.toUpperCase()} 형식이 아니에요.`;
+  return null;
+}
 const mins = t => Math.max(1, Math.round(t.length/500));
 const idOf = v => /^\d+$/.test(String(v)) ? Number(v) : v;
 const maskName = email => { const a = String(email || "").split("@")[0]; return (a.slice(0, 3) || "회원") + "***"; };
@@ -385,7 +427,7 @@ const must = res => { if (res.error) throw res.error; if (Array.isArray(res.data
 const local = (() => {
   const KEY = "samsaekpen-demo-v3"; let mem = {user:null, posts:[], users:{}, comments:[]};
   const load = () => { try { return {...mem, ...(JSON.parse(localStorage.getItem(KEY)) || {})}; } catch { return mem; } };
-  const save = d => { mem = d; try { localStorage.setItem(KEY, JSON.stringify(d)); } catch {} };
+  const save = d => { try { localStorage.setItem(KEY, JSON.stringify(d)); } catch (e) { if (e && /quota/i.test(e.name + e.message)) throw new Error("STORAGE_FULL"); } mem = d; };
   return { load, save };
 })();
 
@@ -398,10 +440,23 @@ const store = REMOTE ? {
   async role(u){ const {data, error} = await sb.from("profiles").select("role").eq("id", u.id).maybeSingle(); if (error) throw error; return data?.role || "member"; },
   async members(){ return must(await sb.from("profiles").select("id,email,role,warns,created_at").order("created_at",{ascending:true})); },
   async setMember(id, patch){ must(await sb.from("profiles").update(patch).eq("id", id).select("id")); },
-  async list(){ const {data, error} = await sb.from("posts").select("id,author_id,title,body,category,visibility,created_at,updated_at").order("created_at",{ascending:false}).limit(500); if (error) throw error; return data; },
+  attMax: 10 * 1048576,
+  async list(){ const {data, error} = await sb.from("posts").select("id,author_id,title,body,category,visibility,created_at,updated_at,attachments").order("created_at",{ascending:false}).limit(500); if (error) throw error; return data; },
   async create(p){ return must(await sb.from("posts").insert(p).select("id"))[0].id; },
   async update(id, p){ must(await sb.from("posts").update(p).eq("id", id).select("id")); },
-  async remove(id){ must(await sb.from("posts").delete().eq("id", id).select("id")); },
+  async remove(id){ const p = posts.find(x => x.id === id); must(await sb.from("posts").delete().eq("id", id).select("id")); await this.removeFiles((p?.attachments || []).map(a => a.path)); },
+  async uploadFiles(postId, files){
+    const out = [];
+    for (const [i, f] of files.entries()) {
+      const ext = attExt(f.name), path = `${postId}/${Date.now()}-${i}.${ext}`;
+      const {error} = await sb.storage.from("attachments").upload(path, f, {contentType: ATT_TYPES[ext], upsert:false});
+      if (error) throw error;
+      out.push({path, name:f.name, type:ATT_TYPES[ext], size:f.size});
+    }
+    return out;
+  },
+  async removeFiles(paths){ if (paths.length) { const {error} = await sb.storage.from("attachments").remove(paths); if (error) console.error(error); } },
+  async fileUrls(atts){ const {data, error} = await sb.storage.from("attachments").createSignedUrls(atts.map(a => a.path), 3600); if (error) throw error; const m = {}; data.forEach((d, i) => { if (d.signedUrl) m[atts[i].path] = d.signedUrl; }); return m; },
   async comments(postId){ const {data, error} = await sb.from("comments").select("id,post_id,author_id,author_name,body,created_at,updated_at").eq("post_id", String(postId)).order("created_at",{ascending:true}); if (error) throw error; return data; },
   async addComment(postId, body){ must(await sb.from("comments").insert({post_id:String(postId), body}).select("id")); },
   async editComment(id, body){ must(await sb.from("comments").update({body}).eq("id", id).select("id")); },
@@ -426,6 +481,15 @@ const store = REMOTE ? {
   async create(p){ const d = local.load(); const id = Date.now(); d.posts.unshift({...p, id, author_id:d.user.id, created_at:new Date().toISOString(), updated_at:null}); local.save(d); return id; },
   async update(id, p){ const d = local.load(); const x = d.posts.find(q => q.id === id); if (!x) throw new Error("no"); Object.assign(x, p); local.save(d); },
   async remove(id){ const d = local.load(); d.posts = d.posts.filter(p => p.id !== id); d.comments = d.comments.filter(c => c.post_id !== String(id)); local.save(d); },
+  attMax: 1048576,
+  async uploadFiles(postId, files){
+    const read = f => new Promise((ok, no) => { const r = new FileReader(); r.onload = () => ok(r.result); r.onerror = no; r.readAsDataURL(f); });
+    const out = [];
+    for (const [i, f] of files.entries()) { const ext = attExt(f.name); out.push({path:`demo:${postId}/${Date.now()}-${i}.${ext}`, name:f.name, type:ATT_TYPES[ext], size:f.size, data: await read(f)}); }
+    return out;
+  },
+  async removeFiles(){},
+  async fileUrls(atts){ const m = {}; for (const a of atts) { if (a.data) { const blob = await (await fetch(a.data)).blob(); m[a.path] = URL.createObjectURL(blob); } } return m; },
   async comments(postId){
     const d = local.load(); const me = d.user && Object.values(d.users).find(u => u.id === d.user.id);
     const banned = new Set(Object.values(d.users).filter(u => u.role === "banned").map(u => u.id));
@@ -440,6 +504,7 @@ const store = REMOTE ? {
 let user = null, role = null, members = [], posts = [], loading = true, loadError = false;
 let cat = "전체", q = "", shown = 10, signupMode = false, afterLogin = "#", firstRender = true;
 let comments = [], commentsFor = null, commentsLoading = false, editingComment = null;
+let pendingFiles = [], keptAtts = [], removedAtts = [], attFor = null, attUrls = {}, attLoading = false;
 const isAdmin = () => !!user && role === "admin";
 const canWrite = isAdmin;
 const canComment = () => !!user && (role === "member" || role === "admin");
@@ -473,7 +538,7 @@ function postItem(p){
     <div>
       <h3><a href="#post-${esc(p.id)}">${esc(p.title)}</a></h3>
       <p>${esc(p.body.replace(/\s+/g," ").slice(0,90))}${p.body.length>90?"…":""}</p>
-      <span class="read">읽는 시간 ${mins(p.body)}분${p.updated_at ? " · 수정됨" : ""}</span>
+      <span class="read">읽는 시간 ${mins(p.body)}분${p.updated_at ? " · 수정됨" : ""}${(p.attachments || []).length ? ` · 첨부 ${p.attachments.length}개` : ""}</span>
     </div>
   </li>`;
 }
@@ -512,6 +577,18 @@ function loginForm(adminMode){
 }
 
 const head = (title, label, extra = "") => `<div class="page-head"><div>${label ? `<div class="label">${label}</div>` : ""}<h1 tabindex="-1">${title}</h1></div>${extra}</div>`;
+
+function attachmentsBlock(p){
+  const atts = p.attachments || [];
+  if (!atts.length) return "";
+  const missing = atts.some(a => !attUrls[a.path]);
+  if (missing) return `<section class="atts" aria-label="첨부 파일"><h2>첨부 파일 ${atts.length}</h2><p class="empty">${attLoading ? "첨부 파일을 불러오는 중입니다." : "첨부 파일을 열 수 없어요. 새로고침해 주세요."}</p></section>`;
+  const imgs = atts.filter(isImage), files = atts.filter(a => !isImage(a));
+  return `<section class="atts" aria-label="첨부 파일"><h2>첨부 파일 ${atts.length}</h2>
+    ${imgs.length ? `<div class="att-imgs">${imgs.map(a => `<figure><a href="${esc(attUrls[a.path])}" target="_blank" rel="noopener"><img src="${esc(attUrls[a.path])}" alt="${esc(a.name)}" loading="lazy"></a><figcaption>${esc(a.name)} · ${fmtSize(a.size)}</figcaption></figure>`).join("")}</div>` : ""}
+    ${files.length ? `<ul class="att-files">${files.map(a => `<li><a class="att-file" href="${esc(attUrls[a.path])}" target="_blank" rel="noopener"><span class="att-kind pdf">PDF</span><span class="nm">${esc(a.name)}</span><span class="sz">${fmtSize(a.size)}</span></a></li>`).join("")}</ul>` : ""}
+  </section>`;
+}
 
 function commentsBlock(p){
   const list = commentsFor === String(p.id) ? comments : [];
@@ -619,6 +696,7 @@ const views = {
         <span>읽는 시간 ${mins(p.body)}분</span>
       </div>
       <p class="article-body">${esc(p.body)}</p>
+      ${attachmentsBlock(p)}
       ${isAdmin() && !p.notice ? `<div class="article-actions">
         <a class="btn sub" href="#edit-${esc(p.id)}">수정</a>
         <button class="btn line" data-act="delete" data-id="${esc(p.id)}">삭제</button>
@@ -661,6 +739,10 @@ const views = {
           <label><input type="radio" name="vis" id="visPrivate" value="private" ${v.visibility==="private"?"checked":""}><span><b>나만보기</b>관리자만 볼 수 있어요. 초안으로 쓰세요</span></label>
         </div></fieldset>
         <div class="field"><label for="wBody">내용</label><textarea id="wBody" required>${esc(v.body)}</textarea></div>
+        <div class="field"><span class="c-label" id="wFilesLabel">첨부 파일</span>
+          <label class="file-btn" for="wFiles"><input id="wFiles" type="file" multiple accept=".jpg,.jpeg,.png,.gif,.pdf,image/jpeg,image/png,image/gif,application/pdf" aria-describedby="wFilesHint">파일 고르기</label>
+          <span class="hint" id="wFilesHint">JPG, PNG, GIF, PDF만 · 파일당 ${fmtSize(store.attMax)}까지 · 한 글에 ${ATT_MAX_COUNT}개까지</span>
+          <ul class="att-pick" id="attPick" aria-labelledby="wFilesLabel"></ul></div>
         <p class="msg" id="writeMsg" role="status"></p>
         <div class="actions"><button class="btn" type="submit" id="writeSubmit">${editing ? "수정 저장" : "올리기"}</button><a class="btn line" href="${editing ? `#post-${esc(p.id)}` : "#"}">취소</a></div>
       </form></div>`;
@@ -709,10 +791,27 @@ function render(){
   const r = parseRoute();
   renderHeader(r);
   if (r.name === "post" && commentsFor !== String(r.id) && !commentsLoading) loadComments(r.id);
+  if (r.name === "post") { const p = findPost(r.id); if (p && (p.attachments || []).some(a => !attUrls[a.path]) && !attLoading) loadAttUrls(p.attachments); }
+  if ((r.name === "write" || r.name === "edit") && !loading && attFor !== (r.id || "new")) {
+    const p = r.name === "edit" ? posts.find(x => String(x.id) === String(r.id)) : null;
+    keptAtts = p ? [...(p.attachments || [])] : []; pendingFiles = []; removedAtts = []; attFor = r.id || "new";
+  }
   const html = (r.name === "edit" ? views.write : views[r.name])(r);
   $("view").innerHTML = html;
+  if ($("attPick")) renderPick();
   const titles = {home:"삼색펜", list:"글 목록 · 삼색펜", write:"글쓰기 · 삼색펜", login:"로그인 · 삼색펜", admin:"관리자 · 삼색펜", edit:"글 수정 · 삼색펜"};
   document.title = r.name === "post" ? `${findPost(r.id)?.title || "글"} · 삼색펜` : titles[r.name];
+}
+async function loadAttUrls(atts){
+  attLoading = true;
+  try { Object.assign(attUrls, await store.fileUrls(atts)); } catch (err) { console.error(err); }
+  attLoading = false;
+  if (parseRoute().name === "post") render();
+}
+function renderPick(){
+  const kept = keptAtts.map(a => `<li><span class="att-kind keep">올린 파일</span><span class="nm">${esc(a.name)}</span><span class="sz">${fmtSize(a.size)}</span><button type="button" data-act="rmKept" data-path="${esc(a.path)}">빼기</button></li>`);
+  const fresh = pendingFiles.map((f, i) => `<li><span class="att-kind ${attExt(f.name) === "pdf" ? "pdf" : "img"}">${attExt(f.name) === "pdf" ? "PDF" : "이미지"}</span><span class="nm">${esc(f.name)}</span><span class="sz">${fmtSize(f.size)}</span><button type="button" data-act="rmPending" data-i="${i}">빼기</button></li>`);
+  $("attPick").innerHTML = kept.concat(fresh).join("");
 }
 async function loadComments(postId){
   commentsLoading = true; commentsFor = String(postId); comments = [];
@@ -721,7 +820,7 @@ async function loadComments(postId){
   if (parseRoute().name === "post") render();
 }
 function show(){
-  editingComment = null;
+  editingComment = null; attFor = null;
   render();
   $("mainnav").classList.remove("open");
   if (!firstRender) { window.scrollTo(0, 0); const h = $("view").querySelector("h1"); if (h) h.focus({preventScroll:true}); }
@@ -735,6 +834,7 @@ async function refresh(){
   loading = false; render();
 }
 
+function alertBox(text){ const v = $("view"); if (!v) return; const d = document.createElement("p"); d.className = "msg err wrap"; d.setAttribute("role", "alert"); d.textContent = text; v.prepend(d); }
 function msg(id, text, err){ const el = $(id); if (!el) return; el.textContent = text; el.className = "msg" + (err ? " err" : ""); }
 function authError(e){
   const m = (e && e.message || "").toLowerCase();
@@ -753,6 +853,8 @@ document.addEventListener("click", async e => {
   if (act === "toggleSignup") { signupMode = !signupMode; return render(); }
   if (act === "more") { shown += 10; return render(); }
   if (t.classList.contains("chip")) { cat = t.dataset.c; shown = 10; return render(); }
+  if (act === "rmPending") { pendingFiles.splice(Number(t.dataset.i), 1); return renderPick(); }
+  if (act === "rmKept") { removedAtts.push(t.dataset.path); keptAtts = keptAtts.filter(a => a.path !== t.dataset.path); return renderPick(); }
   if (act === "editComment") { editingComment = t.dataset.id; return render(); }
   if (act === "cancelEdit") { editingComment = null; return render(); }
   if (act === "delComment" || act === "delete") {
@@ -807,12 +909,28 @@ document.addEventListener("submit", async e => {
     if (!body) return msg("writeMsg", "내용을 입력해 주세요.", true);
     if (category === "공지" || category === "나만보기") return msg("writeMsg", "공지와 나만보기는 카테고리 이름으로 쓸 수 없습니다.", true);
     const b = $("writeSubmit"); b.disabled = true;
+    let createdId = null;
     try {
-      let id;
-      if (editId) { id = idOf(editId); await store.update(id, {title, body, category, visibility, updated_at:new Date().toISOString()}); }
-      else id = await store.create({title, body, category, visibility});
+      let id, uploadFailed = false;
+      if (editId) id = idOf(editId);
+      else { id = await store.create({title, body, category, visibility, attachments:[]}); createdId = id; }
+      let added = [];
+      if (pendingFiles.length) {
+        msg("writeMsg", "파일을 올리는 중입니다.");
+        try { added = await store.uploadFiles(id, pendingFiles); } catch (err) { console.error(err); uploadFailed = true; }
+      }
+      const attachments = [...keptAtts, ...added];
+      if (editId) await store.update(id, {title, body, category, visibility, attachments, updated_at:new Date().toISOString()});
+      else if (added.length) await store.update(id, {attachments});
+      await store.removeFiles(removedAtts.filter(pth => !pth.startsWith("demo:")));
+      pendingFiles = []; removedAtts = []; attFor = null;
       cat = "전체"; await refresh(); go(`#post-${id}`);
-    } catch (err) { console.error(err); b.disabled = false; msg("writeMsg", "저장하지 못했습니다. 관리자 계정인지 확인하고 다시 시도해 주세요.", true); }
+      if (uploadFailed) setTimeout(() => alertBox("글은 저장했지만 첨부 파일을 올리지 못했습니다. 글 수정에서 다시 올려 주세요."), 0);
+    } catch (err) {
+      console.error(err); b.disabled = false;
+      if (createdId !== null) { try { await store.remove(createdId); } catch {} }
+      msg("writeMsg", err && err.message === "STORAGE_FULL" ? "체험 모드의 브라우저 저장 공간이 가득 찼어요. 더 작은 파일을 고르거나 파일 수를 줄여 주세요." : "저장하지 못했습니다. 관리자 계정인지 확인하고 다시 시도해 주세요.", true);
+    }
   }
   if (f.id === "commentForm") {
     if (!canComment()) return;
@@ -828,6 +946,19 @@ document.addEventListener("submit", async e => {
     try { await store.editComment(idOf(f.dataset.editComment), body); editingComment = null; const pid = commentsFor; commentsFor = null; await loadComments(pid); }
     catch (err) { console.error(err); }
   }
+});
+
+document.addEventListener("change", async e => {
+  if (e.target.id !== "wFiles") return;
+  const picked = [...e.target.files]; e.target.value = "";
+  const errors = [];
+  for (const f of picked) {
+    if (keptAtts.length + pendingFiles.length >= ATT_MAX_COUNT) { errors.push(`한 글에는 파일을 ${ATT_MAX_COUNT}개까지 올릴 수 있어요.`); break; }
+    const err = await checkFile(f, store.attMax);
+    if (err) errors.push(err); else pendingFiles.push(f);
+  }
+  renderPick();
+  msg("writeMsg", errors.join(" "), errors.length > 0);
 });
 
 $("q").addEventListener("input", e => {

@@ -185,7 +185,47 @@ create policy "comments_delete" on public.comments
   for delete to authenticated
   using (author_id = auth.uid() or public.my_role() = 'admin');
 
--- 4. 나를 관리자로 만들기
+-- 4. 첨부 파일: JPG, PNG, GIF, PDF만, 파일당 10MB, 글 하나에 5개까지
+alter table public.posts add column if not exists attachments jsonb not null default '[]'::jsonb;
+alter table public.posts drop constraint if exists posts_attachments_check;
+alter table public.posts add constraint posts_attachments_check
+  check (jsonb_typeof(attachments) = 'array' and jsonb_array_length(attachments) <= 5);
+
+-- 파일 보관함(버킷). 비공개로 두고, 아래 규칙으로 읽기를 허용
+insert into storage.buckets (id, name, public, file_size_limit, allowed_mime_types)
+values ('attachments', 'attachments', false, 10485760, array['image/jpeg', 'image/png', 'image/gif', 'application/pdf'])
+on conflict (id) do update set
+  public = false,
+  file_size_limit = excluded.file_size_limit,
+  allowed_mime_types = excluded.allowed_mime_types;
+
+-- 읽기: 공개글의 파일은 누구나, 나만보기 글의 파일은 관리자만
+-- 파일 경로는 "글번호/파일이름" 형태
+drop policy if exists "attachments_read" on storage.objects;
+create policy "attachments_read" on storage.objects
+  for select using (
+    bucket_id = 'attachments'
+    and (
+      public.my_role() = 'admin'
+      or exists (
+        select 1 from public.posts p
+        where p.id::text = split_part(name, '/', 1) and p.visibility = 'public'
+      )
+    )
+  );
+
+-- 올리기와 지우기: 관리자만
+drop policy if exists "attachments_insert" on storage.objects;
+create policy "attachments_insert" on storage.objects
+  for insert to authenticated
+  with check (bucket_id = 'attachments' and public.my_role() = 'admin');
+
+drop policy if exists "attachments_delete" on storage.objects;
+create policy "attachments_delete" on storage.objects
+  for delete to authenticated
+  using (bucket_id = 'attachments' and public.my_role() = 'admin');
+
+-- 5. 나를 관리자로 만들기
 -- 블로그에서 먼저 회원가입한 뒤, 아래 줄 맨 앞의 -- 두 개를 지우고 내 이메일로 바꿔 한 번만 실행하세요.
 -- 관리자 지정은 화면에서 막혀 있어서 이 방법으로만 할 수 있습니다.
 -- 아래 줄은 profiles_guard 규칙을 잠깐 끄고 실행합니다.
