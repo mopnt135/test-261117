@@ -126,6 +126,7 @@ nav.main a:hover{color:var(--orange)}
 
 /* 글 목록 */
 .body-grid{display:grid;grid-template-columns:minmax(0,1fr) 320px;gap:56px;padding-block:32px 72px}
+.body-grid.side-left{grid-template-columns:320px minmax(0,1fr)}
 .sec-head{display:flex;justify-content:space-between;align-items:baseline;gap:12px;border-bottom:2px solid var(--fg);padding-bottom:10px}
 .sec-head h2{font-family:var(--f-display);font-weight:900;font-size:20px;margin:0}
 .posts{list-style:none;margin:0;padding:0}
@@ -219,7 +220,7 @@ footer{border-top:2px solid var(--fg)}
 .foot a{color:var(--muted)}
 
 @media (max-width:980px){
-  .hero-grid,.body-grid{grid-template-columns:1fr;gap:32px}
+  .hero-grid,.body-grid,.body-grid.side-left{grid-template-columns:1fr;gap:32px}
   .search{width:auto;flex:1}
   nav.main{display:none}
   nav.main.open{display:flex;position:absolute;left:0;right:0;top:100%;flex-direction:column;background:var(--bg);border-bottom:2px solid var(--fg);padding:8px max(16px,env(safe-area-inset-left,0px))}
@@ -451,14 +452,14 @@ const views = {
       <a class="tile primary" href="#write"><b>글쓰기</b><span>${canWrite() ? "새 글을 바로 올릴 수 있어요" : "관리자가 허용한 사람만 쓸 수 있어요"}</span></a>
       <a class="tile" href="#admin"><b>관리자 로그인</b><span>${isAdmin() ? "글쓴이 허용과 취소" : "관리자 전용 화면"}</span></a>
     </nav></div>
-    <div class="wrap body-grid">
+    <div class="wrap body-grid side-left">
+      <aside>${accountCard()}${rulesCard}</aside>
       <section aria-label="최근 글">
         <div class="sec-head"><h2>최근 글</h2><a class="link2" href="#list">전체 보기</a></div>
         ${loading ? `<p class="empty">글을 불러오는 중입니다.</p>`
           : loadError ? `<p class="empty"><strong>글을 불러오지 못했습니다.</strong>잠시 뒤 새로고침해 주세요.</p>`
           : `<ul class="posts">${recent.map(postItem).join("")}</ul>${posts.length ? "" : `<p class="empty">${canWrite() ? "<strong>아직 올라온 글이 없습니다.</strong>글쓰기에서 첫 글을 올려 보세요." : "<strong>아직 올라온 글이 없습니다.</strong>지금은 공지만 있어요."}</p>`}`}
       </section>
-      <aside>${accountCard()}${rulesCard}</aside>
     </div>`;
   },
 
