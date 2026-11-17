@@ -108,11 +108,11 @@
 
 | 무엇 | 어디 |
 | --- | --- |
-| 측정 ID | `index.html` 의 `GA_MEASUREMENT_ID` |
+| 측정 ID | `index.html` 의 `GA_MEASUREMENT_ID` (현재 `G-5HJBBKMVE3`) |
 | 공통 함수 | `analytics.track(name, params)`, `analytics.setUser(role)` |
 | 화면 이동 | `trackPageView()`, `pageInfo()` |
 | 읽기 완료 | `checkReadComplete()` |
-| 테스트 | `tests/e2e.js` 의 H 영역 T70~T77 |
+| 테스트 | `tests/e2e.js` 의 H 영역 T70~T78. 테스트는 측정 ID 를 비운 복사본으로 돌아가 실제 GA 로 보내지 않는다 |
 
 새 이벤트를 넣을 때:
 1. 이 문서의 이벤트 목록에 먼저 적는다.

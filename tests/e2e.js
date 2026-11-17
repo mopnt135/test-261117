@@ -10,7 +10,14 @@ const fs = require("fs");
 const path = require("path");
 
 const ROOT = path.resolve(__dirname, "..");
-const URL = "file://" + path.join(ROOT, "index.html");
+// 테스트가 실제 GA 로 가짜 방문을 보내지 않도록, 측정 ID 를 비운 복사본으로 테스트한다
+const GA_ID_RE = /const GA_MEASUREMENT_ID = "[^"]*";/;
+const SOURCE = fs.readFileSync(path.join(ROOT, "index.html"), "utf8");
+if (!GA_ID_RE.test(SOURCE)) throw new Error("index.html 에서 GA_MEASUREMENT_ID 를 찾지 못했습니다");
+const withGaId = id => SOURCE.replace(GA_ID_RE, `const GA_MEASUREMENT_ID = "${id}";`);
+const TMP = fs.mkdtempSync(path.join(require("os").tmpdir(), "samsaekpen-e2e-"));
+fs.writeFileSync(path.join(TMP, "index.html"), withGaId(""));
+const URL = "file://" + path.join(TMP, "index.html");
 const FIX = path.join(__dirname, "fixtures");
 const OUT = process.argv[2] || path.join(__dirname, "e2e-result.json");
 const SHOTS = process.argv[3] || null;
@@ -258,13 +265,13 @@ const tests = [
     await logout();
     return expect(leaks.length === 0, leaks.length ? "유출: " + leaks.join(", ") : "이메일, 댓글 내용, 비밀번호 없음");
   }],
-  ["H", "T76", "측정 ID 가 비어 있으면 GA 스크립트를 불러오지 않는다", async () => {
+  ["H", "T76", "측정 ID 가 비어 있으면 GA 스크립트를 불러오지 않는다 (테스트용 복사본)", async () => {
     await goto(); const n = await page.evaluate(() => document.querySelectorAll('script[src*="googletagmanager"]').length + (window.dataLayer ? 1 : 0));
     return expect(n === 0, "GA 스크립트 0개, dataLayer 없음");
   }],
   ["H", "T77", "측정 ID 를 넣으면 GA 로 page_view 를 보내고, 통계 끄기를 누르면 멈춘다", async () => {
     const dir = fs.mkdtempSync(path.join(require("os").tmpdir(), "samsaekpen-ga-"));
-    const html = fs.readFileSync(path.join(ROOT, "index.html"), "utf8").replace('const GA_MEASUREMENT_ID = "";', 'const GA_MEASUREMENT_ID = "G-TEST12345";');
+    const html = withGaId("G-TEST12345");
     fs.writeFileSync(path.join(dir, "index.html"), html);
     await page.goto("file://" + path.join(dir, "index.html")); await wait(600);
     const st = await page.evaluate(() => ({
@@ -281,6 +288,8 @@ const tests = [
     return expect(st.tag === 1 && st.config && st.pv === 1 && st.toggle === "방문 통계 끄기" && off.flag && after.dl === 0 && after.label === "방문 통계 켜기",
       `스크립트 ${st.tag}개, 자동 page_view 끔 ${st.config}, page_view ${st.pv}건 → 끄기 후 재방문 전송 ${after.dl}건`);
   }],
+
+  ["H", "T78", "배포 파일에 측정 ID 가 들어 있다", async () => { const m = SOURCE.match(GA_ID_RE)[0]; return expect(/"G-[A-Z0-9]{6,}"/.test(m), m); }],
 
   // G. 화면 크기와 테마
   ["G", "T60", "휴대폰 너비에서 화면이 옆으로 넘치지 않는다", async () => {
@@ -304,6 +313,7 @@ const tests = [
   browser = await chromium.launch();
   page = await browser.newPage({ viewport: { width: 1280, height: 900 } });
   page.on("pageerror", e => errors.push(e.message));
+  await page.route(/googletagmanager\.com|google-analytics\.com/, r => r.abort());
   if (SHOTS) fs.mkdirSync(SHOTS, { recursive: true });
   for (const [area, id, name, fn] of tests) {
     const t0 = Date.now();
