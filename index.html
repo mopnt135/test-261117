@@ -244,6 +244,30 @@ footer{border-top:2px solid var(--fg)}
   .article-body{font-size:17px}
 }
 @media (prefers-reduced-motion:reduce){*{transition:none!important}}
+.badge.role-member{background:var(--mint-fill);color:var(--on-mint)}
+.badge.role-warned{background:var(--orange-fill);color:var(--on-orange)}
+.badge.role-banned{background:var(--red);color:var(--on-red)}
+.m-acts{display:flex;gap:8px;flex-wrap:wrap}
+nav.main a[hidden]{display:none}
+.comments{margin-top:48px;padding-top:20px;border-top:2px solid var(--fg)}
+.comments h2{font-family:var(--f-display);font-weight:900;font-size:22px;margin:0 0 12px}
+.comments h2 span{color:var(--orange)}
+.c-list{list-style:none;margin:0;padding:0}
+.comment{padding:16px 0;border-bottom:1px solid var(--line)}
+.c-meta{display:flex;flex-wrap:wrap;gap:6px 12px;align-items:center;font-size:14px;color:var(--muted)}
+.c-meta b{color:var(--fg)}
+.c-meta time{font-family:var(--f-mono);font-size:13px;font-variant-numeric:tabular-nums}
+.c-body{white-space:pre-wrap;margin:6px 0 0}
+.c-actions{display:flex;gap:4px;margin-top:4px}
+.c-actions button{background:none;border:0;color:var(--muted);font-size:14px;cursor:pointer;min-height:36px;padding:0 8px 0 0;text-decoration:underline}
+.c-actions button:hover{color:var(--orange)}
+.c-form{display:flex;flex-direction:column;gap:8px;margin-top:20px}
+.c-form textarea{font:inherit;font-size:16px;line-height:1.6;color:var(--fg);background:var(--bg);border:2px solid var(--fg);padding:10px 12px;min-height:110px;width:100%;resize:vertical}
+.c-form textarea:focus{outline:none;border-color:var(--red)}
+.c-form .actions{align-items:center}
+.c-label{font-weight:700;font-size:15px}
+.c-login{margin-top:20px;padding:16px;background:var(--soft);display:flex;flex-wrap:wrap;gap:12px;align-items:center;justify-content:space-between}
+.c-login p{margin:0}
 </style>
 </head>
 <body>
@@ -272,7 +296,7 @@ footer{border-top:2px solid var(--fg)}
 </header>
 
 <div class="demo-strip" id="demoStrip" hidden>
-  <div class="wrap"><b>체험 모드</b>로그인과 글이 이 브라우저에만 저장됩니다. 처음 로그인한 이메일이 관리자가 됩니다.</div>
+  <div class="wrap"><b>체험 모드</b>로그인, 글, 댓글이 이 브라우저에만 저장됩니다. 처음 로그인한 이메일이 관리자가 됩니다.</div>
 </div>
 
 <main id="view" tabindex="-1"></main>
@@ -285,27 +309,29 @@ footer{border-top:2px solid var(--fg)}
 </footer>
 
 <script>
-/* ===== 설정: Supabase 프로젝트 정보를 넣으면 실제 로그인과 글 저장이 켜집니다 =====
+/* ===== 설정: Supabase 프로젝트 정보를 넣으면 실제 로그인, 글, 댓글 저장이 켜집니다 =====
    비워 두면 체험 모드로 동작합니다. */
 const SUPABASE_URL = "";
 const SUPABASE_ANON_KEY = "";
 
+/* 운영 원칙: 글은 관리자만 쓴다. 회원은 읽기와 댓글만 할 수 있다. */
 const NOTICE = {
-  id:"notice", notice:true, category:"공지", visibility:"public", created_at:"2026-11-17T09:00:00+09:00",
+  id:"notice", notice:true, category:"공지", visibility:"public",
+  created_at:"2026-11-17T09:00:00+09:00", updated_at:"2026-11-17T15:00:00+09:00",
   title:"삼색펜 이용 안내",
   body:`삼색펜에 오신 것을 환영합니다.
-이 블로그는 아래 두 가지 규칙으로 운영됩니다.
+이 블로그는 아래 규칙으로 운영됩니다.
 
-1. 글쓰기는 관리자가 허용한 사람만 할 수 있습니다.
-누구나 회원가입은 할 수 있지만, 가입 직후에는 승인 대기 상태입니다.
-관리자가 허용하면 글쓰기 메뉴를 쓸 수 있습니다.
-로그인하지 않은 방문자는 공개된 글을 읽을 수만 있습니다.
+1. 글은 관리자만 씁니다.
+로그인하지 않은 방문자도 공개된 글을 모두 읽을 수 있습니다.
 
-2. 글은 공개글과 나만보기 글로 나뉩니다.
-공개글은 누구나 볼 수 있습니다.
-나만보기 글은 글을 쓴 본인이 로그인했을 때만 보입니다.
+2. 댓글은 로그인한 회원이 달 수 있습니다.
+회원가입을 하면 바로 댓글을 달 수 있습니다.
+내가 단 댓글은 직접 고치거나 지울 수 있습니다.
 
-내가 쓴 글은 글 상세 화면의 수정 버튼으로 고칠 수 있습니다.`
+3. 운영 기준을 어긴 댓글은 관리자가 지울 수 있습니다.
+기준을 어긴 회원은 경고를 받고, 경고가 3회 쌓이면 자동으로 추방됩니다.
+자세한 기준은 "삼색펜 운영 기준" 공지를 확인해 주세요.`
 };
 
 const NOTICE_RULES = {
@@ -339,12 +365,15 @@ const NOTICE_RULES = {
 나만보기 글은 다른 방문자에게는 보이지 않지만, 관리자는 운영을 위해 볼 수 있습니다.`
 };
 
-const ROLE_NAME = {pending:"승인 대기", writer:"글쓴이", admin:"관리자"};
+const ROLE_NAME = {member:"회원", banned:"추방", admin:"관리자"};
+const MAX_WARNS = 3;
 const $ = id => document.getElementById(id);
 const esc = s => String(s ?? "").replace(/[&<>"']/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
 const fmt = iso => new Date(iso).toLocaleDateString("ko-KR",{timeZone:"Asia/Seoul",year:"numeric",month:"2-digit",day:"2-digit"}).replace(/\.\s?/g,".").replace(/\.$/,"");
+const fmtTime = iso => fmt(iso) + " " + new Date(iso).toLocaleTimeString("ko-KR",{timeZone:"Asia/Seoul",hour:"2-digit",minute:"2-digit",hour12:false});
 const mins = t => Math.max(1, Math.round(t.length/500));
 const idOf = v => /^\d+$/.test(String(v)) ? Number(v) : v;
+const maskName = email => { const a = String(email || "").split("@")[0]; return (a.slice(0, 3) || "회원") + "***"; };
 
 /* ===== 저장소: Supabase(실제) 또는 브라우저(체험) ===== */
 const REMOTE = !!(SUPABASE_URL && SUPABASE_ANON_KEY && window.supabase);
@@ -352,8 +381,8 @@ const sb = REMOTE ? window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY
 const must = res => { if (res.error) throw res.error; if (Array.isArray(res.data) && !res.data.length) throw new Error("권한이 없거나 대상이 없습니다"); return res.data; };
 
 const local = (() => {
-  const KEY = "samsaekpen-demo-v2"; let mem = {user:null, posts:[], users:{}};
-  const load = () => { try { return JSON.parse(localStorage.getItem(KEY)) || mem; } catch { return mem; } };
+  const KEY = "samsaekpen-demo-v3"; let mem = {user:null, posts:[], users:{}, comments:[]};
+  const load = () => { try { return {...mem, ...(JSON.parse(localStorage.getItem(KEY)) || {})}; } catch { return mem; } };
   const save = d => { mem = d; try { localStorage.setItem(KEY, JSON.stringify(d)); } catch {} };
   return { load, save };
 })();
@@ -364,37 +393,55 @@ const store = REMOTE ? {
   async signIn(email, pw){ const {data, error} = await sb.auth.signInWithPassword({email, password:pw}); if (error) throw error; return data.user; },
   async signUp(email, pw){ const {data, error} = await sb.auth.signUp({email, password:pw}); if (error) throw error; return data.session ? data.user : null; },
   async signOut(){ await sb.auth.signOut(); },
-  async role(u){ const {data, error} = await sb.from("profiles").select("role").eq("id", u.id).maybeSingle(); if (error) throw error; return data?.role || "pending"; },
-  async members(){ return must(await sb.from("profiles").select("id,email,role,created_at").order("created_at",{ascending:true})); },
-  async setRole(id, role){ must(await sb.from("profiles").update({role}).eq("id", id).select("id")); },
+  async role(u){ const {data, error} = await sb.from("profiles").select("role").eq("id", u.id).maybeSingle(); if (error) throw error; return data?.role || "member"; },
+  async members(){ return must(await sb.from("profiles").select("id,email,role,warns,created_at").order("created_at",{ascending:true})); },
+  async setMember(id, patch){ must(await sb.from("profiles").update(patch).eq("id", id).select("id")); },
   async list(){ const {data, error} = await sb.from("posts").select("id,author_id,title,body,category,visibility,created_at,updated_at").order("created_at",{ascending:false}).limit(500); if (error) throw error; return data; },
   async create(p){ return must(await sb.from("posts").insert(p).select("id"))[0].id; },
   async update(id, p){ must(await sb.from("posts").update(p).eq("id", id).select("id")); },
-  async remove(id){ must(await sb.from("posts").delete().eq("id", id).select("id")); }
+  async remove(id){ must(await sb.from("posts").delete().eq("id", id).select("id")); },
+  async comments(postId){ const {data, error} = await sb.from("comments").select("id,post_id,author_id,author_name,body,created_at,updated_at").eq("post_id", String(postId)).order("created_at",{ascending:true}); if (error) throw error; return data; },
+  async addComment(postId, body){ must(await sb.from("comments").insert({post_id:String(postId), body}).select("id")); },
+  async editComment(id, body){ must(await sb.from("comments").update({body}).eq("id", id).select("id")); },
+  async removeComment(id){ must(await sb.from("comments").delete().eq("id", id).select("id")); }
 } : {
   async session(){ return local.load().user; },
   onChange(){},
   async signIn(email){
     const d = local.load(), key = email.toLowerCase();
-    if (!d.users[key]) d.users[key] = {id:"demo:"+key, email, role: Object.keys(d.users).length ? "pending" : "admin", created_at:new Date().toISOString()};
+    if (!d.users[key]) d.users[key] = {id:"demo:"+key, email, role: Object.keys(d.users).length ? "member" : "admin", warns:0, created_at:new Date().toISOString()};
     d.user = {id:d.users[key].id, email}; local.save(d); return d.user;
   },
   async signUp(email, pw){ return this.signIn(email, pw); },
   async signOut(){ const d = local.load(); d.user = null; local.save(d); },
-  async role(u){ const m = Object.values(local.load().users).find(x => x.id === u.id); return m ? m.role : "pending"; },
+  async role(u){ const m = Object.values(local.load().users).find(x => x.id === u.id); return m ? m.role : "member"; },
   async members(){ return Object.values(local.load().users).sort((a,b) => a.created_at.localeCompare(b.created_at)); },
-  async setRole(id, role){ const d = local.load(); const m = Object.values(d.users).find(x => x.id === id); if (m) m.role = role; local.save(d); },
-  async list(){ const d = local.load(); return d.posts.filter(p => p.visibility === "public" || (d.user && p.author_id === d.user.id)); },
+  async setMember(id, patch){
+    const d = local.load(); const m = Object.values(d.users).find(x => x.id === id); if (!m || m.role === "admin") throw new Error("no");
+    Object.assign(m, patch); if (m.warns >= MAX_WARNS) m.role = "banned"; local.save(d);
+  },
+  async list(){ const d = local.load(); const admin = d.user && (await this.role(d.user)) === "admin"; return d.posts.filter(p => p.visibility === "public" || admin); },
   async create(p){ const d = local.load(); const id = Date.now(); d.posts.unshift({...p, id, author_id:d.user.id, created_at:new Date().toISOString(), updated_at:null}); local.save(d); return id; },
-  async update(id, p){ const d = local.load(); const x = d.posts.find(q => q.id === id && q.author_id === d.user.id); if (!x) throw new Error("no"); Object.assign(x, p); local.save(d); },
-  async remove(id){ const d = local.load(); d.posts = d.posts.filter(p => !(p.id === id && p.author_id === d.user.id)); local.save(d); }
+  async update(id, p){ const d = local.load(); const x = d.posts.find(q => q.id === id); if (!x) throw new Error("no"); Object.assign(x, p); local.save(d); },
+  async remove(id){ const d = local.load(); d.posts = d.posts.filter(p => p.id !== id); d.comments = d.comments.filter(c => c.post_id !== String(id)); local.save(d); },
+  async comments(postId){
+    const d = local.load(); const me = d.user && Object.values(d.users).find(u => u.id === d.user.id);
+    const banned = new Set(Object.values(d.users).filter(u => u.role === "banned").map(u => u.id));
+    return d.comments.filter(c => c.post_id === String(postId) && (!banned.has(c.author_id) || me?.role === "admin"));
+  },
+  async addComment(postId, body){ const d = local.load(); d.comments.push({id:Date.now(), post_id:String(postId), author_id:d.user.id, author_name:maskName(d.user.email), body, created_at:new Date().toISOString(), updated_at:null}); local.save(d); },
+  async editComment(id, body){ const d = local.load(); const c = d.comments.find(x => x.id === id && x.author_id === d.user.id); if (!c) throw new Error("no"); c.body = body; c.updated_at = new Date().toISOString(); local.save(d); },
+  async removeComment(id){ const d = local.load(); d.comments = d.comments.filter(c => c.id !== id); local.save(d); }
 };
 
 /* ===== 상태 ===== */
 let user = null, role = null, members = [], posts = [], loading = true, loadError = false;
 let cat = "전체", q = "", shown = 10, signupMode = false, afterLogin = "#", firstRender = true;
-const canWrite = () => !!user && (role === "writer" || role === "admin");
+let comments = [], commentsFor = null, commentsLoading = false, editingComment = null;
 const isAdmin = () => !!user && role === "admin";
+const canWrite = isAdmin;
+const canComment = () => !!user && (role === "member" || role === "admin");
+const isBanned = () => !!user && role === "banned";
 const allPosts = () => [NOTICE_RULES, NOTICE, ...posts];
 const findPost = id => allPosts().find(p => String(p.id) === String(id));
 
@@ -430,25 +477,24 @@ function postItem(p){
 }
 
 function accountCard(){
-  if (!user) return `<section class="account"><h2>내 계정</h2><p>회원가입 후 관리자가 허용하면 글을 쓸 수 있어요. 로그인하지 않으면 공개글만 읽을 수 있습니다.</p>
+  if (!user) return `<section class="account"><h2>내 계정</h2><p>글은 누구나 읽을 수 있어요. 회원가입하고 로그인하면 바로 댓글을 달 수 있습니다.</p>
     <div class="row"><a class="btn sub" href="#login">로그인</a></div></section>`;
-  const r = role || "pending", mine = posts.filter(p => p.author_id === user.id);
-  const waiting = members.filter(m => m.role === "pending").length;
+  const r = role || "member";
+  const waiting = members.filter(m => m.role === "member" && (m.warns || 0) > 0).length;
   return `<section class="account"><h2>내 계정</h2>
     <p class="who">${esc(user.email)}</p>
-    <div><span class="badge role-${r}">${ROLE_NAME[r]}</span></div>
-    ${r === "pending" ? `<p>관리자가 글쓰기를 허용하면 글쓰기 메뉴를 쓸 수 있어요. 허용된 뒤에는 새로고침해 주세요.</p>`
-      : `<div class="counts"><span>공개 ${mine.filter(p=>p.visibility==="public").length}편</span><span>나만보기 ${mine.filter(p=>p.visibility==="private").length}편</span></div>`}
+    <div><span class="badge role-${r}">${ROLE_NAME[r] || "회원"}</span></div>
+    <p>${r === "admin" ? "글쓰기, 댓글 관리, 회원 경고와 추방을 할 수 있어요." : r === "banned" ? "이용이 제한된 계정입니다. 댓글을 달 수 없어요." : "글을 읽고 댓글을 달 수 있어요."}</p>
     <div class="row">
-      ${canWrite() ? `<a class="btn" href="#write">글쓰기</a>` : ""}
-      ${isAdmin() ? `<a class="btn sub" href="#admin">글쓴이 관리${waiting ? ` · 대기 ${waiting}명` : ""}</a>` : ""}
+      ${isAdmin() ? `<a class="btn" href="#write">글쓰기</a><a class="btn sub" href="#admin">회원 관리${waiting ? ` · 경고 ${waiting}명` : ""}</a>` : ""}
       <button class="btn line" data-act="logout">로그아웃</button>
     </div></section>`;
 }
 
-const rulesCard = `<section><h2>글 공개 범위</h2><ul class="rules">
-  <li><span class="badge public">공개</span><span>누구나 읽을 수 있습니다. 로그인하지 않은 방문자에게도 보입니다.</span></li>
-  <li><span class="badge private">나만보기</span><span>글을 쓴 본인이 로그인했을 때만 보입니다.</span></li></ul></section>`;
+const rulesCard = `<section><h2>이용 방법</h2><ul class="rules">
+  <li><span class="badge public">읽기</span><span>누구나 공개된 글을 읽을 수 있습니다.</span></li>
+  <li><span class="badge role-member">댓글</span><span>로그인한 회원이 달 수 있습니다. 내 댓글은 고치거나 지울 수 있어요.</span></li>
+  <li><span class="badge role-admin">글쓰기</span><span>관리자만 할 수 있습니다.</span></li></ul></section>`;
 
 function loginForm(adminMode){
   const signup = signupMode && !adminMode;
@@ -459,16 +505,51 @@ function loginForm(adminMode){
     <div class="actions"><button class="btn" type="submit" id="loginSubmit">${signup ? "가입하기" : adminMode ? "관리자 로그인" : "로그인"}</button></div>
     ${adminMode ? `<p class="switch">관리자 계정은 Supabase에서 지정합니다. 일반 로그인은 <a class="link2" href="#login">여기</a>에서 하세요.</p>`
       : signup ? `<p class="switch">이미 계정이 있나요?<button type="button" data-act="toggleSignup">로그인</button></p>`
-      : `<p class="switch">처음이신가요?<button type="button" data-act="toggleSignup">회원가입</button> 가입 후 관리자가 허용하면 글을 쓸 수 있어요.</p>`}
+      : `<p class="switch">처음이신가요?<button type="button" data-act="toggleSignup">회원가입</button> 가입하면 바로 댓글을 달 수 있어요.</p>`}
   </form>`;
 }
 
 const head = (title, label, extra = "") => `<div class="page-head"><div>${label ? `<div class="label">${label}</div>` : ""}<h1 tabindex="-1">${title}</h1></div>${extra}</div>`;
 
+function commentsBlock(p){
+  const list = commentsFor === String(p.id) ? comments : [];
+  const items = list.map(c => {
+    const mine = user && c.author_id === user.id;
+    const editing = editingComment === String(c.id);
+    return `<li class="comment">
+      <div class="c-meta"><b>${esc(c.author_name || "회원")}</b>${mine ? '<span class="badge role-member">내 댓글</span>' : ""}<time>${fmtTime(c.created_at)}</time>${c.updated_at ? "<span>수정됨</span>" : ""}</div>
+      ${editing
+        ? `<form class="c-form" data-edit-comment="${esc(c.id)}"><label class="sr" for="ce-${esc(c.id)}">댓글 고치기</label><textarea id="ce-${esc(c.id)}" maxlength="1000">${esc(c.body)}</textarea>
+           <div class="actions"><button class="btn sub" type="submit">저장</button><button class="btn line" type="button" data-act="cancelEdit">취소</button></div></form>`
+        : `<p class="c-body">${esc(c.body)}</p>
+           <div class="c-actions">${mine && canComment() ? `<button type="button" data-act="editComment" data-id="${esc(c.id)}">수정</button>` : ""}${mine || isAdmin() ? `<button type="button" data-act="delComment" data-id="${esc(c.id)}">${mine ? "삭제" : "관리자 삭제"}</button>` : ""}</div>`}
+    </li>`;
+  }).join("");
+  let form;
+  if (!user) form = `<div class="c-login"><p>댓글은 로그인한 회원만 달 수 있어요.</p><a class="btn sub" href="#login">로그인하고 댓글 달기</a></div>`;
+  else if (isBanned()) form = `<div class="c-login"><p>이용이 제한된 계정이라 댓글을 달 수 없어요.</p></div>`;
+  else form = `<form class="c-form" id="commentForm" data-post="${esc(p.id)}" novalidate>
+      <label for="cBody" class="c-label">댓글 쓰기</label>
+      <textarea id="cBody" maxlength="1000" placeholder="운영 기준을 지켜 댓글을 남겨 주세요."></textarea>
+      <div class="actions"><button class="btn" type="submit" id="cSubmit">댓글 등록</button><span class="hint">1000자까지</span></div>
+      <p class="msg" id="cMsg" role="status"></p>
+    </form>`;
+  return `<section class="comments" aria-label="댓글">
+    <h2>댓글 <span>${commentsLoading ? "" : list.length}</span></h2>
+    ${commentsLoading ? `<p class="empty">댓글을 불러오는 중입니다.</p>` : list.length ? `<ul class="c-list">${items}</ul>` : `<p class="empty">아직 댓글이 없습니다.</p>`}
+    ${form}
+  </section>`;
+}
+
 /* ===== 화면 ===== */
 const views = {
   home(){
     const recent = allPosts().slice(0, 5);
+    const tile2 = isAdmin()
+      ? `<a class="tile primary" href="#write"><b>글쓰기</b><span>새 글을 바로 올릴 수 있어요</span></a>`
+      : user
+        ? `<a class="tile primary" href="#list"><b>댓글 달기</b><span>글을 읽고 댓글을 남겨 보세요</span></a>`
+        : `<a class="tile primary" href="#login"><b>회원가입</b><span>가입하면 바로 댓글을 달 수 있어요</span></a>`;
     return `
     <section class="hero"><div class="wrap hero-grid">
       <div><div class="label">공지</div><h1 tabindex="-1">삼색펜 <mark>운영 기준</mark></h1></div>
@@ -479,8 +560,8 @@ const views = {
     </div></section>
     <div class="wrap"><nav class="tiles" aria-label="바로가기">
       <a class="tile" href="#list"><b>글 목록</b><span>${loading ? "불러오는 중" : `지금 볼 수 있는 글 ${allPosts().length}편`}</span></a>
-      <a class="tile primary" href="#write"><b>글쓰기</b><span>${canWrite() ? "새 글을 바로 올릴 수 있어요" : "관리자가 허용한 사람만 쓸 수 있어요"}</span></a>
-      <a class="tile" href="#admin"><b>관리자 로그인</b><span>${isAdmin() ? "글쓴이 허용과 취소" : "관리자 전용 화면"}</span></a>
+      ${tile2}
+      <a class="tile" href="#admin"><b>관리자 로그인</b><span>${isAdmin() ? "회원 경고와 추방" : "관리자 전용 화면"}</span></a>
     </nav></div>
     <div class="wrap body-grid side-left">
       <aside>${accountCard()}${rulesCard}</aside>
@@ -488,7 +569,7 @@ const views = {
         <div class="sec-head"><h2>최근 글</h2><a class="link2" href="#list">전체 보기</a></div>
         ${loading ? `<p class="empty">글을 불러오는 중입니다.</p>`
           : loadError ? `<p class="empty"><strong>글을 불러오지 못했습니다.</strong>잠시 뒤 새로고침해 주세요.</p>`
-          : `<ul class="posts">${recent.map(postItem).join("")}</ul>${posts.length ? "" : `<p class="empty">${canWrite() ? "<strong>아직 올라온 글이 없습니다.</strong>글쓰기에서 첫 글을 올려 보세요." : "<strong>아직 올라온 글이 없습니다.</strong>지금은 공지만 있어요."}</p>`}`}
+          : `<ul class="posts">${recent.map(postItem).join("")}</ul>${posts.length ? "" : `<p class="empty">${isAdmin() ? "<strong>아직 올라온 글이 없습니다.</strong>글쓰기에서 첫 글을 올려 보세요." : "<strong>아직 올라온 글이 없습니다.</strong>지금은 공지만 있어요."}</p>`}`}
       </section>
     </div>`;
   },
@@ -510,7 +591,7 @@ const views = {
     else if (loadError) empty = "<strong>글을 불러오지 못했습니다.</strong>잠시 뒤 새로고침해 주세요.";
     else if (!list.length) empty = q ? `<strong>‘${esc(q)}’ 검색 결과가 없습니다.</strong>다른 단어로 찾아보세요.` : "<strong>이 카테고리에는 글이 없습니다.</strong>";
     return `<div class="wrap page">
-      ${head("글 목록", q ? `검색: ${esc(q)}` : "전체 글", canWrite() ? `<a class="btn" href="#write">글쓰기</a>` : "")}
+      ${head("글 목록", q ? `검색: ${esc(q)}` : "전체 글", isAdmin() ? `<a class="btn" href="#write">글쓰기</a>` : "")}
       <div class="cats" role="group" aria-label="카테고리 선택">${chips}</div>
       <ul class="posts">${list.slice(0, shown).map(postItem).join("")}</ul>
       ${empty ? `<div class="empty">${empty}</div>` : ""}
@@ -522,10 +603,9 @@ const views = {
     if (loading && !String(r.id).startsWith("notice")) return `<div class="wrap page"><p class="empty">글을 불러오는 중입니다.</p></div>`;
     const p = findPost(r.id);
     if (!p) return `<div class="wrap page">${head("글을 찾을 수 없습니다", "글 상세")}
-      <div class="notice-box"><p>지워진 글이거나 나만보기 글일 수 있어요. 나만보기 글은 쓴 사람으로 로그인해야 보입니다.</p>
-      <div class="actions"><a class="btn sub" href="#list">글 목록으로</a>${user ? "" : `<a class="btn line" href="#login">로그인</a>`}</div></div></div>`;
+      <div class="notice-box"><p>지워진 글이거나 아직 공개되지 않은 글일 수 있어요.</p>
+      <div class="actions"><a class="btn sub" href="#list">글 목록으로</a></div></div></div>`;
     const all = allPosts(), i = all.indexOf(p), newer = all[i-1], older = all[i+1];
-    const own = user && p.author_id === user.id;
     return `<div class="wrap page"><article class="article">
       <a class="back" href="#list">← 글 목록</a>
       <h1 tabindex="-1">${esc(p.title)}</h1>
@@ -537,10 +617,11 @@ const views = {
         <span>읽는 시간 ${mins(p.body)}분</span>
       </div>
       <p class="article-body">${esc(p.body)}</p>
-      ${own ? `<div class="article-actions">
-        ${canWrite() ? `<a class="btn sub" href="#edit-${esc(p.id)}">수정</a>` : ""}
+      ${isAdmin() && !p.notice ? `<div class="article-actions">
+        <a class="btn sub" href="#edit-${esc(p.id)}">수정</a>
         <button class="btn line" data-act="delete" data-id="${esc(p.id)}">삭제</button>
         <p class="msg" id="postMsg" role="status"></p></div>` : ""}
+      ${commentsBlock(p)}
       <nav class="pager" aria-label="다른 글">
         ${newer ? `<a href="#post-${esc(newer.id)}"><small>← 다음 글</small><span>${esc(newer.title)}</span></a>` : "<span></span>"}
         ${older ? `<a href="#post-${esc(older.id)}"><small>이전 글 →</small><span>${esc(older.title)}</span></a>` : "<span></span>"}
@@ -552,17 +633,17 @@ const views = {
     const editing = r.name === "edit";
     const title = editing ? "글 수정" : "새 글 쓰기";
     if (!user) { afterLogin = location.hash; return `<div class="wrap page">${head(title, "글쓰기")}
-      <div class="notice-box"><p>글쓰기는 관리자가 허용한 사람만 할 수 있어요. 먼저 로그인해 주세요.</p>
-      <div class="actions"><a class="btn" href="#login">로그인</a></div></div></div>`; }
-    if (!canWrite()) return `<div class="wrap page">${head(title, "글쓰기")}
-      <div class="notice-box"><p><span class="badge role-pending">승인 대기</span></p><p>아직 글쓰기 허용을 받지 못했어요. 관리자가 허용하면 이 화면에서 글을 쓸 수 있습니다.</p>
-      <div class="actions"><a class="btn line" href="#">첫 화면으로</a></div></div></div>`;
+      <div class="notice-box"><p>글쓰기는 관리자만 할 수 있어요. 관리자라면 로그인해 주세요.</p>
+      <div class="actions"><a class="btn" href="#admin">관리자 로그인</a></div></div></div>`; }
+    if (!isAdmin()) return `<div class="wrap page">${head(title, "글쓰기")}
+      <div class="notice-box"><p>삼색펜의 글은 관리자만 씁니다. 회원은 글을 읽고 댓글을 달 수 있어요.</p>
+      <div class="actions"><a class="btn sub" href="#list">글 읽으러 가기</a></div></div></div>`;
     let p = null;
     if (editing) {
       if (loading) return `<div class="wrap page"><p class="empty">글을 불러오는 중입니다.</p></div>`;
       p = posts.find(x => String(x.id) === String(r.id));
-      if (!p || p.author_id !== user.id) return `<div class="wrap page">${head("고칠 수 없는 글입니다", "글 수정")}
-        <div class="notice-box"><p>내가 쓴 글만 고칠 수 있어요.</p><div class="actions"><a class="btn sub" href="#list">글 목록으로</a></div></div></div>`;
+      if (!p) return `<div class="wrap page">${head("고칠 수 없는 글입니다", "글 수정")}
+        <div class="notice-box"><p>지워진 글이거나 공지예요. 공지는 이 화면에서 고칠 수 없어요.</p><div class="actions"><a class="btn sub" href="#list">글 목록으로</a></div></div></div>`;
     }
     const v = p || {title:"", body:"", category:"일반", visibility:"public"};
     return `<div class="wrap page">
@@ -574,8 +655,8 @@ const views = {
           <datalist id="catList"><option value="일반"><option value="업무 활용"><option value="기초 개념"><option value="실습 기록"><option value="도구 비교"></datalist>
           <span class="hint">목록에서 고르거나 새로 입력하세요.</span></div>
         <fieldset class="field"><legend>공개 범위</legend><div class="vis">
-          <label><input type="radio" name="vis" id="visPublic" value="public" ${v.visibility!=="private"?"checked":""}><span><b>공개</b>누구나 읽을 수 있어요</span></label>
-          <label><input type="radio" name="vis" id="visPrivate" value="private" ${v.visibility==="private"?"checked":""}><span><b>나만보기</b>로그인한 나만 볼 수 있어요</span></label>
+          <label><input type="radio" name="vis" id="visPublic" value="public" ${v.visibility!=="private"?"checked":""}><span><b>공개</b>누구나 읽고 회원은 댓글을 달 수 있어요</span></label>
+          <label><input type="radio" name="vis" id="visPrivate" value="private" ${v.visibility==="private"?"checked":""}><span><b>나만보기</b>관리자만 볼 수 있어요. 초안으로 쓰세요</span></label>
         </div></fieldset>
         <div class="field"><label for="wBody">내용</label><textarea id="wBody" required>${esc(v.body)}</textarea></div>
         <p class="msg" id="writeMsg" role="status"></p>
@@ -592,19 +673,23 @@ const views = {
   admin(){
     if (!user) { afterLogin = "#admin"; return `<div class="wrap page">${head("관리자 로그인", "관리자")}${loginForm(true)}</div>`; }
     if (!isAdmin()) return `<div class="wrap page">${head("관리자 계정이 아닙니다", "관리자")}
-      <div class="notice-box"><p>${esc(user.email)} 계정은 <span class="badge role-${role || "pending"}">${ROLE_NAME[role] || "승인 대기"}</span> 등급이에요. 관리자 계정으로 다시 로그인해 주세요.</p>
+      <div class="notice-box"><p>${esc(user.email)} 계정은 <span class="badge role-${role || "member"}">${ROLE_NAME[role] || "회원"}</span> 등급이에요. 관리자 계정으로 다시 로그인해 주세요.</p>
       <div class="actions"><button class="btn line" data-act="logout" data-next="#admin">로그아웃</button></div></div></div>`;
-    const cnt = r => members.filter(m => m.role === r).length;
-    return `<div class="wrap page">${head("글쓴이 관리", "관리자")}
-      <div class="stat"><div><b>${cnt("pending")}</b><span>승인 대기</span></div><div><b>${cnt("writer")}</b><span>글쓴이</span></div><div><b>${cnt("admin")}</b><span>관리자</span></div></div>
-      <p class="hint" style="margin:0 0 8px">회원가입한 사람은 모두 승인 대기로 시작합니다. 허용한 사람만 글을 쓰고 고칠 수 있습니다.</p>
-      <ul class="members">${members.length ? members.map(m => `
-        <li><div><span class="email">${esc(m.email || "(이메일 없음)")}</span><span class="since">가입 ${fmt(m.created_at)}</span></div>
-          <span class="badge role-${esc(m.role)}">${ROLE_NAME[m.role] || esc(m.role)}</span>
-          ${m.role === "admin" ? "" : m.role === "writer"
-            ? `<button class="btn line" data-role="pending" data-uid="${esc(m.id)}">허용 취소</button>`
-            : `<button class="btn sub" data-role="writer" data-uid="${esc(m.id)}">허용</button>`}
-        </li>`).join("") : `<li><span>가입한 사람이 아직 없습니다.</span></li>`}</ul>
+    const others = members.filter(m => m.role !== "admin");
+    const cnt = f => others.filter(f).length;
+    return `<div class="wrap page">${head("회원 관리", "관리자")}
+      <div class="stat"><div><b>${cnt(m => m.role === "member" && !(m.warns > 0))}</b><span>회원</span></div><div><b>${cnt(m => m.role === "member" && m.warns > 0)}</b><span>경고 받음</span></div><div><b>${cnt(m => m.role === "banned")}</b><span>추방</span></div></div>
+      <p class="hint" style="margin:0 0 8px">가입한 사람은 바로 회원이 되어 댓글을 달 수 있습니다. 경고가 ${MAX_WARNS}회 쌓이면 자동으로 추방되고, 추방된 회원의 댓글은 다른 방문자에게 보이지 않습니다.</p>
+      <ul class="members">${others.length ? others.map(m => {
+        const w = m.warns || 0, last = m.role === "member" && w === MAX_WARNS - 1;
+        const look = m.role === "banned" ? "banned" : w > 0 ? "warned" : "member";
+        const name = m.role === "banned" ? "추방" : w > 0 ? "경고 받음" : "회원";
+        return `<li><div><span class="email">${esc(m.email || "(이메일 없음)")}</span><span class="since">가입 ${fmt(m.created_at)} · 경고 ${m.role === "banned" ? "-" : `${w}/${MAX_WARNS}`}</span></div>
+          <span class="badge role-${look}">${name}</span>
+          ${m.role === "banned"
+            ? `<button class="btn line" data-member="unban" data-uid="${esc(m.id)}">추방 되돌림</button>`
+            : `<span class="m-acts"><button class="btn sub" data-member="warn" data-uid="${esc(m.id)}" data-w="${w}">${last ? "경고 (자동 추방)" : "경고"}</button><button class="btn line" data-member="ban" data-uid="${esc(m.id)}">추방</button></span>`}
+        </li>`; }).join("") : `<li><span>가입한 회원이 아직 없습니다.</span></li>`}</ul>
       <p class="msg" id="adminMsg" role="status"></p></div>`;
   }
 };
@@ -613,27 +698,36 @@ const views = {
 function renderHeader(r){
   $("authArea").innerHTML = !user
     ? `<a class="btn line" href="#login">로그인</a>`
-    : (canWrite() ? `<a class="btn" href="#write">글쓰기</a>` : "") + `<button class="btn line ${canWrite() ? "out" : ""}" data-act="logout">로그아웃</button>`;
+    : (isAdmin() ? `<a class="btn" href="#write">글쓰기</a>` : "") + `<button class="btn line ${isAdmin() ? "out" : ""}" data-act="logout">로그아웃</button>`;
+  const w = document.querySelector('[data-nav="write"]'); if (w) w.hidden = !isAdmin();
   const navName = r.name === "post" ? "list" : r.name === "edit" ? "write" : r.name === "login" ? "" : r.name;
   document.querySelectorAll("[data-nav]").forEach(a => a.dataset.nav === navName ? a.setAttribute("aria-current","page") : a.removeAttribute("aria-current"));
 }
 function render(){
   const r = parseRoute();
   renderHeader(r);
+  if (r.name === "post" && commentsFor !== String(r.id) && !commentsLoading) loadComments(r.id);
   const html = (r.name === "edit" ? views.write : views[r.name])(r);
   $("view").innerHTML = html;
   const titles = {home:"삼색펜", list:"글 목록 · 삼색펜", write:"글쓰기 · 삼색펜", login:"로그인 · 삼색펜", admin:"관리자 · 삼색펜", edit:"글 수정 · 삼색펜"};
   document.title = r.name === "post" ? `${findPost(r.id)?.title || "글"} · 삼색펜` : titles[r.name];
 }
-function show(){  /* 화면 전환: 맨 위로 + 제목에 초점 */
+async function loadComments(postId){
+  commentsLoading = true; commentsFor = String(postId); comments = [];
+  try { comments = await store.comments(postId); } catch (err) { console.error(err); comments = []; }
+  commentsLoading = false;
+  if (parseRoute().name === "post") render();
+}
+function show(){
+  editingComment = null;
   render();
   $("mainnav").classList.remove("open");
   if (!firstRender) { window.scrollTo(0, 0); const h = $("view").querySelector("h1"); if (h) h.focus({preventScroll:true}); }
   firstRender = false;
 }
 async function refresh(){
-  loading = true; render();
-  try { role = user ? await store.role(user) : null; } catch (err) { console.error(err); role = "pending"; }
+  loading = true; commentsFor = null; render();
+  try { role = user ? await store.role(user) : null; } catch (err) { console.error(err); role = "member"; }
   try { members = isAdmin() ? await store.members() : []; } catch (err) { console.error(err); members = []; }
   try { posts = await store.list(); loadError = false; } catch (err) { console.error(err); posts = []; loadError = true; }
   loading = false; render();
@@ -657,19 +751,29 @@ document.addEventListener("click", async e => {
   if (act === "toggleSignup") { signupMode = !signupMode; return render(); }
   if (act === "more") { shown += 10; return render(); }
   if (t.classList.contains("chip")) { cat = t.dataset.c; shown = 10; return render(); }
-  if (act === "delete") {
-    if (t.dataset.armed !== "1") { t.dataset.armed = "1"; t.textContent = "한 번 더 누르면 삭제됩니다"; return; }
-    t.disabled = true;
-    try { await store.remove(idOf(t.dataset.id)); await refresh(); go("#list"); }
-    catch (err) { console.error(err); t.disabled = false; msg("postMsg", "삭제하지 못했습니다. 다시 시도해 주세요.", true); }
-    return;
-  }
-  if (t.dataset.role && t.dataset.uid) {
+  if (act === "editComment") { editingComment = t.dataset.id; return render(); }
+  if (act === "cancelEdit") { editingComment = null; return render(); }
+  if (act === "delComment" || act === "delete") {
+    if (t.dataset.armed !== "1") { t.dataset.armed = "1"; t.textContent = "한 번 더 누르면 삭제"; return; }
     t.disabled = true;
     try {
-      await store.setRole(t.dataset.uid, t.dataset.role);
+      if (act === "delete") { await store.remove(idOf(t.dataset.id)); await refresh(); go("#list"); }
+      else { await store.removeComment(idOf(t.dataset.id)); const pid = commentsFor; commentsFor = null; await loadComments(pid); }
+    } catch (err) { console.error(err); t.disabled = false; t.textContent = "삭제하지 못했어요"; }
+    return;
+  }
+  if (t.dataset.member && t.dataset.uid) {
+    const kind = t.dataset.member;
+    if ((kind === "ban" || (kind === "warn" && Number(t.dataset.w) === MAX_WARNS - 1)) && t.dataset.armed !== "1") {
+      t.dataset.armed = "1"; t.textContent = "한 번 더 누르면 추방됩니다"; return;
+    }
+    t.disabled = true;
+    try {
+      const patch = kind === "warn" ? {warns: Number(t.dataset.w) + 1} : kind === "ban" ? {role:"banned"} : {role:"member", warns:0};
+      await store.setMember(t.dataset.uid, patch);
       members = await store.members(); render();
-      msg("adminMsg", t.dataset.role === "writer" ? "글쓰기를 허용했습니다." : "글쓰기 허용을 취소했습니다.");
+      const after = members.find(m => m.id === t.dataset.uid);
+      msg("adminMsg", kind === "unban" ? "추방을 되돌렸습니다. 경고 횟수는 0으로 돌아갔어요." : after && after.role === "banned" ? "추방했습니다. 이 회원의 댓글은 다른 방문자에게 보이지 않아요." : "경고를 줬습니다.");
     } catch (err) { console.error(err); t.disabled = false; msg("adminMsg", "바꾸지 못했습니다. 관리자 계정인지 확인해 주세요.", true); }
   }
 });
@@ -692,7 +796,7 @@ document.addEventListener("submit", async e => {
     } catch (err) { console.error(err); b.disabled = false; msg("loginMsg", authError(err), true); }
   }
   if (f.id === "writeForm") {
-    if (!canWrite()) return;
+    if (!isAdmin()) return;
     const editId = f.dataset.edit;
     const title = $("wTitle").value.trim(), body = $("wBody").value.trim();
     const category = $("wCat").value.trim() || "일반";
@@ -706,7 +810,21 @@ document.addEventListener("submit", async e => {
       if (editId) { id = idOf(editId); await store.update(id, {title, body, category, visibility, updated_at:new Date().toISOString()}); }
       else id = await store.create({title, body, category, visibility});
       cat = "전체"; await refresh(); go(`#post-${id}`);
-    } catch (err) { console.error(err); b.disabled = false; msg("writeMsg", "저장하지 못했습니다. 글쓰기 허용 상태를 확인하고 다시 시도해 주세요.", true); }
+    } catch (err) { console.error(err); b.disabled = false; msg("writeMsg", "저장하지 못했습니다. 관리자 계정인지 확인하고 다시 시도해 주세요.", true); }
+  }
+  if (f.id === "commentForm") {
+    if (!canComment()) return;
+    const body = $("cBody").value.trim();
+    if (!body) return msg("cMsg", "댓글 내용을 입력해 주세요.", true);
+    const b = $("cSubmit"); b.disabled = true;
+    try { await store.addComment(f.dataset.post, body); const pid = commentsFor; commentsFor = null; await loadComments(pid); }
+    catch (err) { console.error(err); b.disabled = false; msg("cMsg", "댓글을 올리지 못했습니다. 로그인 상태를 확인해 주세요.", true); }
+  }
+  if (f.dataset.editComment) {
+    const ta = f.querySelector("textarea"), body = ta.value.trim();
+    if (!body) return;
+    try { await store.editComment(idOf(f.dataset.editComment), body); editingComment = null; const pid = commentsFor; commentsFor = null; await loadComments(pid); }
+    catch (err) { console.error(err); }
   }
 });
 
