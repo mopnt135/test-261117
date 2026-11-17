@@ -111,7 +111,15 @@ flowchart LR
 | 5 | 서버 보관함 | 형식 목록과 10MB 제한 |
 | 6 | 서버 표 | attachments 5개 제한 |
 
-## 6. 알려진 한계
+## 6. 방문 통계 (GA4)
+
+- `GA_MEASUREMENT_ID` 가 있을 때만 gtag.js 를 불러온다. 자동 page_view 는 끄고(`send_page_view: false`) 화면이 바뀔 때 `trackPageView()` 가 직접 보낸다.
+- `#post-12` 같은 주소는 `/post/12` 처럼 바꿔 page_path 로 보낸다.
+- 관리자는 `traffic_type=internal` 로 표시해 GA 에서 거른다.
+- 방문자가 화면 맨 아래 "방문 통계 끄기"를 누르면 localStorage 에 기억하고 GA 를 멈춘다.
+- 이벤트 목록과 규칙: `docs/ANALYTICS.md`
+
+## 7. 알려진 한계
 
 - 공지는 `index.html` 에 고정. 바꾸려면 파일을 고쳐 다시 배포해야 한다.
 - 관리 기록 표가 없다. 경고와 삭제의 사유를 저장하지 않는다.

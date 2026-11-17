@@ -268,6 +268,9 @@ nav.main a[hidden]{display:none}
 .c-label{font-weight:700;font-size:15px}
 .c-login{margin-top:20px;padding:16px;background:var(--soft);display:flex;flex-wrap:wrap;gap:12px;align-items:center;justify-content:space-between}
 .c-login p{margin:0}
+.foot-links{display:flex;gap:16px;align-items:center;flex-wrap:wrap}
+.link-btn{background:none;border:0;padding:0;font:inherit;font-size:14px;color:var(--muted);text-decoration:underline;cursor:pointer;min-height:44px}
+.link-btn:hover{color:var(--orange)}
 .c-replies{list-style:none;margin:10px 0 0 22px;padding:0 0 0 16px;border-left:3px solid var(--line)}
 .c-replies .comment{padding:12px 0}
 .c-replies .comment:last-child{border-bottom:0}
@@ -353,7 +356,7 @@ nav.main a[hidden]{display:none}
 <footer>
   <div class="wrap foot">
     <span>© 2026 삼색펜 · 모든 시간은 한국 시간(KST) 기준입니다</span>
-    <a href="#admin">관리자 로그인</a>
+    <span class="foot-links"><button type="button" class="link-btn" id="gaToggle" hidden></button><a href="#admin">관리자 로그인</a></span>
   </div>
 </footer>
 
@@ -362,6 +365,50 @@ nav.main a[hidden]{display:none}
    비워 두면 체험 모드로 동작합니다. */
 const SUPABASE_URL = "";
 const SUPABASE_ANON_KEY = "";
+
+/* ===== 설정: Google Analytics 4 측정 ID (G-로 시작). 비워 두면 GA 를 불러오지 않습니다 ===== */
+const GA_MEASUREMENT_ID = "";
+
+/* ===== 방문 통계 (GA4) =====
+   규칙: 이메일, 댓글 내용, 비밀번호 같은 개인정보는 절대 보내지 않는다.
+   이벤트 이름과 파라미터는 docs/ANALYTICS.md 의 택소노미를 따른다. */
+const GA_OPTOUT_KEY = "samsaekpen-ga-optout";
+const analytics = (() => {
+  const buffer = window.samsaekpenEvents = [];   // 테스트와 디버그용 기록 (GA 를 꺼도 쌓임)
+  let on = false, sent = {};
+  const optedOut = () => { try { return localStorage.getItem(GA_OPTOUT_KEY) === "1"; } catch { return false; } };
+  const start = () => {
+    if (!GA_MEASUREMENT_ID || optedOut()) return;
+    window.dataLayer = window.dataLayer || [];
+    window.gtag = function(){ window.dataLayer.push(arguments); };
+    window.gtag("js", new Date());
+    window.gtag("config", GA_MEASUREMENT_ID, { send_page_view: false });
+    const sc = document.createElement("script"); sc.async = true;
+    sc.src = "https://www.googletagmanager.com/gtag/js?id=" + encodeURIComponent(GA_MEASUREMENT_ID);
+    document.head.appendChild(sc);
+    on = true;
+  };
+  const clean = params => { const o = {}; for (const [k, v] of Object.entries(params || {})) if (v !== undefined && v !== null && v !== "") o[k] = typeof v === "string" ? v.slice(0, 100) : v; return o; };
+  const track = (name, params) => {
+    const p = clean(params);
+    buffer.push({ name, params: p, at: new Date().toISOString() });
+    if (on && window.gtag) window.gtag("event", name, p);
+  };
+  const setUser = r => {
+    const userRole = r || "guest";
+    buffer.push({ name: "user_properties", params: { user_role: userRole } });
+    if (!on || !window.gtag) return;
+    window.gtag("set", "user_properties", { user_role: userRole });
+    window.gtag("set", { traffic_type: userRole === "admin" ? "internal" : undefined }); // 관리자 방문은 GA 에서 내부 트래픽으로 걸러냄
+  };
+  const once = key => { if (sent[key]) return false; sent[key] = true; return true; };
+  const setOptOut = v => {
+    try { v ? localStorage.setItem(GA_OPTOUT_KEY, "1") : localStorage.removeItem(GA_OPTOUT_KEY); } catch {}
+    if (GA_MEASUREMENT_ID) window["ga-disable-" + GA_MEASUREMENT_ID] = !!v;
+  };
+  if (GA_MEASUREMENT_ID && optedOut()) window["ga-disable-" + GA_MEASUREMENT_ID] = true;
+  return { start, track, setUser, once, optedOut, setOptOut, get enabled(){ return !!GA_MEASUREMENT_ID; } };
+})();
 
 /* 운영 원칙: 글은 관리자만 쓴다. 회원은 읽기와 댓글만 할 수 있다. */
 const NOTICE = {
@@ -567,6 +614,38 @@ function parseRoute(){
   if ((m = h.match(/^post-([\w-]+)$/))) return {name:"post", id:m[1]};
   if ((m = h.match(/^edit-([\w-]+)$/))) return {name:"edit", id:m[1]};
   return {name:"home"};
+}
+/* 주소 # 뒤를 GA 가 읽기 쉬운 경로로 바꾼다. 예: #post-12 → /post/12 */
+function pageInfo(r){
+  const map = { home:["/", "home"], list:["/list", "list"], write:["/write", "write"], login:["/login", "login"] };
+  if (r.name === "post") return [`/post/${r.id}`, String(r.id).startsWith("notice") ? "notice" : "post"];
+  if (r.name === "edit") return [`/edit/${r.id}`, "edit"];
+  if (r.name === "admin") return [r.tab === "comments" ? "/admin/comments" : "/admin", r.tab === "comments" ? "admin_comments" : "admin"];
+  return map[r.name] || ["/", "home"];
+}
+let pendingPageView = false, readTimer = null, viewStartedAt = 0;
+function trackPageView(){
+  const r = parseRoute(), [path, type] = pageInfo(r);
+  const p = r.name === "post" ? findPost(r.id) : null;
+  analytics.track("page_view", {
+    page_location: location.origin + location.pathname.replace(/\/$/, "") + path,
+    page_path: path, page_type: type,
+    page_title: p ? `${p.title} · 삼색펜` : document.title
+  });
+  clearTimeout(readTimer); viewStartedAt = Date.now();
+  if (p) {
+    analytics.track("post_view", { post_id: String(p.id), post_title: p.title, post_category: p.category, is_notice: !!p.notice, attachment_count: (p.attachments || []).length });
+    readTimer = setTimeout(checkReadComplete, 10000);
+  }
+}
+/* 글을 끝까지 읽음: 본문 끝이 화면에 보이고, 글을 연 지 10초가 지났을 때 한 번 */
+function checkReadComplete(){
+  const r = parseRoute(); if (r.name !== "post") return;
+  const body = document.querySelector(".article-body"); if (!body) return;
+  const seconds = Math.round((Date.now() - viewStartedAt) / 1000);
+  if (seconds < 10 || body.getBoundingClientRect().bottom > innerHeight) return;
+  const p = findPost(r.id); if (!p || !analytics.once("read:" + p.id + ":" + viewStartedAt)) return;
+  analytics.track("post_read_complete", { post_id: String(p.id), post_title: p.title, post_category: p.category, engaged_seconds: seconds });
 }
 const go = hash => { if (location.hash === hash || (hash === "#" && !location.hash)) render(); else location.hash = hash; };
 
@@ -918,6 +997,7 @@ function show(){
   $("mainnav").classList.remove("open");
   if (!firstRender) { window.scrollTo(0, 0); const h = $("view").querySelector("h1"); if (h) h.focus({preventScroll:true}); }
   firstRender = false;
+  if (loading) pendingPageView = true; else trackPageView();
 }
 async function refresh(){
   loading = true; commentsFor = null; render();
@@ -926,6 +1006,8 @@ async function refresh(){
   try { adminComments = isAdmin() ? await store.allComments() : []; } catch (err) { console.error(err); adminComments = []; }
   try { posts = await store.list(); loadError = false; } catch (err) { console.error(err); posts = []; loadError = true; }
   loading = false; render();
+  analytics.setUser(user ? role : "guest");
+  if (pendingPageView) { pendingPageView = false; trackPageView(); }
 }
 
 function alertBox(text){ const v = $("view"); if (!v) return; const d = document.createElement("p"); d.className = "msg err wrap"; d.setAttribute("role", "alert"); d.textContent = text; v.prepend(d); }
@@ -943,16 +1025,16 @@ function authError(e){
 document.addEventListener("click", async e => {
   const t = e.target.closest("button"); if (!t) return;
   const act = t.dataset.act;
-  if (act === "logout") { await store.signOut(); user = null; role = null; members = []; await refresh(); return go(t.dataset.next || "#"); }
+  if (act === "logout") { analytics.track("logout", { user_role: role || "member" }); await store.signOut(); user = null; role = null; members = []; await refresh(); return go(t.dataset.next || "#"); }
   if (act === "toggleSignup") { signupMode = !signupMode; return render(); }
   if (act === "more") { shown += 10; return render(); }
   if (t.dataset.acf) { acFilter = t.dataset.acf; acShown = 30; return render(); }
-  if (t.classList.contains("chip")) { cat = t.dataset.c; shown = 10; return render(); }
+  if (t.classList.contains("chip")) { cat = t.dataset.c; shown = 10; analytics.track("category_filter", { category: cat }); return render(); }
   if (act === "acMore") { acShown += 30; return render(); }
   if (act === "adminDelComment") {
     if (t.dataset.armed !== "1") { t.dataset.armed = "1"; t.textContent = "한 번 더 누르면 삭제"; return; }
     t.disabled = true;
-    try { await store.removeComment(idOf(t.dataset.id), t.dataset.soft === "1"); adminComments = await store.allComments(); commentsFor = null; render(); msg("acMsg", "댓글을 지웠습니다."); }
+    try { await store.removeComment(idOf(t.dataset.id), t.dataset.soft === "1"); analytics.track("comment_delete", { deleted_by: "admin", screen: "admin_comments", soft_delete: t.dataset.soft === "1" }); adminComments = await store.allComments(); commentsFor = null; render(); msg("acMsg", "댓글을 지웠습니다."); }
     catch (err) { console.error(err); t.disabled = false; t.textContent = "삭제하지 못했어요"; }
     return;
   }
@@ -966,8 +1048,8 @@ document.addEventListener("click", async e => {
     if (t.dataset.armed !== "1") { t.dataset.armed = "1"; t.textContent = "한 번 더 누르면 삭제"; return; }
     t.disabled = true;
     try {
-      if (act === "delete") { await store.remove(idOf(t.dataset.id)); await refresh(); go("#list"); }
-      else { await store.removeComment(idOf(t.dataset.id), t.dataset.soft === "1"); const pid = commentsFor; commentsFor = null; await loadComments(pid); }
+      if (act === "delete") { await store.remove(idOf(t.dataset.id)); analytics.track("post_delete", { post_id: String(t.dataset.id) }); await refresh(); go("#list"); }
+      else { const c = comments.find(x => String(x.id) === t.dataset.id); await store.removeComment(idOf(t.dataset.id), t.dataset.soft === "1"); analytics.track("comment_delete", { post_id: commentsFor, deleted_by: c && user && c.author_id === user.id ? "self" : "admin", screen: "post", soft_delete: t.dataset.soft === "1" }); const pid = commentsFor; commentsFor = null; await loadComments(pid); }
     } catch (err) { console.error(err); t.disabled = false; t.textContent = "삭제하지 못했어요"; }
     return;
   }
@@ -982,6 +1064,7 @@ document.addEventListener("click", async e => {
       await store.setMember(t.dataset.uid, patch);
       members = await store.members(); adminComments = await store.allComments(); render();
       const after = members.find(m => m.id === t.dataset.uid);
+      analytics.track("member_action", { action: kind === "warn" && after && after.role === "banned" ? "auto_ban" : kind, warn_count: after ? (after.warns || 0) : undefined });
       msg("adminMsg", kind === "unban" ? "추방을 되돌렸습니다. 경고 횟수는 0으로 돌아갔어요." : after && after.role === "banned" ? "추방했습니다. 이 회원의 댓글은 다른 방문자에게 보이지 않아요." : "경고를 줬습니다.");
     } catch (err) { console.error(err); t.disabled = false; msg("adminMsg", "바꾸지 못했습니다. 관리자 계정인지 확인해 주세요.", true); }
   }
@@ -997,7 +1080,9 @@ document.addEventListener("submit", async e => {
     const adminScreen = parseRoute().name === "admin";
     try {
       const u = (signupMode && !adminScreen) ? await store.signUp(email, pw) : await store.signIn(email, pw);
+      if (signupMode && !adminScreen) analytics.track("sign_up", { method: "email", needs_email_confirm: !u });
       if (!u) { b.disabled = false; return msg("loginMsg", "가입 신청이 접수됐습니다. 메일함에서 인증 링크를 누른 뒤 로그인해 주세요."); }
+      if (!signupMode || adminScreen) analytics.track("login", { method: "email", login_screen: adminScreen ? "admin" : "member" });
       user = u; signupMode = false;
       const next = adminScreen ? "#admin" : (afterLogin && afterLogin !== "#login" ? afterLogin : "#");
       afterLogin = "#";
@@ -1029,6 +1114,7 @@ document.addEventListener("submit", async e => {
       else if (added.length) await store.update(id, {attachments});
       await store.removeFiles(removedAtts.filter(pth => !pth.startsWith("demo:")));
       pendingFiles = []; removedAtts = []; attFor = null;
+      analytics.track(editId ? "post_update" : "post_create", { post_id: String(id), post_category: category, visibility, attachment_count: attachments.length, upload_failed: uploadFailed });
       cat = "전체"; await refresh(); go(`#post-${id}`);
       if (uploadFailed) setTimeout(() => alertBox("글은 저장했지만 첨부 파일을 올리지 못했습니다. 글 수정에서 다시 올려 주세요."), 0);
     } catch (err) {
@@ -1042,7 +1128,7 @@ document.addEventListener("submit", async e => {
     const body = $("cBody").value.trim();
     if (!body) return msg("cMsg", "댓글 내용을 입력해 주세요.", true);
     const b = $("cSubmit"); b.disabled = true;
-    try { await store.addComment(f.dataset.post, body); const pid = commentsFor; commentsFor = null; await loadComments(pid); }
+    try { await store.addComment(f.dataset.post, body); analytics.track("comment_submit", { post_id: String(f.dataset.post), comment_type: "comment", comment_length: body.length }); const pid = commentsFor; commentsFor = null; await loadComments(pid); }
     catch (err) { console.error(err); b.disabled = false; msg("cMsg", "댓글을 올리지 못했습니다. 로그인 상태를 확인해 주세요.", true); }
   }
   if (f.id === "replyForm") {
@@ -1050,13 +1136,13 @@ document.addEventListener("submit", async e => {
     const body = $("rBody").value.trim();
     if (!body) return msg("rMsg", "답글 내용을 입력해 주세요.", true);
     const b = $("rSubmit"); b.disabled = true;
-    try { await store.addComment(f.dataset.post, body, idOf(f.dataset.parent)); replyTo = null; const pid = commentsFor; commentsFor = null; await loadComments(pid); }
+    try { await store.addComment(f.dataset.post, body, idOf(f.dataset.parent)); analytics.track("comment_submit", { post_id: String(f.dataset.post), comment_type: "reply", comment_length: body.length }); replyTo = null; const pid = commentsFor; commentsFor = null; await loadComments(pid); }
     catch (err) { console.error(err); b.disabled = false; msg("rMsg", "답글을 올리지 못했습니다. 로그인 상태를 확인해 주세요.", true); }
   }
   if (f.dataset.editComment) {
     const ta = f.querySelector("textarea"), body = ta.value.trim();
     if (!body) return;
-    try { await store.editComment(idOf(f.dataset.editComment), body); editingComment = null; const pid = commentsFor; commentsFor = null; await loadComments(pid); }
+    try { await store.editComment(idOf(f.dataset.editComment), body); analytics.track("comment_edit", { post_id: commentsFor }); editingComment = null; const pid = commentsFor; commentsFor = null; await loadComments(pid); }
     catch (err) { console.error(err); }
   }
 });
@@ -1066,16 +1152,20 @@ document.addEventListener("change", async e => {
   const picked = [...e.target.files]; e.target.value = "";
   const errors = [];
   for (const f of picked) {
-    if (keptAtts.length + pendingFiles.length >= ATT_MAX_COUNT) { errors.push(`한 글에는 파일을 ${ATT_MAX_COUNT}개까지 올릴 수 있어요.`); break; }
+    if (keptAtts.length + pendingFiles.length >= ATT_MAX_COUNT) { errors.push(`한 글에는 파일을 ${ATT_MAX_COUNT}개까지 올릴 수 있어요.`); analytics.track("file_rejected", { reason: "count", file_ext: attExt(f.name) }); break; }
     const err = await checkFile(f, store.attMax);
-    if (err) errors.push(err); else pendingFiles.push(f);
+    if (err) { errors.push(err); analytics.track("file_rejected", { reason: err.includes("JPG, PNG") ? "type" : err.includes("실제 형식") ? "mime_mismatch" : err.includes("내용이") ? "signature" : err.includes("큰 파일") ? "size" : "empty", file_ext: attExt(f.name) }); }
+    else pendingFiles.push(f);
   }
   renderPick();
   msg("writeMsg", errors.join(" "), errors.length > 0);
 });
 
+let searchTimer = null;
 $("q").addEventListener("input", e => {
   q = e.target.value.trim().toLowerCase(); shown = 10;
+  clearTimeout(searchTimer);
+  if (q) searchTimer = setTimeout(() => analytics.track("search", { search_term: q.slice(0, 50), result_count: allPosts().filter(p => (p.title + " " + p.body).toLowerCase().includes(q)).length }), 1000);
   if (parseRoute().name !== "list") location.hash = "#list"; else render();
 });
 $("menuBtn").addEventListener("click", e => {
@@ -1083,10 +1173,30 @@ $("menuBtn").addEventListener("click", e => {
   e.currentTarget.setAttribute("aria-expanded", open);
   e.currentTarget.setAttribute("aria-label", open ? "메뉴 닫기" : "메뉴 열기");
 });
+/* 첨부 열기와 읽기 완료 */
+document.addEventListener("click", e => {
+  const a = e.target.closest(".att-file, .att-imgs a"); if (!a) return;
+  const r = parseRoute(); const name = a.querySelector(".nm, img"); const label = name ? (name.alt || name.textContent || "") : "";
+  analytics.track("attachment_open", { post_id: String(r.id || ""), file_ext: attExt(label) || (a.classList.contains("att-file") ? "pdf" : "image") });
+});
+window.addEventListener("scroll", () => { if (parseRoute().name === "post") checkReadComplete(); }, { passive: true });
+$("gaToggle").addEventListener("click", () => {
+  const off = !analytics.optedOut();
+  if (!off) analytics.track("analytics_opt_in", {});
+  analytics.setOptOut(off);
+  if (off) analytics.track("analytics_opt_out", {});
+  renderGaToggle(); if (!off) location.reload();
+});
+function renderGaToggle(){
+  const b = $("gaToggle"); if (!analytics.enabled) { b.hidden = true; return; }
+  b.hidden = false; b.textContent = analytics.optedOut() ? "방문 통계 켜기" : "방문 통계 끄기";
+  b.title = "이 블로그는 Google Analytics 로 방문 통계를 모읍니다. 이메일, 댓글 내용은 보내지 않습니다.";
+}
 window.addEventListener("hashchange", () => { if (parseRoute().name !== "login") signupMode = false; show(); });
 
 /* ===== 시작 ===== */
 (async () => {
+  analytics.start(); renderGaToggle();
   $("demoStrip").hidden = REMOTE;
   show();
   try { user = await store.session(); } catch { user = null; }

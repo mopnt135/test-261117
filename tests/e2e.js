@@ -217,6 +217,71 @@ const tests = [
   }],
   ["F", "T53", "로그아웃하면 관리 버튼이 사라진다", async () => { await logout(); const w = await page.$eval("[data-nav=write]", e => e.hidden); const a = await text("#authArea"); return expect(w && a.includes("로그인"), "글쓰기 메뉴 숨김, 로그인 버튼 표시"); }],
 
+  // H. 방문 통계 (GA4). window.samsaekpenEvents 에 쌓이는 이벤트로 확인
+  ["H", "T70", "첫 화면을 열면 홈 page_view 가 1건 기록된다", async () => {
+    await goto(); await wait(300);
+    const ev = await page.evaluate(() => window.samsaekpenEvents.filter(e => e.name === "page_view"));
+    return expect(ev.length === 1 && ev[0].params.page_type === "home" && ev[0].params.page_path === "/", `page_view ${ev.length}건, ${ev[0] && ev[0].params.page_path}`);
+  }],
+  ["H", "T71", "글을 열면 글 경로의 page_view 와 post_view 가 기록된다", async () => {
+    await page.click(".post h3 a >> nth=0"); await wait(500);
+    const ev = await page.evaluate(() => window.samsaekpenEvents.filter(e => ["page_view", "post_view"].includes(e.name)).slice(-2));
+    const pv = ev.find(e => e.name === "page_view"), po = ev.find(e => e.name === "post_view");
+    return expect(pv && pv.params.page_path.startsWith("/post/") && po && po.params.post_title && po.params.post_id, `${pv && pv.params.page_path}, 글: ${po && po.params.post_title}`);
+  }],
+  ["H", "T72", "본문 끝까지 보고 10초가 지나면 읽기 완료가 1번 기록된다", async () => {
+    await page.evaluate(() => window.scrollTo(0, document.body.scrollHeight)); await wait(10600);
+    await page.evaluate(() => window.dispatchEvent(new Event("scroll"))); await wait(200);
+    const ev = await page.evaluate(() => window.samsaekpenEvents.filter(e => e.name === "post_read_complete"));
+    return expect(ev.length === 1 && ev[0].params.engaged_seconds >= 10, `읽기 완료 ${ev.length}건, ${ev[0] && ev[0].params.engaged_seconds}초`);
+  }],
+  ["H", "T73", "검색어와 카테고리 선택이 기록된다", async () => {
+    await goto("#list"); await page.fill("#q", "운영"); await wait(1400); await page.fill("#q", ""); await wait(300);
+    await page.click(".chip >> text=공지"); await wait(300);
+    const ev = await page.evaluate(() => window.samsaekpenEvents.filter(e => ["search", "category_filter"].includes(e.name)));
+    const sr = ev.find(e => e.name === "search"), cf = ev.find(e => e.name === "category_filter");
+    return expect(sr && sr.params.search_term === "운영" && sr.params.result_count >= 1 && cf && cf.params.category === "공지", `검색 "${sr && sr.params.search_term}" 결과 ${sr && sr.params.result_count}개, 카테고리 ${cf && cf.params.category}`);
+  }],
+  ["H", "T74", "로그인과 댓글, 답글이 기록되고 회원 등급이 설정된다", async () => {
+    await login("kim@test.kr");
+    const before = await page.evaluate(() => window.samsaekpenEvents.map(e => e.name));
+    await goto("#post-notice-rules"); await page.fill("#cBody", "통계 테스트 댓글"); await page.click("#cSubmit"); await wait(500);
+    await page.click("[data-act=replyComment] >> nth=0"); await wait(); await page.fill("#rBody", "통계 테스트 답글"); await page.click("#rSubmit"); await wait(500);
+    const ev = await page.evaluate(() => window.samsaekpenEvents);
+    const types = ev.filter(e => e.name === "comment_submit").map(e => e.params.comment_type);
+    const roleSet = ev.some(e => e.name === "user_properties" && e.params.user_role === "member");
+    return expect(before.includes("login") && types.join(",") === "comment,reply" && roleSet, `login ${before.includes("login") ? "있음" : "없음"}, 댓글 종류 ${types.join(",")}, 등급 member`);
+  }],
+  ["H", "T75", "이벤트에 이메일이나 댓글 내용이 담기지 않는다", async () => {
+    const all = JSON.stringify(await page.evaluate(() => window.samsaekpenEvents));
+    const leaks = ["@test.kr", "통계 테스트 댓글", "통계 테스트 답글", "123456"].filter(x => all.includes(x));
+    await logout();
+    return expect(leaks.length === 0, leaks.length ? "유출: " + leaks.join(", ") : "이메일, 댓글 내용, 비밀번호 없음");
+  }],
+  ["H", "T76", "측정 ID 가 비어 있으면 GA 스크립트를 불러오지 않는다", async () => {
+    await goto(); const n = await page.evaluate(() => document.querySelectorAll('script[src*="googletagmanager"]').length + (window.dataLayer ? 1 : 0));
+    return expect(n === 0, "GA 스크립트 0개, dataLayer 없음");
+  }],
+  ["H", "T77", "측정 ID 를 넣으면 GA 로 page_view 를 보내고, 통계 끄기를 누르면 멈춘다", async () => {
+    const dir = fs.mkdtempSync(path.join(require("os").tmpdir(), "samsaekpen-ga-"));
+    const html = fs.readFileSync(path.join(ROOT, "index.html"), "utf8").replace('const GA_MEASUREMENT_ID = "";', 'const GA_MEASUREMENT_ID = "G-TEST12345";');
+    fs.writeFileSync(path.join(dir, "index.html"), html);
+    await page.goto("file://" + path.join(dir, "index.html")); await wait(600);
+    const st = await page.evaluate(() => ({
+      tag: document.querySelectorAll('script[src*="googletagmanager.com/gtag/js?id=G-TEST12345"]').length,
+      config: (window.dataLayer || []).some(a => a[0] === "config" && a[1] === "G-TEST12345" && a[2] && a[2].send_page_view === false),
+      pv: (window.dataLayer || []).filter(a => a[0] === "event" && a[1] === "page_view").length,
+      toggle: document.getElementById("gaToggle").textContent
+    }));
+    await page.click("#gaToggle"); await wait(300);
+    const off = await page.evaluate(() => ({ flag: window["ga-disable-G-TEST12345"] === true, label: document.getElementById("gaToggle").textContent }));
+    await page.reload(); await wait(600);
+    const after = await page.evaluate(() => ({ dl: window.dataLayer ? window.dataLayer.length : 0, label: document.getElementById("gaToggle").textContent }));
+    await page.evaluate(() => localStorage.removeItem("samsaekpen-ga-optout"));
+    return expect(st.tag === 1 && st.config && st.pv === 1 && st.toggle === "방문 통계 끄기" && off.flag && after.dl === 0 && after.label === "방문 통계 켜기",
+      `스크립트 ${st.tag}개, 자동 page_view 끔 ${st.config}, page_view ${st.pv}건 → 끄기 후 재방문 전송 ${after.dl}건`);
+  }],
+
   // G. 화면 크기와 테마
   ["G", "T60", "휴대폰 너비에서 화면이 옆으로 넘치지 않는다", async () => {
     await page.setViewportSize({ width: 390, height: 844 });
