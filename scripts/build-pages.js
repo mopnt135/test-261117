@@ -1,0 +1,247 @@
+/*
+ * 삼색펜 검색, 공유용 정적 페이지 만들기
+ *
+ * 왜 필요한가: 블로그는 index.html 한 장에서 #post-12 같은 # 주소로 화면을 바꾼다.
+ * 검색엔진과 카카오톡, 페이스북 같은 공유 미리보기는 # 뒤를 다른 페이지로 보지 않고,
+ * 대부분 자바스크립트도 실행하지 않는다. 그래서 글마다 실제 주소(/p/12/)를 가진
+ * HTML 파일을 만들고, 그 안에 글별 제목, 설명, 썸네일(og:image)을 적어 둔다.
+ *
+ * 실행: node scripts/build-pages.js [--out 폴더] [--posts-json 파일] [--no-images]
+ *  - 공지 2개는 index.html 에서 읽는다.
+ *  - Supabase 주소와 공개용 키가 index.html 에 있으면 공개글을 읽어 온다. 나만보기 글은 만들지 않는다.
+ *  - --posts-json 은 테스트용. Supabase 대신 이 파일의 글을 쓴다.
+ *  - 썸네일 PNG 는 Playwright(Chromium)로 그린다. 한글 글꼴이 설치돼 있어야 한다.
+ *    OG_FONT_CSS 환경 변수로 @font-face CSS 파일을 줄 수도 있다.
+ * 결과: p/<글번호>/index.html, p/<글번호>/og.png, og/site.png, sitemap.xml, robots.txt
+ * 더 이상 공개가 아닌 글의 p/<글번호>/ 폴더는 지운다.
+ */
+const fs = require("fs");
+const path = require("path");
+
+const ROOT = path.resolve(__dirname, "..");
+const args = process.argv.slice(2);
+const arg = name => { const i = args.indexOf(name); return i >= 0 ? args[i + 1] : null; };
+const OUT = path.resolve(arg("--out") || ROOT);
+const POSTS_JSON = arg("--posts-json");
+const NO_IMAGES = args.includes("--no-images");
+
+const SITE_URL = "https://mopnt135.github.io/test-261117/";
+const SITE_NAME = "삼색펜";
+const SITE_DESC = "AIPM 수업을 복습하는 블로그. 중요한 내용은 빨강, 함께 볼 내용은 주황, 참고는 민트로 표시한 복습 노트를 올립니다.";
+const DESC_MAX = 120;
+
+const esc = s => String(s ?? "").replace(/[&<>"']/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
+const kstDate = iso => new Date(iso).toLocaleDateString("ko-KR", { timeZone: "Asia/Seoul", year: "numeric", month: "2-digit", day: "2-digit" }).replace(/\.\s?/g, ".").replace(/\.$/, "");
+const safeId = id => /^[\w-]{1,64}$/.test(String(id)) ? String(id) : null;
+
+/* ---------- index.html 에서 설정과 공지 읽기 ---------- */
+const INDEX = fs.readFileSync(path.join(ROOT, "index.html"), "utf8");
+const constStr = name => { const m = INDEX.match(new RegExp(`const ${name} = "([^"]*)";`)); return m ? m[1] : ""; };
+const SUPABASE_URL = process.env.SUPABASE_URL || constStr("SUPABASE_URL");
+const SUPABASE_KEY = process.env.SUPABASE_ANON_KEY || constStr("SUPABASE_ANON_KEY");
+const GA_ID = constStr("GA_MEASUREMENT_ID");
+
+function readNotice(name) {
+  const start = INDEX.indexOf(`const ${name} = {`);
+  if (start < 0) throw new Error(`index.html 에서 ${name} 을 찾지 못했습니다`);
+  const end = INDEX.indexOf("\n};", start);
+  const literal = INDEX.slice(start + `const ${name} = `.length, end + 2);
+  return new Function(`return (${literal});`)(); // 이 저장소의 index.html 만 읽는다
+}
+
+async function loadPosts() {
+  if (POSTS_JSON) return JSON.parse(fs.readFileSync(POSTS_JSON, "utf8"));
+  if (!SUPABASE_URL || !SUPABASE_KEY) return [];
+  const base = `${SUPABASE_URL.replace(/\/$/, "")}/rest/v1/posts`;
+  const headers = { apikey: SUPABASE_KEY, Authorization: `Bearer ${SUPABASE_KEY}` };
+  const q = cols => `${base}?select=${cols}&visibility=eq.public&order=created_at.desc&limit=1000`;
+  let res = await fetch(q("id,title,body,category,summary,visibility,created_at,updated_at"), { headers });
+  if (res.status === 400) res = await fetch(q("id,title,body,category,visibility,created_at,updated_at"), { headers }); // summary 칸이 아직 없을 때
+  if (!res.ok) throw new Error(`Supabase 에서 글을 읽지 못했습니다: ${res.status}`);
+  return res.json();
+}
+
+const describe = p => {
+  const s = (p.summary || "").trim();
+  if (s) return s.slice(0, 160);
+  const flat = String(p.body || "").replace(/\s+/g, " ").trim();
+  return flat.length > DESC_MAX ? flat.slice(0, DESC_MAX).trim() + "…" : flat;
+};
+
+/* ---------- 글 페이지 HTML ---------- */
+function postPage(p) {
+  const id = safeId(p.id);
+  const url = `${SITE_URL}p/${id}/`;
+  const img = `${SITE_URL}p/${id}/og.png`;
+  const title = `${p.title} · ${SITE_NAME}`;
+  const desc = describe(p);
+  const ld = {
+    "@context": "https://schema.org", "@type": "BlogPosting",
+    headline: p.title, description: desc, image: img, url, mainEntityOfPage: url,
+    datePublished: p.created_at, dateModified: p.updated_at || p.created_at,
+    articleSection: p.category, inLanguage: "ko-KR",
+    author: { "@type": "Organization", name: SITE_NAME }, publisher: { "@type": "Organization", name: SITE_NAME }
+  };
+  const ga = GA_ID ? `
+<script>
+  (function () {
+    try { if (localStorage.getItem("samsaekpen-ga-optout") === "1") { window["ga-disable-${GA_ID}"] = true; return; } } catch (e) {}
+    var s = document.createElement("script"); s.async = true; s.src = "https://www.googletagmanager.com/gtag/js?id=${GA_ID}"; document.head.appendChild(s);
+    window.dataLayer = window.dataLayer || []; window.gtag = function () { dataLayer.push(arguments); };
+    gtag("js", new Date()); gtag("config", "${GA_ID}", { page_type: "post_static", post_id: ${JSON.stringify(String(id))} });
+  })();
+</script>` : "";
+  return `<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>${esc(title)}</title>
+<meta name="description" content="${esc(desc)}">
+<link rel="canonical" href="${esc(url)}">
+<meta property="og:type" content="article">
+<meta property="og:site_name" content="${SITE_NAME}">
+<meta property="og:locale" content="ko_KR">
+<meta property="og:title" content="${esc(p.title)}">
+<meta property="og:description" content="${esc(desc)}">
+<meta property="og:url" content="${esc(url)}">
+<meta property="og:image" content="${esc(img)}">
+<meta property="og:image:width" content="1200">
+<meta property="og:image:height" content="630">
+<meta property="og:image:alt" content="${esc(p.title)}">
+<meta property="article:published_time" content="${esc(p.created_at)}">
+<meta property="article:modified_time" content="${esc(p.updated_at || p.created_at)}">
+<meta property="article:section" content="${esc(p.category)}">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:title" content="${esc(p.title)}">
+<meta name="twitter:description" content="${esc(desc)}">
+<meta name="twitter:image" content="${esc(img)}">
+<script type="application/ld+json">${JSON.stringify(ld).replace(/</g, "\\u003c")}</script>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Gothic+A1:wght@700;900&family=IBM+Plex+Sans+KR:wght@400;700&display=swap">
+<style>
+:root{--bg:#fff;--fg:#0B0B0B;--muted:#545454;--line:#E2E2E2;--red:#D2141B;--orange:#C2410C;--orange-fill:#FF7A1A;--mint-fill:#7EEBD0;--on-orange:#0B0B0B}
+@media (prefers-color-scheme: dark){:root{--bg:#0D0D0D;--fg:#F5F5F5;--muted:#B0B0B0;--line:#2B2B2B;--red:#FF4A4F;--orange:#FF9B50;--orange-fill:#FF8A3D;--mint-fill:#2DD4B0;--on-orange:#0D0D0D;color-scheme:dark}}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--fg);font-family:"IBM Plex Sans KR","Apple SD Gothic Neo","Malgun Gothic",sans-serif;font-size:17px;line-height:1.85;word-break:keep-all;overflow-wrap:break-word}
+a{color:inherit}
+.wrap{max-width:760px;margin:0 auto;padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px))}
+header{border-bottom:2px solid var(--fg)}
+header .wrap{display:flex;align-items:center;min-height:64px}
+.logo{display:flex;align-items:center;gap:12px;text-decoration:none;font-family:"Gothic A1",sans-serif;font-weight:900;font-size:22px}
+.pens{display:flex;gap:3px;align-items:flex-end}.pens i{display:block;width:6px}
+.pens i:nth-child(1){height:20px;background:var(--red)}.pens i:nth-child(2){height:15px;background:var(--orange-fill)}.pens i:nth-child(3){height:10px;background:var(--mint-fill)}
+article{padding-block:40px 64px}
+.cat{font-size:14px;font-weight:700;color:var(--orange)}
+h1{font-family:"Gothic A1",sans-serif;font-weight:900;font-size:clamp(28px,5vw,42px);line-height:1.3;letter-spacing:-.02em;margin:8px 0 12px}
+.meta{font-size:14px;color:var(--muted);padding-bottom:18px;border-bottom:1px solid var(--line)}
+.body{white-space:pre-wrap;margin:24px 0 0}
+.cta{display:flex;flex-wrap:wrap;gap:10px;margin-top:40px;padding-top:24px;border-top:2px solid var(--fg)}
+.btn{display:inline-flex;align-items:center;min-height:44px;padding:0 18px;font-weight:700;text-decoration:none;border:2px solid var(--fg)}
+.btn.main{background:var(--orange-fill);color:var(--on-orange);border-color:var(--orange-fill)}
+a:focus-visible{outline:3px solid var(--red);outline-offset:3px}
+</style>${ga}
+</head>
+<body>
+<header><div class="wrap"><a class="logo" href="../../"><span class="pens" aria-hidden="true"><i></i><i></i><i></i></span>${SITE_NAME}</a></div></header>
+<main class="wrap">
+<article>
+  <div class="cat">${esc(p.notice ? "공지" : p.category)}</div>
+  <h1>${esc(p.title)}</h1>
+  <div class="meta">${esc(kstDate(p.created_at))} (KST)${p.updated_at ? ` · 수정 ${esc(kstDate(p.updated_at))}` : ""}</div>
+  <div class="body">${esc(p.body)}</div>
+  <div class="cta">
+    <a class="btn main" href="../../#post-${esc(id)}">블로그에서 보고 댓글 달기</a>
+    <a class="btn" href="../../">${SITE_NAME} 첫 화면</a>
+  </div>
+</article>
+</main>
+</body>
+</html>
+`;
+}
+
+/* ---------- 썸네일 카드 (1200×630) ---------- */
+function cardHtml({ title, label, isNotice, fontCss }) {
+  return `<!doctype html><html lang="ko"><head><meta charset="utf-8"><style>
+${fontCss || ""}
+*{box-sizing:border-box;margin:0}
+html,body{width:1200px;height:630px}
+body{background:#fff;color:#0B0B0B;font-family:"Noto Sans KR","Noto Sans CJK KR","Apple SD Gothic Neo",sans-serif;display:flex;flex-direction:column;justify-content:space-between;padding:64px 72px 0;position:relative;overflow:hidden}
+.brand{display:flex;align-items:center;gap:18px;font-size:38px;font-weight:900;letter-spacing:-.01em}
+.pens{display:flex;gap:6px;align-items:flex-end}.pens i{display:block;width:12px}
+.pens i:nth-child(1){height:44px;background:#D2141B}.pens i:nth-child(2){height:33px;background:#FF7A1A}.pens i:nth-child(3){height:22px;background:#7EEBD0}
+.label{display:inline-flex;align-items:center;gap:12px;font-size:30px;font-weight:700;color:#C2410C;margin-bottom:18px}
+.label.notice{color:#fff;background:#D2141B;padding:4px 18px}
+.label:not(.notice)::before{content:"";width:16px;height:16px;background:#D2141B}
+h1{font-size:${title.length > 34 ? 62 : 74}px;line-height:1.22;font-weight:900;letter-spacing:-.025em;display:-webkit-box;-webkit-line-clamp:3;-webkit-box-orient:vertical;overflow:hidden;word-break:keep-all}
+.foot{display:flex;justify-content:space-between;align-items:center;font-size:26px;color:#545454;padding:0 0 34px;border-top:3px solid #0B0B0B;padding-top:22px}
+.bars{position:absolute;left:0;right:0;bottom:0;height:14px;display:flex}.bars i{flex:1}
+</style></head><body>
+<div class="brand"><span class="pens"><i></i><i></i><i></i></span>${SITE_NAME}</div>
+<div><span class="label${isNotice ? " notice" : ""}">${esc(label)}</span><h1>${esc(title)}</h1></div>
+<div class="foot"><span>AIPM 복습 노트</span><span>mopnt135.github.io/test-261117</span></div>
+<div class="bars"><i style="background:#D2141B"></i><i style="background:#FF7A1A"></i><i style="background:#7EEBD0"></i></div>
+</body></html>`;
+}
+
+function fontCssFromEnv() {
+  const p = process.env.OG_FONT_CSS;
+  if (!p) return "";
+  const dir = path.dirname(path.resolve(p));
+  return fs.readFileSync(p, "utf8").replace(/url\(([^)]+)\)/g, (m, u) => /^(https?:|file:|data:)/.test(u) ? m : `url(file://${path.join(dir, u.replace(/^["']|["']$/g, ""))})`);
+}
+
+async function drawCards(cards) {
+  if (NO_IMAGES || !cards.length) return;
+  const { chromium } = require("playwright");
+  const browser = await chromium.launch();
+  const page = await browser.newPage({ viewport: { width: 1200, height: 630 }, deviceScaleFactor: 1 });
+  const fontCss = fontCssFromEnv();
+  for (const c of cards) {
+    await page.setContent(cardHtml({ ...c, fontCss }), { waitUntil: "load" });
+    await page.evaluate(() => document.fonts.ready);
+    await page.screenshot({ path: c.file, type: "png" });
+  }
+  await browser.close();
+}
+
+/* ---------- 홈 카드, sitemap, robots ---------- */
+function sitemap(entries) {
+  const rows = [{ loc: SITE_URL, lastmod: null }, ...entries].map(e =>
+    `  <url><loc>${esc(e.loc)}</loc>${e.lastmod ? `<lastmod>${esc(e.lastmod.slice(0, 10))}</lastmod>` : ""}</url>`).join("\n");
+  return `<?xml version="1.0" encoding="UTF-8"?>\n<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">\n${rows}\n</urlset>\n`;
+}
+const robots = () => `User-agent: *\nAllow: /\nSitemap: ${SITE_URL}sitemap.xml\n`;
+
+(async () => {
+  const notices = [readNotice("NOTICE_RULES"), readNotice("NOTICE")];
+  const fetched = (await loadPosts()).filter(p => p.visibility === undefined || p.visibility === "public");
+  const all = [...notices, ...fetched].filter(p => safeId(p.id) && p.title && p.body && p.created_at);
+
+  const pDir = path.join(OUT, "p");
+  fs.mkdirSync(pDir, { recursive: true });
+  const keep = new Set(all.map(p => safeId(p.id)));
+  const removed = [];
+  for (const d of fs.readdirSync(pDir)) {
+    if (!keep.has(d) && fs.statSync(path.join(pDir, d)).isDirectory()) { fs.rmSync(path.join(pDir, d), { recursive: true, force: true }); removed.push(d); }
+  }
+
+  const cards = [];
+  for (const p of all) {
+    const dir = path.join(pDir, safeId(p.id));
+    fs.mkdirSync(dir, { recursive: true });
+    fs.writeFileSync(path.join(dir, "index.html"), postPage(p));
+    cards.push({ file: path.join(dir, "og.png"), title: p.title, label: p.notice ? "공지" : p.category, isNotice: !!p.notice });
+  }
+  fs.mkdirSync(path.join(OUT, "og"), { recursive: true });
+  cards.push({ file: path.join(OUT, "og", "site.png"), title: "중요도를 세 가지 색으로 표시하는 AIPM 복습 노트", label: "블로그", isNotice: false });
+  await drawCards(cards);
+
+  fs.writeFileSync(path.join(OUT, "sitemap.xml"), sitemap(all.map(p => ({ loc: `${SITE_URL}p/${safeId(p.id)}/`, lastmod: p.updated_at || p.created_at }))));
+  fs.writeFileSync(path.join(OUT, "robots.txt"), robots());
+
+  console.log(`글 페이지 ${all.length}개 (공지 ${notices.length}, 공개글 ${all.length - notices.length})${NO_IMAGES ? ", 썸네일 생략" : `, 썸네일 ${cards.length}장`}${removed.length ? `, 지운 페이지 ${removed.join(", ")}` : ""}`);
+})().catch(e => { console.error(e.message); process.exit(1); });
+
+module.exports = { describe, postPage };

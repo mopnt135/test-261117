@@ -291,6 +291,43 @@ const tests = [
 
   ["H", "T78", "배포 파일에 측정 ID 가 들어 있다", async () => { const m = SOURCE.match(GA_ID_RE)[0]; return expect(/"G-[A-Z0-9]{6,}"/.test(m), m); }],
 
+  // I. 검색과 공유 (글별 설명, 공유 링크)
+  ["I", "T80", "관리자가 검색 설명을 적으면 글 화면의 설명(meta description)이 바뀐다", async () => {
+    await logout(); await login("boss@test.kr", true);
+    await goto("#write"); await page.fill("#wTitle", "검색 설명 테스트"); await page.fill("#wSummary", "  검색 결과에   나올 한 줄 설명  ");
+    await page.fill("#wBody", "본문입니다."); await page.click("#writeSubmit"); await wait(900);
+    const onPost = await page.$eval('meta[name="description"]', m => m.content);
+    await goto(); const onHome = await page.$eval('meta[name="description"]', m => m.content);
+    return expect(onPost === "검색 결과에 나올 한 줄 설명" && onHome.startsWith("AIPM 수업을 복습하는"), `글: ${onPost} / 첫 화면: ${onHome.slice(0, 15)}…`);
+  }],
+  ["I", "T81", "검색 설명은 160자까지만 입력되고, 고칠 때 저장된 값이 채워진다", async () => {
+    await goto("#list"); await page.click(".post h3 a >> text=검색 설명 테스트"); await wait(400);
+    const id = page.url().split("#post-")[1];
+    await goto("#edit-" + id); const kept = await page.inputValue("#wSummary");
+    await page.fill("#wSummary", "가".repeat(200)); const len = (await page.inputValue("#wSummary")).length;
+    return expect(kept === "검색 결과에 나올 한 줄 설명" && len === 160, `채워진 값: ${kept}, 200자 입력 → ${len}자`);
+  }],
+  ["I", "T82", "공유 링크 복사는 글의 정적 페이지 주소(p/글번호/)를 준다", async () => {
+    await page.context().grantPermissions(["clipboard-read", "clipboard-write"]).catch(() => {});
+    await goto("#post-notice-rules"); await page.click("[data-act=copyShare]"); await wait(300);
+    const clip = await page.evaluate(() => navigator.clipboard.readText().catch(() => ""));
+    const m = await text("#shareMsg");
+    const got = clip || (m.match(/(\S+p\/notice-rules\/)/) || [])[1] || "";
+    const ev = await page.evaluate(() => window.samsaekpenEvents.filter(e => e.name === "share_link_copy").pop());
+    return expect(got.endsWith("/p/notice-rules/") && ev && ev.params.post_id === "notice-rules" && Object.keys(ev.params).join() === "post_id", `${got} · ${m.trim().slice(0, 20)}…`);
+  }],
+  ["I", "T83", "나만보기 글에는 공유 링크 복사 버튼이 없다", async () => {
+    await goto("#write"); await page.fill("#wTitle", "공유 안 되는 초안"); await page.check("#visPrivate"); await page.fill("#wBody", "초안");
+    await page.click("#writeSubmit"); await wait(900);
+    const has = await count("[data-act=copyShare]");
+    await page.click("[data-act=delete]"); await wait(150); await page.click("[data-act=delete]"); await wait(600);
+    return expect(has === 0, `나만보기 글의 공유 버튼 ${has}개`);
+  }],
+  ["I", "T84", "첫 화면에 사이트 공유 미리보기 정보(og)가 있다", async () => {
+    const og = await page.evaluate(() => Object.fromEntries([...document.querySelectorAll('meta[property^="og:"]')].map(m => [m.getAttribute("property"), m.content])));
+    return expect(og["og:image"] === "https://mopnt135.github.io/test-261117/og/site.png" && og["og:title"] && og["og:url"], `og:image ${og["og:image"]}`);
+  }],
+
   // G. 화면 크기와 테마
   ["G", "T60", "휴대폰 너비에서 화면이 옆으로 넘치지 않는다", async () => {
     await page.setViewportSize({ width: 390, height: 844 });

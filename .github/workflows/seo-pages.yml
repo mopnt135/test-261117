@@ -1,0 +1,47 @@
+# 글마다 검색, 공유용 정적 페이지(p/<글번호>/)와 썸네일을 만들어 저장소에 올린다.
+# 새 글은 Supabase 에 저장되므로, 하루 두 번 확인한다. 바로 반영하려면 Actions 화면에서 "Run workflow" 를 누른다.
+name: 검색·공유 페이지 만들기
+
+on:
+  workflow_dispatch:
+  schedule:
+    - cron: "17 21 * * *"   # 매일 06:17 KST
+    - cron: "17 9 * * *"    # 매일 18:17 KST
+  push:
+    branches: [main]
+    paths: ["index.html", "scripts/build-pages.js"]
+
+permissions:
+  contents: write
+
+concurrency:
+  group: seo-pages
+  cancel-in-progress: false
+
+jobs:
+  build:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - name: 한글 글꼴과 Playwright 설치
+        run: |
+          sudo apt-get update -q
+          sudo apt-get install -y -q fonts-noto-cjk
+          npm install --no-save --no-package-lock playwright@1.63.0
+          npx playwright install --with-deps chromium
+      - name: 페이지 만들기
+        run: node scripts/build-pages.js
+      - name: 생성기 테스트
+        run: node tests/pages_test.js
+      - name: 바뀐 것이 있으면 올리기
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add p og sitemap.xml robots.txt
+          if git diff --cached --quiet; then echo "바뀐 페이지 없음"; exit 0; fi
+          git commit -m "검색·공유 페이지 자동 갱신"
+          git push

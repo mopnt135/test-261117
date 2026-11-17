@@ -3,8 +3,20 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<meta name="description" content="삼색펜 블로그">
+<meta name="description" content="AIPM 수업을 복습하는 블로그. 중요한 내용은 빨강, 함께 볼 내용은 주황, 참고는 민트로 표시한 복습 노트를 올립니다.">
 <title>삼색펜</title>
+<!-- 검색, 공유 미리보기용. 글마다 다른 정보는 scripts/build-pages.js 가 만드는 p/<글번호>/ 페이지에 있다 -->
+<link rel="canonical" href="https://mopnt135.github.io/test-261117/">
+<meta property="og:type" content="website">
+<meta property="og:site_name" content="삼색펜">
+<meta property="og:locale" content="ko_KR">
+<meta property="og:title" content="삼색펜 · AIPM 복습 노트">
+<meta property="og:description" content="AIPM 수업을 복습하는 블로그. 중요도를 빨강, 주황, 민트 세 가지 색으로 표시합니다.">
+<meta property="og:url" content="https://mopnt135.github.io/test-261117/">
+<meta property="og:image" content="https://mopnt135.github.io/test-261117/og/site.png">
+<meta property="og:image:width" content="1200">
+<meta property="og:image:height" content="630">
+<meta name="twitter:card" content="summary_large_image">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Gothic+A1:wght@700;900&family=IBM+Plex+Sans+KR:wght@400;500;700&family=IBM+Plex+Mono:wght@500&display=swap">
@@ -171,6 +183,7 @@ aside h2{font-family:var(--f-display);font-weight:900;font-size:18px;margin:0 0 
 .article h1{font-family:var(--f-display);font-weight:900;font-size:clamp(30px,4.6vw,48px);line-height:1.25;letter-spacing:-.03em;margin:16px 0 18px;text-wrap:balance}
 .article .meta{padding-bottom:20px;border-bottom:1px solid var(--line)}
 .article-body{white-space:pre-wrap;margin:28px 0 0;font-size:18px;line-height:1.9;max-width:65ch}
+.share{display:flex;gap:10px;flex-wrap:wrap;align-items:center;margin-top:28px}.share .msg{margin:0}
 .article-actions{display:flex;gap:10px;flex-wrap:wrap;margin-top:36px;align-items:center}
 .pager{display:grid;grid-template-columns:1fr 1fr;gap:0;margin-top:48px;border-top:2px solid var(--fg)}
 .pager a{display:flex;flex-direction:column;gap:2px;padding:18px 0;text-decoration:none;min-width:0}
@@ -472,6 +485,10 @@ const fmtTime = iso => fmt(iso) + " " + new Date(iso).toLocaleTimeString("ko-KR"
 /* 첨부 파일: JPG, PNG, GIF, PDF만 허용 */
 const ATT_TYPES = {jpg:"image/jpeg", jpeg:"image/jpeg", png:"image/png", gif:"image/gif", pdf:"application/pdf"};
 const ATT_MAX_COUNT = 5;
+/* 검색, 공유: 글마다 정적 페이지 p/<글번호>/ 가 있다 (scripts/build-pages.js 가 만듦) */
+const SUMMARY_MAX = 160;
+const postDesc = p => { const s = String(p.summary || "").trim(); if (s) return s.slice(0, SUMMARY_MAX); const b = String(p.body || "").replace(/\s+/g, " ").trim(); return b.length > 120 ? b.slice(0, 120).trim() + "…" : b; };
+const shareUrl = id => new URL(`p/${encodeURIComponent(id)}/`, location.href.split("#")[0]).href;
 const fmtSize = n => n >= 1048576 ? (n/1048576).toFixed(1) + "MB" : Math.max(1, Math.round(n/1024)) + "KB";
 const attExt = name => (String(name).split(".").pop() || "").toLowerCase();
 const isImage = a => String(a.type).startsWith("image/");
@@ -512,7 +529,12 @@ const store = REMOTE ? {
   async members(){ return must(await sb.from("profiles").select("id,email,role,warns,created_at").order("created_at",{ascending:true})); },
   async setMember(id, patch){ must(await sb.from("profiles").update(patch).eq("id", id).select("id")); },
   attMax: 10 * 1048576,
-  async list(){ const {data, error} = await sb.from("posts").select("id,author_id,title,body,category,visibility,created_at,updated_at,attachments").order("created_at",{ascending:false}).limit(500); if (error) throw error; return data; },
+  async list(){
+    const q = cols => sb.from("posts").select(cols).order("created_at",{ascending:false}).limit(500);
+    let {data, error} = await q("id,author_id,title,body,category,summary,visibility,created_at,updated_at,attachments");
+    if (error && /summary/.test(error.message || "")) ({data, error} = await q("id,author_id,title,body,category,visibility,created_at,updated_at,attachments")); // SQL 을 아직 다시 실행하지 않았을 때
+    if (error) throw error; return data;
+  },
   async create(p){ return must(await sb.from("posts").insert(p).select("id"))[0].id; },
   async update(id, p){ must(await sb.from("posts").update(p).eq("id", id).select("id")); },
   async remove(id){ const p = posts.find(x => x.id === id); must(await sb.from("posts").delete().eq("id", id).select("id")); await sb.from("comments").delete().eq("post_id", String(id)); await this.removeFiles((p?.attachments || []).map(a => a.path)); },
@@ -863,6 +885,8 @@ const views = {
       </div>
       <p class="article-body">${esc(p.body)}</p>
       ${attachmentsBlock(p)}
+      ${p.visibility !== "private" ? `<div class="share"><button type="button" class="btn line" data-act="copyShare" data-id="${esc(p.id)}">공유 링크 복사</button>
+        <p class="msg" id="shareMsg" role="status"></p></div>` : ""}
       ${isAdmin() && !p.notice ? `<div class="article-actions">
         <a class="btn sub" href="#edit-${esc(p.id)}">수정</a>
         <button class="btn line" data-act="delete" data-id="${esc(p.id)}">삭제</button>
@@ -904,6 +928,8 @@ const views = {
           <label><input type="radio" name="vis" id="visPublic" value="public" ${v.visibility!=="private"?"checked":""}><span><b>공개</b>누구나 읽고 회원은 댓글을 달 수 있어요</span></label>
           <label><input type="radio" name="vis" id="visPrivate" value="private" ${v.visibility==="private"?"checked":""}><span><b>나만보기</b>관리자만 볼 수 있어요. 초안으로 쓰세요</span></label>
         </div></fieldset>
+        <div class="field"><label for="wSummary">검색 설명 <small>(선택)</small></label><input id="wSummary" maxlength="${SUMMARY_MAX}" value="${esc(v.summary || "")}" aria-describedby="wSummaryHint">
+          <span class="hint" id="wSummaryHint">검색 결과와 카카오톡 공유 미리보기에 나오는 한두 문장이에요. ${SUMMARY_MAX}자까지. 비워 두면 본문 앞부분을 씁니다.</span></div>
         <div class="field"><label for="wBody">내용</label><textarea id="wBody" required>${esc(v.body)}</textarea></div>
         <div class="field"><span class="c-label" id="wFilesLabel">첨부 파일</span>
           <label class="file-btn" for="wFiles"><input id="wFiles" type="file" multiple accept=".jpg,.jpeg,.png,.gif,.pdf,image/jpeg,image/png,image/gif,application/pdf" aria-describedby="wFilesHint">파일 고르기</label>
@@ -972,6 +998,8 @@ function render(){
   if ($("attPick")) renderPick();
   const titles = {home:"삼색펜", list:"글 목록 · 삼색펜", write:"글쓰기 · 삼색펜", login:"로그인 · 삼색펜", admin:"관리자 · 삼색펜", edit:"글 수정 · 삼색펜"};
   document.title = r.name === "post" ? `${findPost(r.id)?.title || "글"} · 삼색펜` : titles[r.name];
+  const md = document.querySelector('meta[name="description"]');
+  if (md) { if (!md.dataset.site) md.dataset.site = md.content; const fp = r.name === "post" ? findPost(r.id) : null; md.content = fp ? postDesc(fp) : md.dataset.site; }
 }
 async function loadAttUrls(atts){
   attLoading = true;
@@ -1041,6 +1069,13 @@ document.addEventListener("click", async e => {
   if (act === "rmPending") { pendingFiles.splice(Number(t.dataset.i), 1); return renderPick(); }
   if (act === "rmKept") { removedAtts.push(t.dataset.path); keptAtts = keptAtts.filter(a => a.path !== t.dataset.path); return renderPick(); }
   if (act === "replyComment") { replyTo = replyTo === t.dataset.id ? null : t.dataset.id; editingComment = null; render(); const r = $("rBody"); if (r) r.focus(); return; }
+  if (act === "copyShare") {
+    const url = shareUrl(t.dataset.id);
+    analytics.track("share_link_copy", { post_id: String(t.dataset.id) });
+    try { await navigator.clipboard.writeText(url); msg("shareMsg", "링크를 복사했어요. 새 글은 미리보기가 생기기까지 최대 하루 걸릴 수 있어요."); }
+    catch { msg("shareMsg", `복사하지 못했어요. 이 주소를 직접 복사해 주세요: ${url}`, true); }
+    return;
+  }
   if (act === "cancelReply") { replyTo = null; return render(); }
   if (act === "editComment") { editingComment = t.dataset.id; replyTo = null; return render(); }
   if (act === "cancelEdit") { editingComment = null; return render(); }
@@ -1095,6 +1130,7 @@ document.addEventListener("submit", async e => {
     const title = $("wTitle").value.trim(), body = $("wBody").value.trim();
     const category = $("wCat").value.trim() || "일반";
     const visibility = $("visPrivate").checked ? "private" : "public";
+    const summary = $("wSummary").value.replace(/\s+/g, " ").trim().slice(0, SUMMARY_MAX) || null;
     if (!title) return msg("writeMsg", "제목을 입력해 주세요.", true);
     if (!body) return msg("writeMsg", "내용을 입력해 주세요.", true);
     if (category === "공지" || category === "나만보기") return msg("writeMsg", "공지와 나만보기는 카테고리 이름으로 쓸 수 없습니다.", true);
@@ -1103,14 +1139,14 @@ document.addEventListener("submit", async e => {
     try {
       let id, uploadFailed = false;
       if (editId) id = idOf(editId);
-      else { id = await store.create({title, body, category, visibility, attachments:[]}); createdId = id; }
+      else { id = await store.create({title, body, category, summary, visibility, attachments:[]}); createdId = id; }
       let added = [];
       if (pendingFiles.length) {
         msg("writeMsg", "파일을 올리는 중입니다.");
         try { added = await store.uploadFiles(id, pendingFiles); } catch (err) { console.error(err); uploadFailed = true; }
       }
       const attachments = [...keptAtts, ...added];
-      if (editId) await store.update(id, {title, body, category, visibility, attachments, updated_at:new Date().toISOString()});
+      if (editId) await store.update(id, {title, body, category, summary, visibility, attachments, updated_at:new Date().toISOString()});
       else if (added.length) await store.update(id, {attachments});
       await store.removeFiles(removedAtts.filter(pth => !pth.startsWith("demo:")));
       pendingFiles = []; removedAtts = []; attFor = null;

@@ -101,6 +101,10 @@ create table if not exists public.posts (
   created_at timestamptz not null default now()
 );
 alter table public.posts add column if not exists updated_at timestamptz;
+-- 검색 설명: 검색 결과와 공유 미리보기에 쓰는 한두 문장 (선택, 160자까지)
+alter table public.posts add column if not exists summary text;
+alter table public.posts drop constraint if exists posts_summary_len;
+alter table public.posts add constraint posts_summary_len check (summary is null or char_length(summary) <= 160);
 alter table public.posts enable row level security;
 
 -- 읽기: 공개글은 누구나, 나만보기 글은 관리자만

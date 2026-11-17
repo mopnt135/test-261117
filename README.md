@@ -17,6 +17,12 @@ AIPM 수업 복습 노트를 올리는 블로그입니다.
 | [docs/TASKS.md](docs/TASKS.md) | 끝낸 일과 남은 일 |
 | [docs/reports/](docs/reports/) | 테스트 보고서 |
 
+## 검색과 공유 미리보기
+
+글마다 `p/글번호/` 주소의 정적 페이지와 썸네일이 자동으로 만들어집니다.
+GitHub Actions 가 하루 두 번 돌고, Actions 탭에서 "검색·공유 페이지 만들기"를 눌러 바로 만들 수도 있습니다.
+처음 한 번은 저장소 Settings > Actions > General 에서 "Read and write permissions" 를 켜야 합니다.
+
 ## Supabase 연결
 
 1. Supabase 프로젝트를 만들고 SQL Editor 에서 `supabase-setup.sql` 을 실행합니다.
@@ -30,4 +36,7 @@ node tests/e2e.js
 ```
 ```bash
 python3 tests/rls_test.py
+```
+```bash
+node tests/pages_test.js
 ```

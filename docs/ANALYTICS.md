@@ -61,6 +61,7 @@
 | `post_delete` | 관리자가 글을 지울 때 | post_id | |
 | `file_rejected` | 첨부 파일이 거절될 때 | reason=`type`/`mime_mismatch`/`signature`/`size`/`empty`/`count`, file_ext | 업로드 문제 |
 | `member_action` | 관리자가 경고, 추방, 되돌림을 할 때 | action=`warn`/`auto_ban`/`ban`/`unban`, warn_count | 운영 기록 |
+| `share_link_copy` | 글 상세에서 "공유 링크 복사"를 누를 때 | post_id | 어떤 글이 공유되나 |
 | `analytics_opt_out` / `analytics_opt_in` | 방문 통계 끄기와 켜기 | 없음 | |
 
 ### page_type 값과 경로
@@ -71,6 +72,7 @@
 | list | `/list` | 글 목록 |
 | post | `/post/<글번호>` | 글 상세 |
 | notice | `/post/notice`, `/post/notice-rules` | 공지 상세 |
+| (정적) | `/test-261117/p/<글번호>/` | 검색·공유용 정적 글 페이지. GA 가 자동 page_view 를 보내고 page_type=`post_static` 을 붙인다 |
 | write / edit | `/write`, `/edit/<글번호>` | 글쓰기, 글 수정 |
 | login | `/login` | 로그인 |
 | admin / admin_comments | `/admin`, `/admin/comments` | 관리자 화면 |

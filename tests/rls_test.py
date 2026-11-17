@@ -180,6 +180,12 @@ def main():
             return not ok and "고칠 수 없습니다" in err, "삭제된 댓글 고치기 거절" if not ok else "거절 안 됨"
         case("S24", "삭제된 댓글은 다시 고칠 수 없다", s24)
 
+        def s25():
+            ok, out, _ = as_user("authenticated", ADMIN, f"insert into public.posts(author_id,title,body,summary) values ('{ADMIN}','t','b','{'가'*160}') returning char_length(summary);")
+            ok2, _, err2 = as_user("authenticated", ADMIN, f"insert into public.posts(author_id,title,body,summary) values ('{ADMIN}','t','b','{'가'*161}');")
+            return ok and out == "160" and not ok2 and "posts_summary_len" in err2, f"160자 {'저장' if ok else '거절'}, 161자 {'거절' if not ok2 else '저장'}"
+        case("S25", "검색 설명은 160자까지만 저장된다", s25)
+
         def s19():
             code = subprocess.run(["psql", "-X", "-q", "-v", "ON_ERROR_STOP=1", "-d", DB, "-f",
                                    os.path.join(ROOT, "supabase-setup.sql")], capture_output=True, text=True).returncode

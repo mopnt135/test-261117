@@ -14,6 +14,7 @@ flowchart LR
 
 - **GitHub Pages**: `index.html` 을 그대로 보여준다. 저장 기능은 없다.
 - **Supabase**: 로그인, 데이터, 파일을 맡는다. 모든 권한은 RLS 규칙으로 서버에서 검사한다.
+- **검색·공유 페이지**: GitHub Actions 가 하루 두 번 `scripts/build-pages.js` 를 돌려 글마다 `p/<글번호>/index.html` 과 썸네일 `og.png` 를 만들어 올린다. 8장 참고.
 - **체험 모드**: Supabase 주소와 키가 비어 있으면 같은 화면이 localStorage 로 돌아간다. 코드의 `store` 객체가 두 모드를 같은 함수 이름으로 감싼다.
 
 ## 2. index.html 안의 구조
@@ -69,6 +70,7 @@ flowchart LR
 | --- | --- |
 | id, author_id | 글 번호, 쓴 사람 |
 | title, body, category | 제목(120자), 본문(5만 자), 카테고리(20자) |
+| summary | 검색 설명(선택, 160자). 검색 결과와 공유 미리보기에 쓴다. 비면 본문 앞 120자 |
 | visibility | `public` 또는 `private`(관리자 초안) |
 | attachments | 첨부 목록 JSON 배열, 5개까지. `{path, name, type, size}` |
 | created_at, updated_at | 쓴 시각, 고친 시각 |
@@ -121,7 +123,37 @@ flowchart LR
 
 ## 7. 알려진 한계
 
+- 새 글의 검색·공유 페이지는 Actions 가 돌아야 생긴다. 최대 반나절 늦다. 바로 필요하면 Actions 에서 직접 실행한다.
+
 - 공지는 `index.html` 에 고정. 바꾸려면 파일을 고쳐 다시 배포해야 한다.
 - 관리 기록 표가 없다. 경고와 삭제의 사유를 저장하지 않는다.
 - 체험 모드의 데이터는 그 브라우저에만 있다.
 - 사진의 위치 정보(EXIF)를 지우지 않는다.
+
+## 8. 검색과 공유 미리보기
+
+**왜 따로 만드나.** 블로그는 `index.html` 한 장이 `#post-12` 같은 주소로 화면을 바꾼다. 검색엔진과 카카오톡, 페이스북, X 의 미리보기는 `#` 뒤를 다른 페이지로 보지 않고, 대부분 자바스크립트를 실행하지 않는다. 그래서 글마다 진짜 주소를 가진 HTML 파일을 미리 만든다.
+
+```mermaid
+flowchart LR
+  SB[Supabase 공개글] --> GEN[scripts/build-pages.js]
+  IX[index.html 공지 2개] --> GEN
+  GEN --> P["p/글번호/index.html<br>제목, 설명, og 태그, JSON-LD"]
+  GEN --> IMG["p/글번호/og.png<br>1200×630 제목 카드"]
+  GEN --> SM[sitemap.xml, robots.txt]
+  GH[GitHub Actions 하루 2번] --> GEN
+```
+
+| 파일 | 내용 |
+| --- | --- |
+| `scripts/build-pages.js` | 생성기. 의존 패키지 없음(썸네일만 Playwright). 공개글만 만들고, 공개가 아니게 된 글의 폴더는 지운다 |
+| `p/<글번호>/index.html` | 글 제목, 설명, 대표 주소(canonical), og/twitter 태그, BlogPosting 구조화 데이터, 본문, "블로그에서 보고 댓글 달기" 링크 |
+| `p/<글번호>/og.png` | 삼색펜 디자인의 제목 카드. 첨부 사진은 비공개 임시 주소라 썸네일로 쓸 수 없어 따로 그린다 |
+| `og/site.png` | 첫 화면 공유용 카드 |
+| `sitemap.xml`, `robots.txt` | 검색엔진에 페이지 목록을 알려준다 |
+| `.github/workflows/seo-pages.yml` | 매일 06:17, 18:17 KST 와 index.html 이 바뀔 때 생성기를 돌리고 바뀐 파일을 커밋 |
+
+- 설명 순서: 글의 `summary` → 없으면 본문 앞 120자.
+- 글 상세 화면의 "공유 링크 복사"는 `p/<글번호>/` 주소를 준다. 나만보기 글에는 버튼이 없다.
+- 화면이 바뀔 때 `meta description` 도 바꾸지만, 이것은 자바스크립트를 실행하는 검색엔진에만 의미가 있다.
+- `p/`, `og/`, `sitemap.xml`, `robots.txt` 는 **생성 결과물이다. 손으로 고치지 않는다.** `tests/pages_test.js` G12 가 확인한다.
