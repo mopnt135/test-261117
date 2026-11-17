@@ -3,25 +3,20 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<meta name="description" content="AI와 일하는 법을 중요도 순서로 정리하는 블로그">
+<meta name="description" content="삼색펜 블로그">
 <title>삼색펜</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Gothic+A1:wght@700;900&family=IBM+Plex+Sans+KR:wght@400;500;700&family=IBM+Plex+Mono:wght@500&display=swap">
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.min.js"></script>
 <style>
-/* 레이아웃: 상단 고정 헤더 → 대표 글 → 카테고리 필터 → 글 목록 + 사이드바, 모바일은 한 줄
-   강조 3단계: 빨강(1순위, 꼭 누를 곳) > 주황(2순위, 함께 볼 곳) > 민트(3순위, 참고 표시) */
+/* 레이아웃: 상단 고정 헤더 → 공지 → 카테고리 필터 → 글 목록 + 계정 사이드바, 모바일은 한 줄
+   강조 3단계: 빨강(1순위) > 주황(2순위) > 민트(3순위) */
 :root{
-  --bg:#FFFFFF;
-  --fg:#0B0B0B;
-  --muted:#545454;
-  --line:#E2E2E2;
-  --soft:#F4F4F4;
-  --red:#D2141B;        --on-red:#FFFFFF;
-  --orange:#C2410C;     /* 글자용 주황 */
-  --orange-fill:#FF7A1A;--on-orange:#0B0B0B;
-  --mint:#0A7A68;       /* 글자용 민트 */
-  --mint-fill:#7EEBD0;  --on-mint:#0B0B0B;
+  --bg:#FFFFFF;--fg:#0B0B0B;--muted:#545454;--line:#E2E2E2;--soft:#F4F4F4;
+  --red:#D2141B;--on-red:#FFFFFF;
+  --orange:#C2410C;--orange-fill:#FF7A1A;--on-orange:#0B0B0B;
+  --mint:#0A7A68;--mint-fill:#7EEBD0;--on-mint:#0B0B0B;
   --f-display:"Gothic A1","Apple SD Gothic Neo","Malgun Gothic",sans-serif;
   --f-body:"IBM Plex Sans KR","Apple SD Gothic Neo","Malgun Gothic",sans-serif;
   --f-mono:"IBM Plex Mono",ui-monospace,Menlo,monospace;
@@ -51,19 +46,29 @@ img{max-width:100%}
 [hidden]{display:none!important}
 body{background:var(--bg);color:var(--fg);font-family:var(--f-body);font-size:17px;line-height:1.7;word-break:keep-all;overflow-wrap:break-word}
 a{color:inherit}
+button{font:inherit}
 :focus-visible{outline:3px solid var(--red);outline-offset:3px;border-radius:2px}
 .wrap{max-width:var(--wrap);margin:0 auto;padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px))}
 .skip{position:absolute;left:-999px;top:8px;background:var(--red);color:var(--on-red);padding:10px 16px;z-index:50;font-weight:700}
 .skip:focus{left:16px}
 .sr{position:absolute;left:-999px}
-.label{font-family:var(--f-mono);font-size:13px;letter-spacing:.08em;text-transform:uppercase;color:var(--muted);display:flex;align-items:center;gap:8px}
+.label{font-family:var(--f-mono);font-size:13px;letter-spacing:.08em;color:var(--muted);display:flex;align-items:center;gap:8px}
 .label::before{content:"";width:8px;height:8px;background:var(--red)}
+
+/* 버튼 3단계 */
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:8px;min-height:44px;padding:0 18px;background:var(--red);color:var(--on-red);text-decoration:none;border:0;font-weight:700;cursor:pointer;white-space:nowrap}
+.btn:hover{background:var(--fg);color:var(--bg)}
+.btn.sub{background:var(--orange-fill);color:var(--on-orange)}
+.btn.sub:hover{background:var(--fg);color:var(--bg)}
+.btn.line{background:transparent;color:var(--fg);border:2px solid var(--fg)}
+.btn.line:hover{border-color:var(--orange);color:var(--orange);background:transparent}
+.btn[disabled]{opacity:.5;cursor:wait}
 
 /* 헤더 */
 body::before{content:"";position:fixed;inset:0 0 auto;height:env(safe-area-inset-top,0px);z-index:10;background:var(--bg)}
 header.site{position:sticky;top:env(safe-area-inset-top,0px);z-index:20;background:var(--bg);border-bottom:2px solid var(--fg)}
-.bar{display:flex;align-items:center;gap:24px;min-height:68px}
-.logo{display:flex;align-items:center;gap:12px;text-decoration:none;font-family:var(--f-display);font-weight:900;font-size:23px;letter-spacing:-.02em}
+.bar{display:flex;align-items:center;gap:20px;min-height:68px;position:relative}
+.logo{display:flex;align-items:center;gap:12px;text-decoration:none;font-family:var(--f-display);font-weight:900;font-size:23px;letter-spacing:-.02em;flex:none}
 .pens{display:flex;gap:3px;align-items:flex-end}
 .pens i{display:block;width:6px;border-radius:1px}
 .pens i:nth-child(1){height:20px;background:var(--red)}
@@ -73,31 +78,31 @@ nav.main{display:flex;gap:4px;margin-left:auto}
 nav.main a{text-decoration:none;padding:10px 12px;font-weight:500;min-height:44px;display:flex;align-items:center}
 nav.main a[aria-current="page"]{box-shadow:inset 0 -3px 0 var(--orange-fill)}
 nav.main a:hover{color:var(--orange)}
-.search{display:flex;align-items:center;border:2px solid var(--fg);height:44px;width:220px}
+.search{display:flex;align-items:center;border:2px solid var(--fg);height:44px;width:200px;min-width:0}
 .search input{flex:1;min-width:0;border:0;background:transparent;color:var(--fg);font:inherit;font-size:15px;padding:0 12px;height:100%}
 .search input:focus{outline:none}
 .search:focus-within{border-color:var(--red)}
 .search svg{width:18px;height:18px;margin-right:12px;flex:none}
+.auth{display:flex;gap:8px;flex:none}
 .menu-btn{display:none}
+.demo-strip{background:var(--soft);font-size:14px;color:var(--muted)}
+.demo-strip .wrap{padding-block:8px;display:flex;gap:8px;align-items:center}
+.demo-strip b{color:var(--mint)}
 
-/* 대표 글 */
-.hero{padding-block:56px 48px;border-bottom:1px solid var(--line)}
+/* 공지 영역 */
+.hero{padding-block:52px 44px;border-bottom:1px solid var(--line)}
 .hero-grid{display:grid;grid-template-columns:1.35fr 1fr;gap:48px;align-items:end}
-.hero h1{font-family:var(--f-display);font-weight:900;font-size:clamp(34px,5.4vw,64px);line-height:1.15;letter-spacing:-.03em;margin:14px 0 0;text-wrap:balance}
+.hero h1{font-family:var(--f-display);font-weight:900;font-size:clamp(34px,5.4vw,60px);line-height:1.15;letter-spacing:-.03em;margin:14px 0 0;text-wrap:balance}
 .hero h1 mark{background:linear-gradient(transparent 62%,var(--red) 62%,var(--red) 90%,transparent 90%);color:inherit;padding:0 2px}
-.hero p.lead{font-size:19px;color:var(--muted);margin:0 0 20px;max-width:36ch}
+.hero p.lead{font-size:19px;color:var(--muted);margin:0 0 20px;max-width:38ch}
 .meta{display:flex;flex-wrap:wrap;gap:6px 14px;font-size:14px;color:var(--muted);font-family:var(--f-mono);font-variant-numeric:tabular-nums}
-.btn{display:inline-flex;align-items:center;gap:10px;min-height:48px;padding:0 22px;background:var(--red);color:var(--on-red);text-decoration:none;border:0;font:inherit;font-weight:700;cursor:pointer}
-.btn:hover{background:var(--fg);color:var(--bg)}
-.btn.sub{background:var(--orange-fill);color:var(--on-orange)}
-.btn.sub:hover{background:var(--bg);color:var(--fg)}
-.link2{font-weight:700;text-decoration:none;color:var(--orange);border-bottom:2px solid currentColor;padding-block:4px}
-.link2:hover{color:var(--fg)}
 .hero-actions{display:flex;gap:20px;align-items:center;flex-wrap:wrap;margin-top:24px}
+.link2{font-weight:700;color:var(--orange);background:none;border:0;border-bottom:2px solid currentColor;padding:4px 0;cursor:pointer}
+.link2:hover{color:var(--fg)}
 
 /* 카테고리 */
 .cats{display:flex;gap:8px;flex-wrap:wrap;padding-block:28px 8px}
-.chip{font:inherit;font-size:15px;font-weight:500;min-height:40px;padding:0 16px;border:1.5px solid var(--fg);background:transparent;color:var(--fg);cursor:pointer}
+.chip{font-size:15px;font-weight:500;min-height:40px;padding:0 16px;border:1.5px solid var(--fg);background:transparent;color:var(--fg);cursor:pointer}
 .chip:hover{border-color:var(--orange);color:var(--orange)}
 .chip[aria-pressed="true"]{background:var(--fg);color:var(--bg)}
 .chip .n{font-family:var(--f-mono);font-size:12px;margin-left:6px;opacity:.7}
@@ -109,39 +114,73 @@ nav.main a:hover{color:var(--orange)}
 .post .side{display:flex;flex-direction:column;gap:6px;align-items:flex-start}
 .post .cat{font-size:14px;font-weight:700;color:var(--orange)}
 .post time{font-family:var(--f-mono);font-size:13px;color:var(--muted);font-variant-numeric:tabular-nums}
-.badge{font-size:12px;font-weight:700;padding:1px 8px;background:var(--mint-fill);color:var(--on-mint)}
+.badge{font-size:12px;font-weight:700;padding:1px 8px;white-space:nowrap}
+.badge.notice{background:var(--red);color:var(--on-red)}
+.badge.private{background:var(--mint-fill);color:var(--on-mint)}
 .post h3{font-family:var(--f-display);font-weight:700;font-size:23px;line-height:1.4;letter-spacing:-.02em;margin:0 0 8px;text-wrap:balance}
-.post h3 a{text-decoration:none;background:linear-gradient(var(--orange-fill),var(--orange-fill)) 0 100%/0 3px no-repeat;transition:background-size .25s}
-.post h3 a:hover{background-size:100% 3px}
+.title-link{all:unset;cursor:pointer;background:linear-gradient(var(--orange-fill),var(--orange-fill)) 0 100%/0 3px no-repeat;transition:background-size .25s}
+.title-link:hover{background-size:100% 3px}
+.title-link:focus-visible{outline:3px solid var(--red);outline-offset:3px}
 .post p{margin:0 0 10px;color:var(--muted);max-width:62ch}
 .post .read{font-family:var(--f-mono);font-size:13px;color:var(--mint)}
-.empty{padding:40px 0;color:var(--muted)}
-.more{margin-top:32px;width:100%;min-height:52px;font:inherit;font-weight:700;background:transparent;color:var(--fg);border:2px solid var(--fg);cursor:pointer}
+.empty{padding:36px 0;color:var(--muted)}
+.empty strong{color:var(--fg);display:block;font-size:19px;margin-bottom:4px}
+.more{margin-top:32px;width:100%;min-height:52px;font-weight:700;background:transparent;color:var(--fg);border:2px solid var(--fg);cursor:pointer}
 .more:hover{border-color:var(--orange);color:var(--orange)}
 
 aside{display:flex;flex-direction:column;gap:40px}
 aside h2{font-family:var(--f-display);font-weight:900;font-size:18px;margin:0 0 14px;padding-bottom:10px;border-bottom:2px solid var(--fg)}
-.rank{list-style:none;margin:0;padding:0;display:flex;flex-direction:column}
-.rank li{display:grid;grid-template-columns:32px 1fr;gap:10px;padding-block:12px;border-bottom:1px solid var(--line)}
-.rank b{font-family:var(--f-mono);font-size:18px;color:var(--muted);font-variant-numeric:tabular-nums}
-.rank li:nth-child(1) b{color:var(--red)}
-.rank li:nth-child(2) b,.rank li:nth-child(3) b{color:var(--orange)}
-.rank a{text-decoration:none;font-weight:500;line-height:1.5}
-.rank a:hover{color:var(--orange)}
-.news{background:var(--fg);color:var(--bg);padding:24px}
-.news h2{border-color:var(--bg)}
-.news p{margin:0 0 16px;font-size:15px;opacity:.85}
-.news form{display:flex;flex-direction:column;gap:10px}
-.news label{font-size:14px}
-.news input{font:inherit;font-size:16px;height:48px;padding:0 14px;border:0;background:var(--bg);color:var(--fg)}
-.news .btn{justify-content:center}
-.news .msg{font-size:14px;margin:4px 0 0;min-height:1.5em}
-.tags{display:flex;flex-wrap:wrap;gap:8px}
-.tags a{font-size:14px;padding:6px 10px;background:var(--soft);text-decoration:none;min-height:36px;display:flex;align-items:center}
-.tags a:hover{background:var(--mint-fill);color:var(--on-mint)}
+.account{background:var(--fg);color:var(--bg);padding:24px;display:flex;flex-direction:column;gap:14px}
+.account h2{border-color:var(--bg);margin:0}
+.account p{margin:0;font-size:15px;opacity:.85}
+.account .who{font-family:var(--f-mono);font-size:14px;word-break:break-all}
+.account .counts{display:flex;gap:16px;font-size:14px;font-variant-numeric:tabular-nums}
+.account .btn.line{color:var(--bg);border-color:var(--bg)}
+.account .btn.line:hover{color:var(--orange-fill);border-color:var(--orange-fill)}
+.account .row{display:flex;gap:8px;flex-wrap:wrap}
+.rules{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:14px;font-size:15px}
+.rules li{display:grid;grid-template-columns:76px 1fr;gap:10px;align-items:start}
+.rules .badge{justify-self:start;margin-top:3px}
+.badge.public{border:1.5px solid var(--fg)}
 
 footer{border-top:2px solid var(--fg)}
 .foot{display:flex;flex-wrap:wrap;justify-content:space-between;gap:12px;padding-block:28px;font-size:14px;color:var(--muted)}
+
+/* 대화상자 */
+dialog{border:2px solid var(--fg);background:var(--bg);color:var(--fg);padding:0;width:min(640px,calc(100% - 32px));max-height:calc(100% - 48px)}
+dialog::backdrop{background:rgba(0,0,0,.6)}
+.dlg{padding:28px;display:flex;flex-direction:column;gap:18px}
+.dlg-head{display:flex;justify-content:space-between;align-items:flex-start;gap:16px}
+.dlg h2{font-family:var(--f-display);font-weight:900;font-size:26px;line-height:1.3;margin:0;letter-spacing:-.02em;text-wrap:balance}
+.x{flex:none;width:44px;height:44px;border:2px solid var(--fg);background:transparent;color:var(--fg);cursor:pointer;font-size:20px;line-height:1}
+.field{display:flex;flex-direction:column;gap:6px}
+.field label,.field legend{font-size:15px;font-weight:700}
+.field input,.field textarea{font:inherit;font-size:16px;color:var(--fg);background:var(--bg);border:2px solid var(--fg);padding:10px 12px;min-height:48px;width:100%}
+.field textarea{min-height:220px;resize:vertical;line-height:1.7}
+.field input:focus,.field textarea:focus{outline:none;border-color:var(--red)}
+.hint{font-size:13px;color:var(--muted)}
+fieldset.field{border:0;padding:0;margin:0}
+.vis{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.vis label{display:flex;gap:10px;align-items:flex-start;border:2px solid var(--line);padding:12px;cursor:pointer;font-weight:400}
+.vis label b{display:block}
+.vis label span{font-size:13px;color:var(--muted)}
+.vis input{width:20px;height:20px;min-height:0;margin:3px 0 0;accent-color:var(--fg);flex:none}
+.vis label:has(input:checked){border-color:var(--fg);background:var(--soft)}
+.actions{display:flex;gap:10px;justify-content:flex-end;flex-wrap:wrap}
+.msg{font-size:14px;margin:0;min-height:1.4em}
+.msg.err{color:var(--red);font-weight:700}
+.switch{font-size:14px;color:var(--muted)}
+.switch button{background:none;border:0;color:var(--orange);font-weight:700;cursor:pointer;text-decoration:underline;padding:4px}
+.read-body{white-space:pre-wrap;margin:0;font-size:17px;line-height:1.85}
+.badge.role-pending{background:var(--mint-fill);color:var(--on-mint)}
+.badge.role-writer{background:var(--orange-fill);color:var(--on-orange)}
+.badge.role-admin{background:var(--red);color:var(--on-red)}
+.members{list-style:none;margin:0;padding:0;display:flex;flex-direction:column}
+.members li{display:grid;grid-template-columns:minmax(0,1fr) auto auto;gap:12px;align-items:center;padding-block:12px;border-bottom:1px solid var(--line)}
+.members .email{display:block;font-weight:700;word-break:break-all}
+.members .since{display:block;font-family:var(--f-mono);font-size:12px;color:var(--muted)}
+.members .btn{min-height:40px;padding:0 14px;font-size:15px}
+@media (max-width:560px){.members li{grid-template-columns:minmax(0,1fr) auto}.members .btn{grid-column:1/-1}}
 
 @media (max-width:900px){
   .hero-grid,.body-grid{grid-template-columns:1fr;gap:32px}
@@ -149,7 +188,7 @@ footer{border-top:2px solid var(--fg)}
   nav.main{display:none}
   nav.main.open{display:flex;position:absolute;left:0;right:0;top:100%;flex-direction:column;background:var(--bg);border-bottom:2px solid var(--fg);padding:8px max(16px,env(safe-area-inset-left,0px))}
   .menu-btn{display:flex;align-items:center;justify-content:center;width:44px;height:44px;border:2px solid var(--fg);background:transparent;color:var(--fg);cursor:pointer;flex:none}
-  .bar{gap:12px;position:relative}
+  .bar{gap:10px}
 }
 @media (max-width:560px){
   body{font-size:16px}
@@ -157,6 +196,10 @@ footer{border-top:2px solid var(--fg)}
   .post .side{flex-direction:row;gap:12px;align-items:center;flex-wrap:wrap}
   .logo .name{display:none}
   .hero{padding-block:36px 32px}
+  .auth .btn{padding:0 12px}
+  .auth .out{display:none}
+  .vis{grid-template-columns:1fr}
+  .dlg{padding:20px}
 }
 @media (prefers-reduced-motion:reduce){*{transition:none!important}}
 </style>
@@ -170,36 +213,38 @@ footer{border-top:2px solid var(--fg)}
     <a class="logo" href="#" aria-label="삼색펜 홈"><span class="pens" aria-hidden="true"><i></i><i></i><i></i></span><span class="name">삼색펜</span></a>
     <nav class="main" id="mainnav" aria-label="주 메뉴">
       <a href="#" aria-current="page">홈</a>
-      <a href="#">전체 글</a>
-      <a href="#">시리즈</a>
-      <a href="#">소개</a>
+      <a href="#posts">전체 글</a>
+      <a href="#account">내 계정</a>
     </nav>
     <label class="search" for="q">
       <span class="sr">글 검색</span>
-      <input id="q" type="search" placeholder="글 제목·내용 검색" autocomplete="off">
+      <input id="q" type="search" placeholder="글 검색" autocomplete="off">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" aria-hidden="true"><circle cx="10.5" cy="10.5" r="6.5"/><path d="M15.5 15.5 21 21"/></svg>
     </label>
+    <div class="auth" id="authArea"></div>
     <button class="menu-btn" id="menuBtn" aria-controls="mainnav" aria-expanded="false" aria-label="메뉴 열기">
       <svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="2.4" aria-hidden="true"><path d="M3 6h18M3 12h18M3 18h18"/></svg>
     </button>
   </div>
 </header>
 
+<div class="demo-strip" id="demoStrip" hidden>
+  <div class="wrap"><b>체험 모드</b>로그인과 글이 이 브라우저에만 저장됩니다. 다른 사람에게는 보이지 않아요.</div>
+</div>
+
 <main>
   <section class="hero">
     <div class="wrap hero-grid">
       <div>
-        <div class="label">이번 주 대표 글</div>
-        <h1>AI에게 일을 맡기기 전, <mark>꼭 정해야 할</mark> 세 가지</h1>
+        <div class="label">공지</div>
+        <h1>삼색펜 <mark>이용 안내</mark></h1>
       </div>
       <div>
-        <p class="lead">목표, 판단 기준, 끝나는 조건. 이 셋만 먼저 적어 두면 결과물을 고치는 시간이 절반으로 줄어듭니다.</p>
-        <div class="meta"><span>업무 활용</span><span>2026.11.16 (KST)</span><span>읽는 시간 7분</span></div>
+        <p class="lead">관리자가 허용한 사람만 글을 쓸 수 있습니다. 글마다 공개와 나만보기를 고를 수 있고, 내가 쓴 글은 고칠 수 있습니다.</p>
+        <div class="meta"><span>공지사항</span><span>2026.11.17 (KST)</span></div>
         <div class="hero-actions">
-          <a class="btn" href="#">글 읽기
-            <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2.6" aria-hidden="true"><path d="M5 12h14M13 6l6 6-6 6"/></svg>
-          </a>
-          <a class="link2" href="#">이 시리즈 전체 보기</a>
+          <button class="btn sub" id="heroNotice">공지 읽기</button>
+          <button class="link2" id="heroLogin">로그인하기</button>
         </div>
       </div>
     </div>
@@ -210,41 +255,20 @@ footer{border-top:2px solid var(--fg)}
   </div>
 
   <div class="wrap body-grid">
-    <section aria-label="최신 글">
+    <section aria-label="글 목록">
       <ul class="posts" id="posts" tabindex="-1"></ul>
-      <p class="empty" id="empty" hidden>검색 결과가 없습니다. 다른 단어로 찾아보세요.</p>
-      <button class="more" id="more">글 더 보기</button>
+      <div class="empty" id="empty" hidden></div>
+      <button class="more" id="more" hidden>글 더 보기</button>
     </section>
 
     <aside>
+      <section class="account" id="account" aria-live="polite"></section>
       <section>
-        <h2>많이 읽은 글</h2>
-        <ol class="rank">
-          <li><b>1</b><a href="#">프롬프트보다 중요한 건 업무 쪼개기</a></li>
-          <li><b>2</b><a href="#">월 3만 원으로 만드는 1인 업무 자동화</a></li>
-          <li><b>3</b><a href="#">회의록 정리를 AI에 맡겨 본 4주 기록</a></li>
-          <li><b>4</b><a href="#">엑셀 함수 몰라도 되는 시대일까</a></li>
-          <li><b>5</b><a href="#">초보자를 위한 생성형 AI 용어 20개</a></li>
-        </ol>
-      </section>
-
-      <section class="news">
-        <h2>뉴스레터</h2>
-        <p>매주 목요일 오전 8시, 새 글 1편과 실습 팁을 메일로 보내 드립니다.</p>
-        <form id="newsForm" novalidate>
-          <label for="email">이메일 주소</label>
-          <input id="email" type="email" placeholder="name@example.com" required>
-          <button class="btn sub" type="submit">구독하기</button>
-          <p class="msg" id="newsMsg" role="status"></p>
-        </form>
-      </section>
-
-      <section>
-        <h2>태그</h2>
-        <div class="tags">
-          <a href="#">#프롬프트</a><a href="#">#자동화</a><a href="#">#엑셀</a><a href="#">#회의록</a>
-          <a href="#">#기획</a><a href="#">#메일쓰기</a><a href="#">#초보</a><a href="#">#도구비교</a>
-        </div>
+        <h2>글 공개 범위</h2>
+        <ul class="rules">
+          <li><span class="badge public">공개</span><span>누구나 읽을 수 있습니다. 로그인하지 않은 방문자에게도 보입니다.</span></li>
+          <li><span class="badge private">나만보기</span><span>글을 쓴 본인이 로그인했을 때만 보입니다.</span></li>
+        </ul>
       </section>
     </aside>
   </div>
@@ -253,60 +277,366 @@ footer{border-top:2px solid var(--fg)}
 <footer>
   <div class="wrap foot">
     <span>© 2026 삼색펜</span>
-    <span>새 글은 매주 화·목 오전에 올라옵니다 (KST)</span>
+    <span>모든 시간은 한국 시간(KST) 기준입니다</span>
   </div>
 </footer>
 
+<!-- 로그인 -->
+<dialog id="loginDlg" aria-labelledby="loginTitle">
+  <form class="dlg" id="loginForm" novalidate>
+    <div class="dlg-head"><h2 id="loginTitle">로그인</h2><button type="button" class="x" data-close aria-label="닫기">×</button></div>
+    <div class="field"><label for="lEmail">이메일</label><input id="lEmail" type="email" autocomplete="email" required></div>
+    <div class="field"><label for="lPw">비밀번호</label><input id="lPw" type="password" autocomplete="current-password" minlength="6" required><span class="hint">6자 이상</span></div>
+    <p class="msg" id="loginMsg" role="status"></p>
+    <div class="actions"><button class="btn" type="submit" id="loginSubmit">로그인</button></div>
+    <p class="switch" id="loginSwitch"></p>
+  </form>
+</dialog>
+
+<!-- 글쓰기와 수정 -->
+<dialog id="writeDlg" aria-labelledby="writeTitle">
+  <form class="dlg" id="writeForm" novalidate>
+    <div class="dlg-head"><h2 id="writeTitle">새 글 쓰기</h2><button type="button" class="x" data-close aria-label="닫기">×</button></div>
+    <div class="field"><label for="wTitle">제목</label><input id="wTitle" maxlength="120" required></div>
+    <div class="field"><label for="wCat">카테고리</label><input id="wCat" list="catList" maxlength="20" value="일반">
+      <datalist id="catList"><option value="일반"><option value="업무 활용"><option value="기초 개념"><option value="실습 기록"><option value="도구 비교"></datalist>
+    </div>
+    <fieldset class="field">
+      <legend>공개 범위</legend>
+      <div class="vis">
+        <label><input type="radio" name="vis" id="visPublic" value="public" checked><span><b>공개</b>누구나 읽을 수 있어요</span></label>
+        <label><input type="radio" name="vis" id="visPrivate" value="private"><span><b>나만보기</b>로그인한 나만 볼 수 있어요</span></label>
+      </div>
+    </fieldset>
+    <div class="field"><label for="wBody">내용</label><textarea id="wBody" required></textarea></div>
+    <p class="msg" id="writeMsg" role="status"></p>
+    <div class="actions"><button type="button" class="btn line" data-close>취소</button><button class="btn" type="submit" id="writeSubmit">올리기</button></div>
+  </form>
+</dialog>
+
+<!-- 글 읽기 -->
+<dialog id="readDlg" aria-labelledby="readTitle">
+  <div class="dlg">
+    <div class="dlg-head"><h2 id="readTitle"></h2><button type="button" class="x" data-close aria-label="닫기">×</button></div>
+    <div class="meta" id="readMeta"></div>
+    <p class="read-body" id="readBody"></p>
+    <p class="msg" id="readMsg" role="status"></p>
+    <div class="actions" id="readActions"></div>
+  </div>
+</dialog>
+
+<!-- 글쓴이 관리 (관리자 전용) -->
+<dialog id="adminDlg" aria-labelledby="adminTitle">
+  <div class="dlg">
+    <div class="dlg-head"><h2 id="adminTitle">글쓴이 관리</h2><button type="button" class="x" data-close aria-label="닫기">×</button></div>
+    <p class="hint" style="margin:0">회원가입한 사람은 모두 승인 대기로 시작합니다. 허용한 사람만 글을 쓰고 고칠 수 있습니다.</p>
+    <ul class="members" id="members"></ul>
+    <p class="msg" id="adminMsg" role="status"></p>
+  </div>
+</dialog>
+
 <script>
-const POSTS=[
-  {c:"업무 활용",t:"보고서 초안을 30분 만에 끝내는 순서",d:"자료 모으기, 뼈대 잡기, 문장 다듬기를 나눠서 시키면 결과가 훨씬 안정적입니다.",dt:"2026.11.13",m:6,n:true},
-  {c:"도구 비교",t:"요금제별로 따져 본 AI 도구 한 달 비용",d:"무료, 월 2만 9천 원, 월 4만 원대 요금제를 실제 사용량 기준으로 비교했습니다.",dt:"2026.11.11",m:9,n:true},
-  {c:"기초 개념",t:"토큰이 뭐길래 답변이 중간에 끊길까",d:"글자 수와 토큰의 차이를 과자 봉지에 비유해 쉽게 풀었습니다.",dt:"2026.11.06",m:5},
-  {c:"업무 활용",t:"고객 메일 답장, 어디까지 맡겨도 될까",d:"사람이 꼭 확인해야 하는 문장 유형 네 가지를 정리했습니다.",dt:"2026.11.04",m:7},
-  {c:"실습 기록",t:"블로그 첫 화면을 AI와 함께 다시 만든 과정",d:"흑백 바탕에 강조색 세 가지를 중요도 순서로 쓰기로 한 이유를 남깁니다.",dt:"2026.10.30",m:8},
-  {c:"기초 개념",t:"검색과 생성은 무엇이 다를까",d:"정답을 찾아오는 일과 새로 쓰는 일의 차이를 예시로 비교합니다.",dt:"2026.10.28",m:4},
-  {c:"실습 기록",t:"일주일 동안 모든 메일을 AI로 초안 써 보기",d:"절약한 시간과 오히려 늘어난 확인 시간을 숫자로 기록했습니다.",dt:"2026.10.23",m:10},
-  {c:"도구 비교",t:"문서 요약 도구 다섯 개, 같은 글로 시험",d:"30쪽짜리 계약서를 넣고 빠진 내용이 있는지 하나씩 확인했습니다.",dt:"2026.10.21",m:11}
-];
-const CATS=["전체",...new Set(POSTS.map(p=>p.c))];
-let cat="전체",q="",shown=5;
-const $=id=>document.getElementById(id);
+/* ===== 설정: Supabase 프로젝트 정보를 넣으면 실제 로그인과 글 저장이 켜집니다 =====
+   비워 두면 체험 모드로 동작합니다. */
+const SUPABASE_URL = "";
+const SUPABASE_ANON_KEY = "";
+
+const NOTICE = {
+  id:"notice", notice:true, category:"공지", visibility:"public", created_at:"2026-11-17T09:00:00+09:00",
+  title:"삼색펜 이용 안내",
+  body:`삼색펜에 오신 것을 환영합니다.
+이 블로그는 아래 두 가지 규칙으로 운영됩니다.
+
+1. 글쓰기는 관리자가 허용한 사람만 할 수 있습니다.
+누구나 회원가입은 할 수 있지만, 가입 직후에는 승인 대기 상태입니다.
+관리자가 허용하면 글쓰기 버튼이 나타납니다.
+로그인하지 않은 방문자는 공개된 글을 읽을 수만 있습니다.
+
+2. 글은 공개글과 나만보기 글로 나뉩니다.
+공개글은 누구나 볼 수 있습니다.
+나만보기 글은 글을 쓴 본인이 로그인했을 때만 보입니다.
+
+내가 쓴 글은 글을 연 뒤 수정 버튼으로 고칠 수 있습니다.`
+};
+
+const ROLE_NAME = {pending:"승인 대기", writer:"글쓴이", admin:"관리자"};
+const $ = id => document.getElementById(id);
+const esc = s => String(s).replace(/[&<>"']/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
+const fmt = iso => new Date(iso).toLocaleDateString("ko-KR",{timeZone:"Asia/Seoul",year:"numeric",month:"2-digit",day:"2-digit"}).replace(/\.\s?/g,".").replace(/\.$/,"");
+const mins = t => Math.max(1, Math.round(t.length/500));
+
+/* ===== 저장소: Supabase(실제) 또는 브라우저(체험) ===== */
+const REMOTE = !!(SUPABASE_URL && SUPABASE_ANON_KEY && window.supabase);
+const sb = REMOTE ? window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY) : null;
+const must = (res) => { if (res.error) throw res.error; if (Array.isArray(res.data) && !res.data.length) throw new Error("권한이 없거나 대상이 없습니다"); return res.data; };
+
+const local = (() => {
+  const KEY = "samsaekpen-demo-v2"; let mem = {user:null, posts:[], users:{}};
+  const load = () => { try { return JSON.parse(localStorage.getItem(KEY)) || mem; } catch { return mem; } };
+  const save = d => { mem = d; try { localStorage.setItem(KEY, JSON.stringify(d)); } catch {} };
+  return { load, save };
+})();
+
+const store = REMOTE ? {
+  async session(){ const {data} = await sb.auth.getSession(); return data.session?.user || null; },
+  onChange(cb){ sb.auth.onAuthStateChange((_e, s) => cb(s?.user || null)); },
+  async signIn(email, pw){ const {data, error} = await sb.auth.signInWithPassword({email, password:pw}); if (error) throw error; return data.user; },
+  async signUp(email, pw){ const {data, error} = await sb.auth.signUp({email, password:pw}); if (error) throw error; return data.session ? data.user : null; },
+  async signOut(){ await sb.auth.signOut(); },
+  async role(u){ const {data, error} = await sb.from("profiles").select("role").eq("id", u.id).maybeSingle(); if (error) throw error; return data?.role || "pending"; },
+  async members(){ return must(await sb.from("profiles").select("id,email,role,created_at").order("created_at",{ascending:true})); },
+  async setRole(id, role){ must(await sb.from("profiles").update({role}).eq("id", id).select("id")); },
+  async list(){ const {data, error} = await sb.from("posts").select("id,author_id,title,body,category,visibility,created_at,updated_at").order("created_at",{ascending:false}).limit(200); if (error) throw error; return data; },
+  async create(p){ must(await sb.from("posts").insert(p).select("id")); },
+  async update(id, p){ must(await sb.from("posts").update(p).eq("id", id).select("id")); },
+  async remove(id){ must(await sb.from("posts").delete().eq("id", id).select("id")); }
+} : {
+  async session(){ return local.load().user; },
+  onChange(){},
+  async signIn(email){
+    const d = local.load(), key = email.toLowerCase();
+    if (!d.users[key]) d.users[key] = {id:"demo:"+key, email, role: Object.keys(d.users).length ? "pending" : "admin", created_at:new Date().toISOString()};
+    d.user = {id:d.users[key].id, email}; local.save(d); return d.user;
+  },
+  async signUp(email, pw){ return this.signIn(email, pw); },
+  async signOut(){ const d = local.load(); d.user = null; local.save(d); },
+  async role(u){ const m = Object.values(local.load().users).find(x => x.id === u.id); return m ? m.role : "pending"; },
+  async members(){ return Object.values(local.load().users).sort((a,b) => a.created_at.localeCompare(b.created_at)); },
+  async setRole(id, role){ const d = local.load(); const m = Object.values(d.users).find(x => x.id === id); if (m) m.role = role; local.save(d); },
+  async list(){ const d = local.load(); return d.posts.filter(p => p.visibility === "public" || (d.user && p.author_id === d.user.id)); },
+  async create(p){ const d = local.load(); d.posts.unshift({...p, id:Date.now(), author_id:d.user.id, created_at:new Date().toISOString(), updated_at:null}); local.save(d); },
+  async update(id, p){ const d = local.load(); const x = d.posts.find(q => q.id === id && q.author_id === d.user.id); if (!x) throw new Error("no"); Object.assign(x, p); local.save(d); },
+  async remove(id){ const d = local.load(); d.posts = d.posts.filter(p => !(p.id === id && p.author_id === d.user.id)); local.save(d); }
+};
+
+/* ===== 화면 상태 ===== */
+let user = null, role = null, members = [], posts = [], cat = "전체", q = "", shown = 10, loading = true, loadError = false, editingId = null;
+const canWrite = () => !!user && (role === "writer" || role === "admin");
+const isAdmin = () => !!user && role === "admin";
+
+function renderAuth(){
+  $("authArea").innerHTML = !user
+    ? `<button class="btn line" id="loginBtn">로그인</button>`
+    : (canWrite() ? `<button class="btn" id="writeBtn">글쓰기</button>` : "") + `<button class="btn line ${canWrite() ? "out" : ""}" id="logoutBtn">로그아웃</button>`;
+  $("heroLogin").hidden = !!user;
+  if (!user) {
+    $("account").innerHTML = `<h2>내 계정</h2><p>회원가입 후 관리자가 허용하면 글을 쓸 수 있어요. 로그인하지 않으면 공개글만 읽을 수 있습니다.</p>
+      <div class="row"><button class="btn sub" data-act="login">로그인</button></div>`;
+    return;
+  }
+  const r = role || "pending";
+  const mine = posts.filter(p => p.author_id === user.id);
+  const waiting = members.filter(m => m.role === "pending").length;
+  $("account").innerHTML = `<h2>내 계정</h2>
+    <p class="who">${esc(user.email || "")}</p>
+    <div><span class="badge role-${r}">${ROLE_NAME[r]}</span></div>
+    ${r === "pending"
+      ? `<p>관리자가 글쓰기를 허용하면 글쓰기 버튼이 나타납니다. 허용된 뒤에는 새로고침해 주세요.</p>`
+      : `<div class="counts"><span>공개 ${mine.filter(p=>p.visibility==="public").length}편</span><span>나만보기 ${mine.filter(p=>p.visibility==="private").length}편</span></div>`}
+    <div class="row">
+      ${canWrite() ? `<button class="btn" data-act="write">글쓰기</button>` : ""}
+      ${isAdmin() ? `<button class="btn sub" data-act="admin">글쓴이 관리${waiting ? ` · 대기 ${waiting}명` : ""}</button>` : ""}
+      <button class="btn line" data-act="logout">로그아웃</button>
+    </div>`;
+}
 
 function renderCats(){
-  $("cats").innerHTML=CATS.map(c=>{
-    const n=c==="전체"?POSTS.length:POSTS.filter(p=>p.c===c).length;
-    return `<button class="chip" aria-pressed="${c===cat}" data-c="${c}">${c}<span class="n">${n}</span></button>`;
+  const all = [NOTICE, ...posts];
+  const names = ["전체", "공지", ...new Set(posts.map(p => p.category))];
+  if (posts.some(p => p.visibility === "private")) names.push("나만보기");
+  if (!names.includes(cat)) cat = "전체";
+  $("cats").innerHTML = names.map(c => {
+    const n = c==="전체" ? all.length : c==="나만보기" ? posts.filter(p=>p.visibility==="private").length : all.filter(p=>p.category===c).length;
+    return `<button class="chip" aria-pressed="${c===cat}" data-c="${esc(c)}">${esc(c)}<span class="n">${n}</span></button>`;
   }).join("");
 }
-function render(){
-  const list=POSTS.filter(p=>(cat==="전체"||p.c===cat)&&(!q||(p.t+p.d).toLowerCase().includes(q)));
-  $("posts").innerHTML=list.slice(0,shown).map(p=>`
+
+function renderPosts(){
+  const all = [NOTICE, ...posts];
+  const list = all.filter(p =>
+    (cat==="전체" || (cat==="나만보기" ? p.visibility==="private" : p.category===cat)) &&
+    (!q || (p.title + " " + p.body).toLowerCase().includes(q)));
+  $("posts").innerHTML = list.slice(0, shown).map(p => `
     <li class="post">
-      <div class="side"><span class="cat">${p.c}</span><time>${p.dt}</time>${p.n?'<span class="badge">새 글</span>':''}</div>
-      <div><h3><a href="#">${p.t}</a></h3><p>${p.d}</p><span class="read">읽는 시간 ${p.m}분</span></div>
+      <div class="side">
+        ${p.notice ? '<span class="badge notice">공지</span>' : `<span class="cat">${esc(p.category)}</span>`}
+        <time datetime="${esc(p.created_at)}">${fmt(p.created_at)}</time>
+        ${p.visibility==="private" ? '<span class="badge private">나만보기</span>' : ""}
+      </div>
+      <div>
+        <h3><button class="title-link" data-id="${esc(p.id)}">${esc(p.title)}</button></h3>
+        <p>${esc(p.body.replace(/\s+/g," ").slice(0,90))}${p.body.length>90?"…":""}</p>
+        <span class="read">읽는 시간 ${mins(p.body)}분${p.updated_at ? " · 수정됨" : ""}</span>
+      </div>
     </li>`).join("");
-  $("empty").hidden=list.length>0;
-  $("more").hidden=list.length<=shown;
+  const e = $("empty");
+  if (loading) { e.innerHTML = "글을 불러오는 중입니다."; e.hidden = false; }
+  else if (loadError) { e.innerHTML = "<strong>글을 불러오지 못했습니다.</strong>잠시 뒤 새로고침해 주세요."; e.hidden = false; }
+  else if (q && !list.length) { e.innerHTML = "<strong>검색 결과가 없습니다.</strong>다른 단어로 찾아보세요."; e.hidden = false; }
+  else if (!posts.length && cat==="전체" && !q) { e.innerHTML = canWrite() ? "<strong>아직 올라온 글이 없습니다.</strong>오른쪽 위 글쓰기 버튼으로 첫 글을 올려 보세요." : "<strong>아직 올라온 글이 없습니다.</strong>지금은 공지만 있어요."; e.hidden = false; }
+  else e.hidden = true;
+  $("more").hidden = list.length <= shown;
 }
-$("cats").addEventListener("click",e=>{
-  const b=e.target.closest(".chip"); if(!b)return;
-  cat=b.dataset.c; shown=5; renderCats(); render();
+
+function renderMembers(){
+  $("members").innerHTML = members.length ? members.map(m => `
+    <li>
+      <div><span class="email">${esc(m.email || "(이메일 없음)")}</span><span class="since">가입 ${fmt(m.created_at)}</span></div>
+      <span class="badge role-${m.role}">${ROLE_NAME[m.role] || m.role}</span>
+      ${m.role === "admin" ? "" : m.role === "writer"
+        ? `<button class="btn line" data-role="pending" data-uid="${esc(m.id)}">허용 취소</button>`
+        : `<button class="btn sub" data-role="writer" data-uid="${esc(m.id)}">허용</button>`}
+    </li>`).join("") : `<li><span>가입한 사람이 아직 없습니다.</span></li>`;
+}
+
+function renderAll(){ renderAuth(); renderCats(); renderPosts(); }
+
+async function refresh(){
+  loading = true; renderPosts();
+  try { role = user ? await store.role(user) : null; } catch (err) { console.error(err); role = "pending"; }
+  try { members = isAdmin() ? await store.members() : []; } catch (err) { console.error(err); members = []; }
+  try { posts = await store.list(); loadError = false; } catch (err) { console.error(err); posts = []; loadError = true; }
+  loading = false; renderAll();
+}
+
+/* ===== 대화상자 ===== */
+let signupMode = false;
+function openLogin(){
+  signupMode = false; setLoginMode(); msg($("loginMsg"), "");
+  $("loginDlg").showModal(); $("lEmail").focus();
+}
+function setLoginMode(){
+  $("loginTitle").textContent = signupMode ? "회원가입" : "로그인";
+  $("loginSubmit").textContent = signupMode ? "가입하기" : "로그인";
+  $("lPw").autocomplete = signupMode ? "new-password" : "current-password";
+  $("loginSwitch").innerHTML = signupMode
+    ? '이미 계정이 있나요?<button type="button" id="toSignup">로그인</button>'
+    : '처음이신가요?<button type="button" id="toSignup">회원가입</button> 가입 후 관리자가 허용하면 글을 쓸 수 있어요.';
+}
+function openWrite(post){
+  if (!user) return openLogin();
+  if (!canWrite()) return;
+  editingId = post ? post.id : null;
+  $("writeForm").reset();
+  $("writeTitle").textContent = post ? "글 수정" : "새 글 쓰기";
+  $("writeSubmit").textContent = post ? "수정 저장" : "올리기";
+  $("wTitle").value = post ? post.title : "";
+  $("wCat").value = post ? post.category : "일반";
+  $("wBody").value = post ? post.body : "";
+  $(post && post.visibility === "private" ? "visPrivate" : "visPublic").checked = true;
+  msg($("writeMsg"), "");
+  $("writeDlg").showModal(); $("wTitle").focus();
+}
+function openRead(id){
+  const p = id === "notice" ? NOTICE : posts.find(x => String(x.id) === String(id));
+  if (!p) return;
+  $("readTitle").textContent = p.title;
+  $("readMeta").innerHTML = `${p.notice ? '<span class="badge notice">공지</span>' : `<span>${esc(p.category)}</span>`}<span>${fmt(p.created_at)} (KST)</span>${p.updated_at ? `<span>수정 ${fmt(p.updated_at)}</span>` : ""}${p.visibility==="private" ? '<span class="badge private">나만보기</span>' : '<span>공개</span>'}`;
+  $("readBody").textContent = p.body;
+  msg($("readMsg"), "");
+  const own = user && p.author_id === user.id;
+  $("readActions").innerHTML = own
+    ? (canWrite() ? `<button class="btn sub" id="editBtn" data-id="${esc(p.id)}">수정</button>` : "") + `<button class="btn line" id="delBtn" data-id="${esc(p.id)}">삭제</button>`
+    : "";
+  $("readDlg").showModal();
+}
+async function openAdmin(){
+  if (!isAdmin()) return;
+  msg($("adminMsg"), "");
+  try { members = await store.members(); } catch (err) { console.error(err); msg($("adminMsg"), "목록을 불러오지 못했습니다.", true); }
+  renderMembers(); $("adminDlg").showModal();
+}
+function msg(el, text, err){ el.textContent = text; el.className = "msg" + (err ? " err" : ""); }
+function authError(e){
+  const m = (e && e.message || "").toLowerCase();
+  if (m.includes("invalid login")) return "이메일 또는 비밀번호가 맞지 않습니다.";
+  if (m.includes("email not confirmed")) return "메일함에서 인증 링크를 먼저 눌러 주세요.";
+  if (m.includes("already registered")) return "이미 가입된 이메일입니다. 로그인해 주세요.";
+  if (m.includes("signups not allowed")) return "지금은 회원가입을 받지 않습니다.";
+  return "처리하지 못했습니다. 잠시 뒤 다시 시도해 주세요.";
+}
+const idOf = v => isNaN(v) ? v : Number(v);
+
+/* ===== 이벤트 ===== */
+document.addEventListener("click", async e => {
+  const t = e.target.closest("button"); if (!t) return;
+  if (t.matches("[data-close]")) return t.closest("dialog").close();
+  if (t.id === "loginBtn" || t.id === "heroLogin" || t.dataset.act === "login") return openLogin();
+  if (t.id === "writeBtn" || t.dataset.act === "write") return openWrite(null);
+  if (t.dataset.act === "admin") return openAdmin();
+  if (t.id === "logoutBtn" || t.dataset.act === "logout") { await store.signOut(); user = null; role = null; members = []; return refresh(); }
+  if (t.id === "toSignup") { signupMode = !signupMode; setLoginMode(); msg($("loginMsg"), ""); return; }
+  if (t.id === "heroNotice") return openRead("notice");
+  if (t.classList.contains("title-link")) return openRead(t.dataset.id);
+  if (t.classList.contains("chip")) { cat = t.dataset.c; shown = 10; renderCats(); renderPosts(); return; }
+  if (t.id === "editBtn") { const p = posts.find(x => String(x.id) === t.dataset.id); $("readDlg").close(); return openWrite(p); }
+  if (t.id === "delBtn") {
+    if (t.dataset.armed !== "1") { t.dataset.armed = "1"; t.textContent = "한 번 더 누르면 삭제됩니다"; return; }
+    t.disabled = true;
+    try { await store.remove(idOf(t.dataset.id)); $("readDlg").close(); await refresh(); }
+    catch (err) { console.error(err); t.disabled = false; msg($("readMsg"), "삭제하지 못했습니다. 다시 시도해 주세요.", true); }
+    return;
+  }
+  if (t.dataset.role && t.dataset.uid) {
+    t.disabled = true;
+    try {
+      await store.setRole(t.dataset.uid, t.dataset.role);
+      members = await store.members(); renderMembers(); renderAuth();
+      msg($("adminMsg"), t.dataset.role === "writer" ? "글쓰기를 허용했습니다." : "글쓰기 허용을 취소했습니다.");
+    } catch (err) { console.error(err); t.disabled = false; msg($("adminMsg"), "바꾸지 못했습니다. 관리자 계정인지 확인해 주세요.", true); }
+  }
 });
-$("q").addEventListener("input",e=>{q=e.target.value.trim().toLowerCase(); shown=5; render();});
-$("more").addEventListener("click",()=>{shown+=5; render();});
-$("menuBtn").addEventListener("click",e=>{
-  const open=$("mainnav").classList.toggle("open");
-  e.currentTarget.setAttribute("aria-expanded",open);
-  e.currentTarget.setAttribute("aria-label",open?"메뉴 닫기":"메뉴 열기");
-});
-$("newsForm").addEventListener("submit",e=>{
+
+$("loginForm").addEventListener("submit", async e => {
   e.preventDefault();
-  const v=$("email").value.trim();
-  $("newsMsg").textContent=/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(v)
-    ?"예시 화면입니다. 실제 구독은 뉴스레터 서비스 연결 후 동작합니다."
-    :"이메일 형식을 확인해 주세요. 예: name@example.com";
+  const email = $("lEmail").value.trim(), pw = $("lPw").value;
+  if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) return msg($("loginMsg"), "이메일 형식을 확인해 주세요. 예: name@example.com", true);
+  if (pw.length < 6) return msg($("loginMsg"), "비밀번호는 6자 이상이어야 합니다.", true);
+  const b = $("loginSubmit"); b.disabled = true;
+  try {
+    const u = signupMode ? await store.signUp(email, pw) : await store.signIn(email, pw);
+    if (!u) { msg($("loginMsg"), "가입 신청이 접수됐습니다. 메일함에서 인증 링크를 누른 뒤 로그인해 주세요."); return; }
+    user = u; $("loginDlg").close(); await refresh();
+  } catch (err) { console.error(err); msg($("loginMsg"), authError(err), true); }
+  finally { b.disabled = false; }
 });
-renderCats(); render();
+
+$("writeForm").addEventListener("submit", async e => {
+  e.preventDefault();
+  if (!canWrite()) { $("writeDlg").close(); return; }
+  const title = $("wTitle").value.trim(), body = $("wBody").value.trim();
+  const category = $("wCat").value.trim() || "일반";
+  const visibility = $("visPrivate").checked ? "private" : "public";
+  if (!title) return msg($("writeMsg"), "제목을 입력해 주세요.", true);
+  if (!body) return msg($("writeMsg"), "내용을 입력해 주세요.", true);
+  if (category === "공지" || category === "나만보기") return msg($("writeMsg"), "공지와 나만보기는 카테고리 이름으로 쓸 수 없습니다.", true);
+  const b = $("writeSubmit"); b.disabled = true;
+  try {
+    if (editingId !== null) await store.update(editingId, {title, body, category, visibility, updated_at:new Date().toISOString()});
+    else await store.create({title, body, category, visibility});
+    const wasEdit = editingId !== null, id = editingId;
+    $("writeDlg").close(); editingId = null; cat = "전체"; await refresh();
+    if (wasEdit) openRead(id);
+  } catch (err) { console.error(err); msg($("writeMsg"), "저장하지 못했습니다. 글쓰기 허용 상태를 확인하고 다시 시도해 주세요.", true); }
+  finally { b.disabled = false; }
+});
+
+$("q").addEventListener("input", e => { q = e.target.value.trim().toLowerCase(); shown = 10; renderPosts(); });
+$("more").addEventListener("click", () => { shown += 10; renderPosts(); });
+$("menuBtn").addEventListener("click", e => {
+  const open = $("mainnav").classList.toggle("open");
+  e.currentTarget.setAttribute("aria-expanded", open);
+  e.currentTarget.setAttribute("aria-label", open ? "메뉴 닫기" : "메뉴 열기");
+});
+
+/* ===== 시작 ===== */
+(async () => {
+  $("demoStrip").hidden = REMOTE;
+  renderAll();
+  try { user = await store.session(); } catch { user = null; }
+  store.onChange(u => { const changed = (u && u.id) !== (user && user.id); user = u; if (changed) refresh(); });
+  await refresh();
+})();
 </script>
 </body>
 </html>
