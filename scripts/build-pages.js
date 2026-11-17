@@ -24,6 +24,7 @@ const arg = name => { const i = args.indexOf(name); return i >= 0 ? args[i + 1] 
 const OUT = path.resolve(arg("--out") || ROOT);
 const POSTS_JSON = arg("--posts-json");
 const NO_IMAGES = args.includes("--no-images");
+const ATT_DIR = arg("--attachments-dir"); // 테스트용. Supabase 보관함 대신 이 폴더에서 첨부 사진을 읽는다
 
 const SITE_URL = "https://mopnt135.github.io/test-261117/";
 const SITE_NAME = "삼색펜";
@@ -55,13 +56,13 @@ async function loadPosts() {
   const base = `${SUPABASE_URL.replace(/\/$/, "")}/rest/v1/posts`;
   const headers = { apikey: SUPABASE_KEY, Authorization: `Bearer ${SUPABASE_KEY}` };
   const q = cols => `${base}?select=${cols}&visibility=eq.public&order=created_at.desc&limit=1000`;
-  let res = await fetch(q("id,title,body,category,summary,visibility,created_at,updated_at"), { headers });
-  if (res.status === 400) res = await fetch(q("id,title,body,category,visibility,created_at,updated_at"), { headers }); // summary 칸이 아직 없을 때
+  let res = await fetch(q("id,title,body,category,summary,visibility,created_at,updated_at,attachments"), { headers });
+  if (res.status === 400) res = await fetch(q("id,title,body,category,visibility,created_at,updated_at,attachments"), { headers }); // summary 칸이 아직 없을 때
   if (!res.ok) throw new Error(`Supabase 에서 글을 읽지 못했습니다: ${res.status}`);
   return res.json();
 }
 
-const imgVersion = p => (Date.parse(p.updated_at || p.created_at) || 0).toString(36);
+const imgVersion = p => (Date.parse(p.updated_at || p.created_at) || 0).toString(36) + CARD_DESIGN;
 const describe = p => {
   const s = (p.summary || "").trim();
   if (s) return s.slice(0, 160);
@@ -163,28 +164,85 @@ a:focus-visible{outline:3px solid var(--red);outline-offset:3px}
 `;
 }
 
-/* ---------- 썸네일 카드 (1200×630) ---------- */
-function cardHtml({ title, label, isNotice, fontCss }) {
+/* ---------- 썸네일 카드 (1200×630) ----------
+ * 글마다 다르게: 제목 + 본문 앞 세 줄(빨강, 주황, 민트 표시) + 날짜.
+ * 글에 사진(JPG, PNG, GIF)이 첨부돼 있으면 첫 사진을 오른쪽에 넣는다.
+ */
+const CARD_DESIGN = "c2"; // 카드 디자인을 바꾸면 이 값을 바꾼다. 썸네일 주소의 ?v= 가 바뀌어 카카오톡이 새로 가져간다
+const LINE_MAX = 60;
+// 사진이 있으면 세 줄(두 줄까지 줄바꿈), 없으면 네 줄
+async function cardContent(p) { const image = await thumbImage(p); return { image, lines: excerptLines(p, image ? 3 : 4) }; }
+function excerptLines(p, n = 3) {
+  const lines = String(p.body || "").split(/\n+/).map(l => l.replace(/\s+/g, " ").trim()).filter(l => l && l !== p.title);
+  const s = String(p.summary || "").trim();
+  return (s ? [s, ...lines] : lines).slice(0, n).map(l => l.length > LINE_MAX ? l.slice(0, LINE_MAX).trim() + "…" : l);
+}
+
+function cardHtml({ title, label, isNotice, date, lines = [], image, fontCss }) {
+  const withImg = !!image;
+  const tSize = title.length > (withImg ? 22 : 30) ? 54 : 64;
   return `<!doctype html><html lang="ko"><head><meta charset="utf-8"><style>
 ${fontCss || ""}
-*{box-sizing:border-box;margin:0}
+*{box-sizing:border-box;margin:0;padding:0}
 html,body{width:1200px;height:630px}
-body{background:#fff;color:#0B0B0B;font-family:"Noto Sans KR","Noto Sans CJK KR","Apple SD Gothic Neo",sans-serif;display:flex;flex-direction:column;justify-content:space-between;padding:64px 72px 0;position:relative;overflow:hidden}
-.brand{display:flex;align-items:center;gap:18px;font-size:38px;font-weight:900;letter-spacing:-.01em}
-.pens{display:flex;gap:6px;align-items:flex-end}.pens i{display:block;width:12px}
-.pens i:nth-child(1){height:44px;background:#D2141B}.pens i:nth-child(2){height:33px;background:#FF7A1A}.pens i:nth-child(3){height:22px;background:#7EEBD0}
-.label{display:inline-flex;align-items:center;gap:12px;font-size:30px;font-weight:700;color:#C2410C;margin-bottom:18px}
-.label.notice{color:#fff;background:#D2141B;padding:4px 18px}
-.label:not(.notice)::before{content:"";width:16px;height:16px;background:#D2141B}
-h1{font-size:${title.length > 34 ? 62 : 74}px;line-height:1.22;font-weight:900;letter-spacing:-.025em;display:-webkit-box;-webkit-line-clamp:3;-webkit-box-orient:vertical;overflow:hidden;word-break:keep-all}
-.foot{display:flex;justify-content:space-between;align-items:center;font-size:26px;color:#545454;padding:0 0 34px;border-top:3px solid #0B0B0B;padding-top:22px}
+body{background:#fff;color:#0B0B0B;font-family:"Noto Sans KR","Noto Sans CJK KR","Apple SD Gothic Neo",sans-serif;position:relative;overflow:hidden;display:flex;gap:44px;padding:52px 64px 66px}
+.main{flex:1;min-width:0;display:flex;flex-direction:column}
+.top{display:flex;align-items:center;justify-content:space-between;gap:16px}
+.brand{display:flex;align-items:center;gap:14px;font-size:32px;font-weight:900;letter-spacing:-.01em}
+.pens{display:flex;gap:5px;align-items:flex-end}.pens i{display:block;width:10px}
+.pens i:nth-child(1){height:36px;background:#D2141B}.pens i:nth-child(2){height:27px;background:#FF7A1A}.pens i:nth-child(3){height:18px;background:#7EEBD0}
+.label{font-size:24px;font-weight:700;color:#C2410C;white-space:nowrap}
+.label.notice{color:#fff;background:#D2141B;padding:2px 14px}
+h1{margin-top:34px;font-size:${tSize}px;line-height:1.2;font-weight:900;letter-spacing:-.025em;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;word-break:keep-all;padding-bottom:22px;border-bottom:3px solid #0B0B0B}
+ul{list-style:none;margin-top:24px;display:flex;flex-direction:column;gap:12px}
+li{display:flex;gap:16px;align-items:flex-start;font-size:${withImg ? 26 : 30}px;line-height:1.45;color:#2A2A2A}
+li i{flex:none;width:14px;height:14px;margin-top:${withImg ? 12 : 14}px}
+li span{display:-webkit-box;-webkit-line-clamp:${withImg ? 2 : 1};-webkit-box-orient:vertical;overflow:hidden;word-break:keep-all}
+li:nth-child(1) i{background:#D2141B}li:nth-child(2) i{background:#FF7A1A}li:nth-child(3) i{background:#7EEBD0}li:nth-child(4) i{background:#0B0B0B}
+.foot{margin-top:auto;display:flex;justify-content:space-between;font-size:22px;color:#545454}
+.pic{flex:none;width:400px;height:100%;border:3px solid #0B0B0B;background:#F4F4F4 center/cover no-repeat}
 .bars{position:absolute;left:0;right:0;bottom:0;height:14px;display:flex}.bars i{flex:1}
 </style></head><body>
-<div class="brand"><span class="pens"><i></i><i></i><i></i></span>${SITE_NAME}</div>
-<div><span class="label${isNotice ? " notice" : ""}">${esc(label)}</span><h1>${esc(title)}</h1></div>
-<div class="foot"><span>AIPM 복습 노트</span><span>mopnt135.github.io/test-261117</span></div>
+<div class="main">
+  <div class="top"><div class="brand"><span class="pens"><i></i><i></i><i></i></span>${SITE_NAME}</div><span class="label${isNotice ? " notice" : ""}">${esc(label)}</span></div>
+  <h1>${esc(title)}</h1>
+  <ul>${lines.map(l => `<li><i></i><span>${esc(l)}</span></li>`).join("")}</ul>
+  <div class="foot"><span>${esc(date || "AIPM 복습 노트")}</span><span>mopnt135.github.io/test-261117</span></div>
+</div>
+${withImg ? `<div class="pic" style="background-image:url('${image}')"></div>` : ""}
 <div class="bars"><i style="background:#D2141B"></i><i style="background:#FF7A1A"></i><i style="background:#7EEBD0"></i></div>
 </body></html>`;
+}
+
+/* 첨부 사진 가져오기. 형식은 파일 앞부분(서명)으로 다시 확인하고, 아니면 사진 없이 그린다 */
+const IMG_MAX = 8 * 1024 * 1024;
+const sniff = b => b[0] === 0x89 && b[1] === 0x50 && b[2] === 0x4E && b[3] === 0x47 ? "image/png"
+  : b[0] === 0xFF && b[1] === 0xD8 && b[2] === 0xFF ? "image/jpeg"
+  : b.slice(0, 4).toString("latin1") === "GIF8" ? "image/gif" : null;
+async function thumbImage(p) {
+  const a = (Array.isArray(p.attachments) ? p.attachments : []).find(x => x && /^image\/(png|jpeg|gif)$/.test(x.type) && typeof x.path === "string");
+  if (!a) return null;
+  let buf = null;
+  try {
+    if (ATT_DIR) {
+      const file = path.resolve(ATT_DIR, a.path);
+      if (!file.startsWith(path.resolve(ATT_DIR) + path.sep)) return null;
+      buf = fs.readFileSync(file);
+    } else if (SUPABASE_URL && SUPABASE_KEY) {
+      const base = SUPABASE_URL.replace(/\/$/, "") + "/storage/v1";
+      const key = a.path.split("/").map(encodeURIComponent).join("/");
+      const headers = { apikey: SUPABASE_KEY, Authorization: `Bearer ${SUPABASE_KEY}`, "Content-Type": "application/json" };
+      const r = await fetch(`${base}/object/sign/attachments/${key}`, { method: "POST", headers, body: JSON.stringify({ expiresIn: 120 }) });
+      if (!r.ok) return null;
+      const { signedURL } = await r.json();
+      const img = await fetch(base + signedURL);
+      if (!img.ok) return null;
+      buf = Buffer.from(await img.arrayBuffer());
+    }
+  } catch (e) { console.error(`${p.id}번 글 사진을 가져오지 못해 사진 없이 그립니다: ${e.message}`); return null; }
+  if (!buf || buf.length > IMG_MAX) return null;
+  const type = sniff(buf);
+  return type ? `data:${type};base64,${buf.toString("base64")}` : null;
 }
 
 function fontCssFromEnv() {
@@ -199,6 +257,7 @@ async function drawCards(cards) {
   const { chromium } = require("playwright");
   const browser = await chromium.launch();
   const page = await browser.newPage({ viewport: { width: 1200, height: 630 }, deviceScaleFactor: 1 });
+  await page.route(/^https?:/, r => r.abort()); // 카드 안에서는 바깥 주소를 불러오지 않는다
   const fontCss = fontCssFromEnv();
   for (const c of cards) {
     await page.setContent(cardHtml({ ...c, fontCss }), { waitUntil: "load" });
@@ -216,7 +275,7 @@ function sitemap(entries) {
 }
 const robots = () => `User-agent: *\nAllow: /\nSitemap: ${SITE_URL}sitemap.xml\n`;
 
-(async () => {
+async function main() {
   const notices = [readNotice("NOTICE_RULES"), readNotice("NOTICE")];
   const fetched = (await loadPosts()).filter(p => p.visibility === undefined || p.visibility === "public");
   const all = [...notices, ...fetched].filter(p => safeId(p.id) && p.title && p.body && p.created_at);
@@ -234,16 +293,19 @@ const robots = () => `User-agent: *\nAllow: /\nSitemap: ${SITE_URL}sitemap.xml\n
     const dir = path.join(pDir, safeId(p.id));
     fs.mkdirSync(dir, { recursive: true });
     fs.writeFileSync(path.join(dir, "index.html"), postPage(p));
-    cards.push({ file: path.join(dir, "og.png"), title: p.title, label: p.notice ? "공지" : p.category, isNotice: !!p.notice });
+    if (!NO_IMAGES) cards.push({ file: path.join(dir, "og.png"), title: p.title, label: p.notice ? "공지" : p.category, isNotice: !!p.notice,
+      date: `${kstDate(p.created_at)} · AIPM 복습 노트`, ...await cardContent(p) });
   }
   fs.mkdirSync(path.join(OUT, "og"), { recursive: true });
-  cards.push({ file: path.join(OUT, "og", "site.png"), title: "중요도를 세 가지 색으로 표시하는 AIPM 복습 노트", label: "블로그", isNotice: false });
+  cards.push({ file: path.join(OUT, "og", "site.png"), title: "AIPM 수업 복습 노트", label: "블로그", isNotice: false,
+    lines: ["가장 중요한 내용은 빨강으로", "함께 알아 둘 내용은 주황으로", "참고할 내용은 민트로 표시합니다"] });
   await drawCards(cards);
 
   fs.writeFileSync(path.join(OUT, "sitemap.xml"), sitemap(all.map(p => ({ loc: `${SITE_URL}p/${safeId(p.id)}/`, lastmod: p.updated_at || p.created_at }))));
   fs.writeFileSync(path.join(OUT, "robots.txt"), robots());
 
   console.log(`글 페이지 ${all.length}개 (공지 ${notices.length}, 공개글 ${all.length - notices.length})${NO_IMAGES ? ", 썸네일 생략" : `, 썸네일 ${cards.length}장`}${removed.length ? `, 지운 페이지 ${removed.join(", ")}` : ""}`);
-})().catch(e => { console.error(e.message); process.exit(1); });
+}
 
-module.exports = { describe, postPage };
+if (require.main === module) main().catch(e => { console.error(e.message); process.exit(1); });
+module.exports = { describe, postPage, cardHtml, excerptLines, imgVersion, thumbImage };

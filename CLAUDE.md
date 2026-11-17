@@ -29,7 +29,7 @@ AI 코딩 에이전트가 이 저장소에서 일할 때 가장 먼저 읽는 �
 | `supabase-setup.sql` | 서버 표, 권한 규칙(RLS), 파일 보관함 설정. 여러 번 실행해도 안전해야 함 |
 | `tests/e2e.js` | 화면 테스트 61건 (Playwright, 체험 모드, 측정 ID 를 비운 복사본으로 실행) |
 | `tests/rls_test.py` | 서버 권한 테스트 25건 (로컬 PostgreSQL) |
-| `tests/pages_test.js` | 검색·공유 페이지 생성기 테스트 13건 |
+| `tests/pages_test.js` | 검색·공유 페이지 생성기 테스트 17건 |
 | `tests/stub_supabase.sql` | 로컬에서 Supabase 를 흉내 내는 준비 파일 |
 | `tests/fixtures/` | 첨부 테스트용 파일 |
 | `docs/reports/` | 테스트 보고서 PDF |

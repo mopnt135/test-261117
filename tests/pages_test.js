@@ -10,6 +10,10 @@ const path = require("path");
 const { execFileSync } = require("child_process");
 
 const ROOT = path.resolve(__dirname, "..");
+const FIX = path.join(__dirname, "fixtures");
+// 생성기 함수를 직접 부를 때 쓸 첨부 폴더 (모듈이 읽을 때 인자를 본다)
+process.argv.push("--attachments-dir", FIX);
+const gen = require(path.join(ROOT, "scripts/build-pages.js"));
 const SITE = "https://mopnt135.github.io/test-261117/";
 const tmp = fs.mkdtempSync(path.join(os.tmpdir(), "samsaekpen-pages-"));
 const out = path.join(tmp, "site");
@@ -56,7 +60,7 @@ check("G3", "검색 설명이 비어 있으면 본문 앞 120자에 … 를 붙�
 });
 check("G4", "썸네일과 주소는 전체 주소(https://…)로 적는다", () => {
   const h = read("p/12/index.html");
-  const ok = meta(h, "property", "og:image") === `${SITE}p/12/og.png?v=${Date.parse("2026-11-11T01:00:00Z").toString(36)}` && meta(h, "property", "og:url") === `${SITE}p/12/`
+  const ok = meta(h, "property", "og:image") === `${SITE}p/12/og.png?v=${gen.imgVersion(posts[0])}` && meta(h, "property", "og:url") === `${SITE}p/12/`
     && h.includes(`<link rel="canonical" href="${SITE}p/12/">`) && meta(h, "name", "twitter:card") === "summary_large_image";
   return [ok, meta(h, "property", "og:image")];
 });
@@ -101,8 +105,47 @@ check("G12", "저장소의 p/ 폴더는 생성기 결과와 같다 (손으로 �
   return [same, same ? "공지 페이지 2개 같음" : "다름. node scripts/build-pages.js 를 다시 실행하세요"];
 });
 
+check("G14", "썸네일 카드에 글 제목과 본문 앞줄이 들어가고, HTML 기호는 글자로 바뀐다", () => {
+  const p = { title: "<b>제목</b>", body: "첫 줄 <script>x</script>\n\n둘째 줄\n셋째 줄\n넷째 줄\n다섯째 줄" };
+  const lines = gen.excerptLines(p, 4);
+  const h = gen.cardHtml({ title: p.title, label: "실습 기록", lines });
+  const ok = lines.length === 4 && lines[3] === "넷째 줄" && h.includes("&lt;b&gt;제목&lt;/b&gt;") && h.includes("첫 줄 &lt;script&gt;") && !h.includes("<script>x");
+  return [ok, `앞줄: ${lines.join(" / ")}`];
+});
+check("G15", "검색 설명이 있으면 카드 첫 줄로, 긴 줄은 60자에서 자른다", () => {
+  const l = gen.excerptLines({ title: "t", summary: "요약 한 줄", body: "가".repeat(100) }, 3);
+  return [l[0] === "요약 한 줄" && l[1].length === 61 && l[1].endsWith("…"), `${l[0]} / ${l[1].length}자`];
+});
+
+(async () => {
+  const pic = async attachments => gen.thumbImage({ id: 1, attachments });
+  const png = await pic([{ path: "note.pdf", type: "application/pdf" }, { path: "red.png", type: "image/png" }]);
+  const fake = await pic([{ path: "fake.png", type: "image/png" }]);
+  const escape = await pic([{ path: "../e2e.js", type: "image/png" }]);
+  const none = await pic([]);
+  check("G16", "첨부 중 첫 사진만 카드에 넣고, 가짜 사진과 폴더 밖 경로는 넣지 않는다", () =>
+    [png && png.startsWith("data:image/png;base64,") && fake === null && escape === null && none === null,
+     `진짜 PNG ${png ? "넣음" : "안 넣음"}, 가짜 PNG ${fake ? "넣음" : "안 넣음"}, 폴더 밖 ${escape ? "넣음" : "안 넣음"}`]);
+
+  let pw = null; try { pw = require("playwright"); } catch {}
+  if (pw) {
+    const out2 = path.join(tmp, "site2");
+    const two = [posts[0], { ...posts[2], attachments: [{ path: "orange.jpg", type: "image/jpeg" }] }];
+    fs.writeFileSync(postsFile, JSON.stringify(two));
+    execFileSync("node", [path.join(ROOT, "scripts/build-pages.js"), "--out", out2, "--posts-json", postsFile, "--attachments-dir", FIX], { encoding: "utf8" });
+    const a = fs.readFileSync(path.join(out2, "p/12/og.png")), b = fs.readFileSync(path.join(out2, "p/14/og.png"));
+    check("G17", "글마다 썸네일 그림이 다르고 크기는 1200×630 이다", () => {
+      const size = buf => [buf.readUInt32BE(16), buf.readUInt32BE(20)].join("×");
+      return [!a.equals(b) && size(a) === "1200×630" && size(b) === "1200×630", `12번 ${a.length}B, 14번 ${b.length}B, ${size(a)}`];
+    });
+  }
+  finish();
+})();
+
+function finish() {
 fs.rmSync(tmp, { recursive: true, force: true });
 for (const r of results) console.log(`${r.pass ? "PASS" : "FAIL"} ${r.id} ${r.name} — ${r.detail}`);
 const fails = results.filter(r => !r.pass).length;
 console.log(`\n${results.length}건 중 ${results.length - fails}건 통과, ${fails}건 실패`);
 process.exit(fails ? 1 : 0);
+}
