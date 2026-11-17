@@ -56,9 +56,14 @@ check("G3", "검색 설명이 비어 있으면 본문 앞 120자에 … 를 붙�
 });
 check("G4", "썸네일과 주소는 전체 주소(https://…)로 적는다", () => {
   const h = read("p/12/index.html");
-  const ok = meta(h, "property", "og:image") === `${SITE}p/12/og.png` && meta(h, "property", "og:url") === `${SITE}p/12/`
+  const ok = meta(h, "property", "og:image") === `${SITE}p/12/og.png?v=${Date.parse("2026-11-11T01:00:00Z").toString(36)}` && meta(h, "property", "og:url") === `${SITE}p/12/`
     && h.includes(`<link rel="canonical" href="${SITE}p/12/">`) && meta(h, "name", "twitter:card") === "summary_large_image";
   return [ok, meta(h, "property", "og:image")];
+});
+check("G13", "글을 고치면 썸네일 주소의 ?v= 값이 바뀐다 (카카오톡 캐시 대비)", () => {
+  const v = h => meta(h, "property", "og:image").split("?v=")[1];
+  const a = v(read("p/12/index.html")), b = v(read("p/14/index.html"));
+  return [a && b && a !== b && meta(read("p/12/index.html"), "name", "twitter:image").endsWith(`?v=${a}`), `12번 v=${a}, 14번 v=${b}`];
 });
 check("G5", "제목과 본문의 HTML 기호는 글자로 바뀐다", () => {
   const h = read("p/13/index.html");

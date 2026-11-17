@@ -61,6 +61,7 @@ async function loadPosts() {
   return res.json();
 }
 
+const imgVersion = p => (Date.parse(p.updated_at || p.created_at) || 0).toString(36);
 const describe = p => {
   const s = (p.summary || "").trim();
   if (s) return s.slice(0, 160);
@@ -72,7 +73,8 @@ const describe = p => {
 function postPage(p) {
   const id = safeId(p.id);
   const url = `${SITE_URL}p/${id}/`;
-  const img = `${SITE_URL}p/${id}/og.png`;
+  // 카카오톡 등은 썸네일을 주소 기준으로 기억한다. 글을 고치면 주소 끝 ?v= 가 바뀌어 새 그림을 다시 가져간다
+  const img = `${SITE_URL}p/${id}/og.png?v=${imgVersion(p)}`;
   const title = `${p.title} · ${SITE_NAME}`;
   const desc = describe(p);
   const ld = {
