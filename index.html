@@ -308,6 +308,37 @@ const NOTICE = {
 내가 쓴 글은 글 상세 화면의 수정 버튼으로 고칠 수 있습니다.`
 };
 
+const NOTICE_RULES = {
+  id:"notice-rules", notice:true, category:"공지", visibility:"public", created_at:"2026-11-17T13:00:00+09:00",
+  title:"삼색펜 운영 기준",
+  body:`삼색펜을 함께 쓰기 위한 기준입니다.
+기준을 어기면 수정 요청, 글 삭제, 경고, 추방 순서로 조치합니다.
+
+불필요한 글의 기준
+1. 블로그 주제와 관계없는 광고나 홍보 글
+2. 같은 내용을 여러 번 올린 글
+3. 다른 사람의 글이나 사진을 출처 없이 옮긴 글
+4. 다른 사람의 이름, 연락처 같은 개인정보가 들어간 글
+5. 내용 없이 제목만 있거나 의미 없는 글자만 있는 글
+
+질 나쁜 이용자의 기준
+1. 다른 사람을 욕하거나 비하하는 사람
+2. 성별, 나이, 지역, 장애 등을 이유로 차별하는 사람
+3. 불필요한 글을 반복해서 올리는 사람
+4. 수정 요청을 받고도 같은 문제를 되풀이하는 사람
+5. 다른 사람인 척하거나 계정을 여러 개 만들어 쓰는 사람
+
+조치 방법
+1. 글에 문제가 있으면 수정 요청을 보냅니다. 3일 안에 고치지 않으면 글이 숨겨집니다.
+2. 심각한 글은 바로 지울 수 있습니다. 지운 글은 14일 동안 복구할 수 있습니다.
+3. 이용자 기준을 어기면 경고를 받습니다. 경고가 3회 쌓이면 자동으로 추방됩니다.
+4. 추방되면 올린 공개글이 모두 비공개로 바뀝니다.
+5. 모든 안내는 블로그에 로그인했을 때 화면으로만 보냅니다.
+
+나만보기 글 안내
+나만보기 글은 다른 방문자에게는 보이지 않지만, 관리자는 운영을 위해 볼 수 있습니다.`
+};
+
 const ROLE_NAME = {pending:"승인 대기", writer:"글쓴이", admin:"관리자"};
 const $ = id => document.getElementById(id);
 const esc = s => String(s ?? "").replace(/[&<>"']/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
@@ -364,7 +395,7 @@ let user = null, role = null, members = [], posts = [], loading = true, loadErro
 let cat = "전체", q = "", shown = 10, signupMode = false, afterLogin = "#", firstRender = true;
 const canWrite = () => !!user && (role === "writer" || role === "admin");
 const isAdmin = () => !!user && role === "admin";
-const allPosts = () => [NOTICE, ...posts];
+const allPosts = () => [NOTICE_RULES, NOTICE, ...posts];
 const findPost = id => allPosts().find(p => String(p.id) === String(id));
 
 /* ===== 주소 → 화면 ===== */
@@ -440,10 +471,10 @@ const views = {
     const recent = allPosts().slice(0, 5);
     return `
     <section class="hero"><div class="wrap hero-grid">
-      <div><div class="label">공지</div><h1 tabindex="-1">삼색펜 <mark>이용 안내</mark></h1></div>
+      <div><div class="label">공지</div><h1 tabindex="-1">삼색펜 <mark>운영 기준</mark></h1></div>
       <div>
         <div class="meta"><span>공지사항</span><span>2026.11.17 (KST)</span></div>
-        <div class="hero-actions"><a class="btn sub" href="#post-notice">공지 읽기</a>${user ? "" : `<a class="link2" href="#login">로그인하기</a>`}</div>
+        <div class="hero-actions"><a class="btn sub" href="#post-notice-rules">공지 읽기</a>${user ? "" : `<a class="link2" href="#login">로그인하기</a>`}</div>
       </div>
     </div></section>
     <div class="wrap"><nav class="tiles" aria-label="바로가기">
@@ -488,7 +519,7 @@ const views = {
   },
 
   post(r){
-    if (loading && r.id !== "notice") return `<div class="wrap page"><p class="empty">글을 불러오는 중입니다.</p></div>`;
+    if (loading && !String(r.id).startsWith("notice")) return `<div class="wrap page"><p class="empty">글을 불러오는 중입니다.</p></div>`;
     const p = findPost(r.id);
     if (!p) return `<div class="wrap page">${head("글을 찾을 수 없습니다", "글 상세")}
       <div class="notice-box"><p>지워진 글이거나 나만보기 글일 수 있어요. 나만보기 글은 쓴 사람으로 로그인해야 보입니다.</p>
