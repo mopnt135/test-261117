@@ -85,13 +85,22 @@ function postPage(p) {
     articleSection: p.category, inLanguage: "ko-KR",
     author: { "@type": "Organization", name: SITE_NAME }, publisher: { "@type": "Organization", name: SITE_NAME }
   };
+  // GA: 블로그 화면(index.html)과 같은 이름, 같은 값으로 보낸다. 주소가 같아(p/글번호/) GA 보고서에서 한 줄로 모인다.
+  // 이메일, 댓글 같은 개인정보는 이 페이지에 없으므로 보내지 않는다. 이벤트 규칙은 docs/ANALYTICS.md
+  const gaPost = { post_id: String(id), post_title: String(p.title).slice(0, 100), post_category: String(p.notice ? "공지" : p.category).slice(0, 100),
+    is_notice: !!p.notice, attachment_count: Array.isArray(p.attachments) ? p.attachments.length : 0, view_source: "static" };
   const ga = GA_ID ? `
 <script>
   (function () {
-    try { if (localStorage.getItem("samsaekpen-ga-optout") === "1") { window["ga-disable-${GA_ID}"] = true; return; } } catch (e) {}
+    var ls = function (k) { try { return localStorage.getItem(k); } catch (e) { return null; } };
+    if (ls("samsaekpen-ga-optout") === "1") { window["ga-disable-${GA_ID}"] = true; return; }
     var s = document.createElement("script"); s.async = true; s.src = "https://www.googletagmanager.com/gtag/js?id=${GA_ID}"; document.head.appendChild(s);
     window.dataLayer = window.dataLayer || []; window.gtag = function () { dataLayer.push(arguments); };
-    gtag("js", new Date()); gtag("config", "${GA_ID}", { page_type: "post_static", post_id: ${JSON.stringify(String(id))} });
+    var post = ${JSON.stringify(gaPost).replace(/</g, "\\u003c")};
+    gtag("js", new Date());
+    if (ls("samsaekpen-ga-internal") === "1") gtag("set", { traffic_type: "internal" });
+    gtag("config", "${GA_ID}", { page_type: post.is_notice ? "notice" : "post", view_source: "static" });
+    gtag("event", "post_view", post);
   })();
 </script>` : "";
   return `<!doctype html>

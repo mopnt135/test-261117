@@ -116,7 +116,7 @@ flowchart LR
 ## 6. 방문 통계 (GA4)
 
 - `GA_MEASUREMENT_ID` 가 있을 때만 gtag.js 를 불러온다. 자동 page_view 는 끄고(`send_page_view: false`) 화면이 바뀔 때 `trackPageView()` 가 직접 보낸다.
-- `#post-12` 같은 주소는 `/post/12` 처럼 바꿔 page_path 로 보낸다.
+- GA4 는 page_location(전체 주소)으로 경로를 정한다. 글(`#post-12`)은 검색·공유 페이지와 같은 실제 주소 `p/12/` 로 보내서, 어느 쪽으로 읽어도 GA 에서 한 줄로 모인다. 정적 페이지도 같은 `post_view` 를 보낸다. 자세한 표는 `docs/ANALYTICS.md` 3장.
 - 관리자는 `traffic_type=internal` 로 표시해 GA 에서 거른다.
 - 방문자가 화면 맨 아래 "방문 통계 끄기"를 누르면 localStorage 에 기억하고 GA 를 멈춘다.
 - 이벤트 목록과 규칙: `docs/ANALYTICS.md`

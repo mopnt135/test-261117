@@ -50,10 +50,15 @@ a:focus-visible{outline:3px solid var(--red);outline-offset:3px}
 </style>
 <script>
   (function () {
-    try { if (localStorage.getItem("samsaekpen-ga-optout") === "1") { window["ga-disable-G-5HJBBKMVE3"] = true; return; } } catch (e) {}
+    var ls = function (k) { try { return localStorage.getItem(k); } catch (e) { return null; } };
+    if (ls("samsaekpen-ga-optout") === "1") { window["ga-disable-G-5HJBBKMVE3"] = true; return; }
     var s = document.createElement("script"); s.async = true; s.src = "https://www.googletagmanager.com/gtag/js?id=G-5HJBBKMVE3"; document.head.appendChild(s);
     window.dataLayer = window.dataLayer || []; window.gtag = function () { dataLayer.push(arguments); };
-    gtag("js", new Date()); gtag("config", "G-5HJBBKMVE3", { page_type: "post_static", post_id: "notice" });
+    var post = {"post_id":"notice","post_title":"삼색펜 이용 안내","post_category":"공지","is_notice":true,"attachment_count":0,"view_source":"static"};
+    gtag("js", new Date());
+    if (ls("samsaekpen-ga-internal") === "1") gtag("set", { traffic_type: "internal" });
+    gtag("config", "G-5HJBBKMVE3", { page_type: post.is_notice ? "notice" : "post", view_source: "static" });
+    gtag("event", "post_view", post);
   })();
 </script>
 </head>

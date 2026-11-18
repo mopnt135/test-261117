@@ -8,6 +8,7 @@
 const { chromium } = require("playwright");
 const fs = require("fs");
 const path = require("path");
+const NodeURL = require("url").URL; // 아래 URL 은 테스트 페이지 주소라서 이름이 겹친다
 
 const ROOT = path.resolve(__dirname, "..");
 // 테스트가 실제 GA 로 가짜 방문을 보내지 않도록, 측정 ID 를 비운 복사본으로 테스트한다
@@ -228,13 +229,17 @@ const tests = [
   ["H", "T70", "첫 화면을 열면 홈 page_view 가 1건 기록된다", async () => {
     await goto(); await wait(300);
     const ev = await page.evaluate(() => window.samsaekpenEvents.filter(e => e.name === "page_view"));
-    return expect(ev.length === 1 && ev[0].params.page_type === "home" && ev[0].params.page_path === "/", `page_view ${ev.length}건, ${ev[0] && ev[0].params.page_path}`);
+    // GA4 는 page_location 으로 경로를 정한다. 첫 화면은 사이트 주소 그대로 (배포 주소에서는 /test-261117/)
+    const home = new NodeURL(".", URL).href;
+    return expect(ev.length === 1 && ev[0].params.page_type === "home" && ev[0].params.page_location === home && ev[0].params.page_path === new NodeURL(home).pathname && ev[0].params.view_source === "app", `page_view ${ev.length}건, ${ev[0] && ev[0].params.page_location}`);
   }],
   ["H", "T71", "글을 열면 글 경로의 page_view 와 post_view 가 기록된다", async () => {
     await page.click(".post h3 a >> nth=0"); await wait(500);
     const ev = await page.evaluate(() => window.samsaekpenEvents.filter(e => ["page_view", "post_view"].includes(e.name)).slice(-2));
     const pv = ev.find(e => e.name === "page_view"), po = ev.find(e => e.name === "post_view");
-    return expect(pv && pv.params.page_path.startsWith("/post/") && po && po.params.post_title && po.params.post_id, `${pv && pv.params.page_path}, 글: ${po && po.params.post_title}`);
+    // 글은 검색·공유 페이지와 같은 실제 주소 p/<글번호>/ 로 보낸다
+    const want = new NodeURL(`p/${po && po.params.post_id}/`, new NodeURL(".", URL)).href;
+    return expect(pv && pv.params.page_location === want && pv.params.page_path.endsWith(`/p/${po.params.post_id}/`) && po.params.post_title && po.params.view_source === "app", `${pv && pv.params.page_path}, 글: ${po && po.params.post_title}`);
   }],
   ["H", "T72", "본문 끝까지 보고 10초가 지나면 읽기 완료가 1번 기록된다", async () => {
     await page.evaluate(() => window.scrollTo(0, document.body.scrollHeight)); await wait(10600);
@@ -258,6 +263,19 @@ const tests = [
     const types = ev.filter(e => e.name === "comment_submit").map(e => e.params.comment_type);
     const roleSet = ev.some(e => e.name === "user_properties" && e.params.user_role === "member");
     return expect(before.includes("login") && types.join(",") === "comment,reply" && roleSet, `login ${before.includes("login") ? "있음" : "없음"}, 댓글 종류 ${types.join(",")}, 등급 member`);
+  }],
+  ["H", "T79", "검색어 속 이메일과 전화번호는 가려서 기록한다", async () => {
+    await goto("#list"); await page.fill("#q", "kim@test.kr 010-1234-5678 운영"); await wait(1400);
+    const sr = await page.evaluate(() => window.samsaekpenEvents.filter(e => e.name === "search").pop());
+    await page.fill("#q", ""); await wait(300);
+    return expect(sr && sr.params.search_term === "[이메일] [숫자] 운영", `기록된 검색어: ${sr && sr.params.search_term}`);
+  }],
+  ["H", "T85", "관리자로 로그인한 브라우저는 내부 방문으로 표시하고, 회원으로 로그인하면 표시를 지운다", async () => {
+    const flag = () => page.evaluate(() => localStorage.getItem("samsaekpen-ga-internal"));
+    await logout(); await login("boss@test.kr", true); const a = await flag();
+    await logout(); const b = await flag();
+    await login("kim@test.kr"); const c = await flag();
+    return expect(a === "1" && b === "1" && c === null, `관리자 ${a}, 로그아웃 뒤 ${b}, 회원 로그인 뒤 ${c}`);
   }],
   ["H", "T75", "이벤트에 이메일이나 댓글 내용이 담기지 않는다", async () => {
     const all = JSON.stringify(await page.evaluate(() => window.samsaekpenEvents));

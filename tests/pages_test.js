@@ -105,6 +105,16 @@ check("G12", "저장소의 p/ 폴더는 생성기 결과와 같다 (손으로 �
   return [same, same ? "공지 페이지 2개 같음" : "다름. node scripts/build-pages.js 를 다시 실행하세요"];
 });
 
+check("G18", "정적 페이지도 같은 주소 규칙으로 post_view 를 보내고, 제목 속 </script> 에 깨지지 않는다", () => {
+  const h = read("p/13/index.html");
+  const scripts = h.match(/<script>[\s\S]*?<\/script>/g) || [];
+  const ga = scripts.find(x => x.includes("gtag(")) || "";
+  const post = JSON.parse(ga.match(/var post = (\{.*?\});/)[1]);
+  const ok = post.post_id === "13" && post.post_title.startsWith("<script>") && post.view_source === "static" && post.post_category === "실습 기록"
+    && ga.includes('gtag("event", "post_view", post)') && ga.includes("samsaekpen-ga-internal") && ga.includes("samsaekpen-ga-optout")
+    && !/@|email|comment/i.test(JSON.stringify(post)) && (ga.match(/<\/script>/g) || []).length === 1;
+  return [ok, `post_view 값: ${Object.keys(post).join(", ")}`];
+});
 check("G14", "썸네일 카드에 글 제목과 본문 앞줄이 들어가고, HTML 기호는 글자로 바뀐다", () => {
   const p = { title: "<b>제목</b>", body: "첫 줄 <script>x</script>\n\n둘째 줄\n셋째 줄\n넷째 줄\n다섯째 줄" };
   const lines = gen.excerptLines(p, 4);

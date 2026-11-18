@@ -27,9 +27,9 @@ AI 코딩 에이전트가 이 저장소에서 일할 때 가장 먼저 읽는 �
 | `p/`, `og/`, `sitemap.xml`, `robots.txt` | 생성기 결과물. **손으로 고치지 않는다** |
 | `.github/workflows/seo-pages.yml` | 생성기를 하루 2번 돌려 커밋하는 GitHub Actions |
 | `supabase-setup.sql` | 서버 표, 권한 규칙(RLS), 파일 보관함 설정. 여러 번 실행해도 안전해야 함 |
-| `tests/e2e.js` | 화면 테스트 61건 (Playwright, 체험 모드, 측정 ID 를 비운 복사본으로 실행) |
+| `tests/e2e.js` | 화면 테스트 63건 (Playwright, 체험 모드, 측정 ID 를 비운 복사본으로 실행) |
 | `tests/rls_test.py` | 서버 권한 테스트 25건 (로컬 PostgreSQL) |
-| `tests/pages_test.js` | 검색·공유 페이지 생성기 테스트 17건 |
+| `tests/pages_test.js` | 검색·공유 페이지 생성기 테스트 18건 |
 | `tests/stub_supabase.sql` | 로컬에서 Supabase 를 흉내 내는 준비 파일 |
 | `tests/fixtures/` | 첨부 테스트용 파일 |
 | `docs/reports/` | 테스트 보고서 PDF |
@@ -45,7 +45,7 @@ AI 코딩 에이전트가 이 저장소에서 일할 때 가장 먼저 읽는 �
 7. **화면 글자는 한국어, 쉬운 말로 쓴다.** 오류 문구는 무엇이 잘못됐고 어떻게 고치는지 말한다.
 8. **공지 내용은 마음대로 바꾸지 않는다.** `NOTICE`, `NOTICE_RULES` 는 운영 정책이다. 바꿀 때는 사람의 확인을 받는다.
 9. **글별 검색 정보는 생성기로만 만든다.** 글 제목, 설명, 썸네일이 바뀌는 기능을 고치면 `scripts/build-pages.js` 와 `tests/pages_test.js` 도 같이 고친다. 생성 페이지에도 `esc()` 와 같은 처리를 한다.
-10. **방문 통계 이벤트는 `analytics.track()` 으로만 보낸다.** 이름과 값은 `docs/ANALYTICS.md` 를 따른다. 이메일, 댓글 본문, 비밀번호는 절대 보내지 않는다.
+10. **방문 통계 이벤트는 `analytics.track()` 으로만 보낸다.** 예외는 생성기가 만드는 정적 페이지의 GA 코드 하나다(`scripts/build-pages.js`). 둘 다 이름과 값은 `docs/ANALYTICS.md` 를 따르고, 글 주소는 `p/<글번호>/` 로 맞춘다. 이메일, 댓글 본문, 비밀번호는 절대 보내지 않는다.
 
 ## 디자인 규칙
 
