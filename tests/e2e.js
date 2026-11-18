@@ -17,10 +17,7 @@ const SOURCE = fs.readFileSync(path.join(ROOT, "index.html"), "utf8");
 if (!GA_ID_RE.test(SOURCE)) throw new Error("index.html 에서 GA_MEASUREMENT_ID 를 찾지 못했습니다");
 const withGaId = id => SOURCE.replace(GA_ID_RE, `const GA_MEASUREMENT_ID = "${id}";`);
 const TMP = fs.mkdtempSync(path.join(require("os").tmpdir(), "samsaekpen-e2e-"));
-// 날씨 카드 시험용 가짜 키. 실제 OpenWeatherMap 은 부르지 않는다 (아래 page.route)
-const WEATHER_KEY_RE = /const OPENWEATHER_API_KEY = "[^"]*";/;
-if (!WEATHER_KEY_RE.test(SOURCE)) throw new Error("index.html 에서 OPENWEATHER_API_KEY 를 찾지 못했습니다");
-fs.writeFileSync(path.join(TMP, "index.html"), withGaId("").replace(WEATHER_KEY_RE, 'const OPENWEATHER_API_KEY = "test-key";'));
+fs.writeFileSync(path.join(TMP, "index.html"), withGaId(""));
 const URL = "file://" + path.join(TMP, "index.html");
 const FIX = path.join(__dirname, "fixtures");
 const OUT = process.argv[2] || path.join(__dirname, "e2e-result.json");
@@ -46,7 +43,7 @@ const shot = async name => { if (SHOTS) await page.screenshot({ path: path.join(
 
 let postUrl = "";
 let catCalls = 0, catReply = { status: 500, body: "" };
-let weatherCalls = 0, weatherUrl = "", weatherReply = { status: 500, body: "" }, pokeCalls = 0, pokeReply = null;
+let pokeCalls = 0, pokeReply = null;
 
 const tests = [
   // A. 공통 화면
@@ -380,23 +377,8 @@ const tests = [
     return expect(m.includes("잠시 뒤 다시") && !disabled && ev.params.result === "error", m.trim());
   }],
 
-  ["J", "T94", "날씨 보기를 누르면 서울 날씨가 나오고, 키는 주소에만 담긴다", async () => {
-    weatherReply = { status: 200, body: JSON.stringify({ dt: 1795000000, name: "Seoul", main: { temp: 12.34, feels_like: 10.6, humidity: 40 }, weather: [{ description: "맑음<script>" }] }) };
-    await goto(); const before = weatherCalls;
-    await page.click("#weatherBtn"); await wait(600);
-    const box = await text("#weatherBox");
-    const hasScript = await page.$("#weatherBox script");
-    const ev = await page.evaluate(() => window.samsaekpenEvents.filter(e => e.name === "weather_load").pop());
-    const u = new NodeURL(weatherUrl);
-    return expect(before === 0 && box.includes("12.3°C") && box.includes("체감 11°C") && box.includes("습도 40%") && box.includes("맑음<script>") && !hasScript
-      && u.searchParams.get("lat") === "37.5665" && u.searchParams.get("appid") === "test-key" && ev.params.result === "ok" && !JSON.stringify(ev.params).includes("test-key"), box.replace(/\s+/g, " ").trim());
-  }],
-  ["J", "T95", "날씨는 10분 안에 다시 누르면 서버에 다시 묻지 않는다", async () => {
-    const before = weatherCalls; await page.click("#weatherBtn"); await wait(400);
-    return expect(weatherCalls === before, `추가 요청 ${weatherCalls - before}번`);
-  }],
   ["J", "T96", "포켓몬 만나기를 누르면 한국어 이름, 분류, 설명과 그림이 나온다", async () => {
-    pokeReply = null; await page.click("#pokeBtn"); await page.waitForSelector("#pokeFrame img", { timeout: 5000 });
+    pokeReply = null; await goto(); await page.click("#pokeBtn"); await page.waitForSelector("#pokeFrame img", { timeout: 5000 });
     const info = await text("#pokeInfo"), src = await page.getAttribute("#pokeFrame img", "src");
     const ev = await page.evaluate(() => window.samsaekpenEvents.filter(e => e.name === "pokemon_load").pop());
     await page.$eval(".fun", e => e.scrollIntoView()); await shot("home-fun");
@@ -416,17 +398,11 @@ const tests = [
     await page.setViewportSize({ width: 1280, height: 900 });
     return expect(desk.left && desk.under && mob, `컴퓨터 왼쪽 ${desk.left}, 계정 카드 아래 ${desk.under}, 휴대폰 최근 글 아래 ${mob}`);
   }],
-  ["J", "T99", "날씨 키가 비어 있으면 방문자에게 날씨 카드가 보이지 않고, 관리자에게는 안내가 보인다", async () => {
-    const dir = fs.mkdtempSync(path.join(require("os").tmpdir(), "samsaekpen-nokey-"));
-    // 저장소의 실제 키와 상관없이, 키를 비운 복사본으로 시험한다
-    fs.writeFileSync(path.join(dir, "index.html"), withGaId("").replace(WEATHER_KEY_RE, 'const OPENWEATHER_API_KEY = "";'));
-    const open = async () => { await page.goto("file://" + path.join(dir, "index.html")); await wait(500); };
-    await open(); await logout(); await open();
-    const n = await count("#weatherBtn"), cards = await count(".fun-card");
-    await login("boss@test.kr", true); await open();
-    const hint = await page.$eval(".fun", e => e.textContent.includes("관리자에게만 보이는 안내"));
-    await logout();
-    return expect(n === 0 && cards === 2 && hint, `방문자: 날씨 버튼 ${n}개, 카드 ${cards}개 / 관리자 안내 ${hint ? "보임" : "없음"}`);
+  ["J", "T99", "쉬어가기는 고양이와 포켓몬 두 카드뿐이고, 날씨 API 는 코드에 없다", async () => {
+    await goto();
+    const cards = await count(".fun-card");
+    const noWeather = !/openweathermap|OPENWEATHER_API_KEY/i.test(SOURCE);
+    return expect(cards === 2 && noWeather, `카드 ${cards}개, 날씨 코드 ${noWeather ? "없음" : "남아 있음"}`);
   }],
 
   // G. 화면 크기와 테마
@@ -454,7 +430,6 @@ const tests = [
   await page.route(/googletagmanager\.com|google-analytics\.com/, r => r.abort());
   // 고양이 API 는 실제로 부르지 않고 가짜로 답한다. 사진은 테스트용 PNG 를 준다
   await page.route("https://api.thecatapi.com/**", r => { catCalls++; r.fulfill({ status: catReply.status, contentType: "application/json", headers: { "Access-Control-Allow-Origin": "*" }, body: catReply.body }); });
-  await page.route("https://api.openweathermap.org/**", r => { weatherCalls++; weatherUrl = r.request().url(); r.fulfill({ status: weatherReply.status, contentType: "application/json", headers: { "Access-Control-Allow-Origin": "*" }, body: weatherReply.body }); });
   await page.route("https://pokeapi.co/**", r => {
     pokeCalls++;
     const u = r.request().url();
