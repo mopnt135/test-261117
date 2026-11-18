@@ -197,10 +197,6 @@ aside h2{font-family:var(--f-display);font-weight:900;font-size:18px;margin:0 0 
 .fun-frame.poke img{object-fit:contain;padding:8px}
 .fun-frame p{color:var(--muted);font-size:15px;padding:16px;text-align:center;margin:0}
 .fun-card .msg{margin-top:8px}
-.weather-box{border:2px solid var(--fg);padding:14px 16px;margin:0 0 10px;min-height:96px}
-.weather-box .temp{font-family:var(--f-mono);font-size:30px;line-height:1.2}
-.weather-box .desc{font-weight:700}
-.weather-box .sub{color:var(--muted);font-size:14px}
 .poke-info{margin:0 0 10px}
 .poke-info b{font-family:var(--f-display);font-size:18px}
 .poke-info .no{font-family:var(--f-mono);color:var(--muted);font-size:14px;margin-right:6px}
@@ -406,10 +402,6 @@ const SUPABASE_ANON_KEY = "";
 /* ===== 설정: Google Analytics 4 측정 ID (G-로 시작). 비워 두면 GA 를 불러오지 않습니다 ===== */
 const GA_MEASUREMENT_ID = "G-5HJBBKMVE3";
 
-/* ===== 설정: OpenWeatherMap API 키. 비워 두면 날씨 카드를 방문자에게 보여주지 않습니다 =====
-   주의: 이 키는 블로그 코드에 그대로 보입니다. 무료 키만 넣고, 결제 수단을 연결한 키는 넣지 마세요. */
-const OPENWEATHER_API_KEY = "0743df45b7d6748010b6e4eb143e2ef8";
-const WEATHER_PLACE = { name: "서울", lat: 37.5665, lon: 126.9780 };
 
 /* ===== 방문 통계 (GA4) =====
    규칙: 이메일, 댓글 내용, 비밀번호 같은 개인정보는 절대 보내지 않는다.
@@ -709,7 +701,7 @@ function checkReadComplete(){
 }
 const go = hash => { if (location.hash === hash || (hash === "#" && !location.hash)) render(); else location.hash = hash; };
 
-/* ===== 쉬어가기: 고양이(The Cat API), 날씨(OpenWeatherMap), 포켓몬(PokéAPI) =====
+/* ===== 쉬어가기: 고양이(The Cat API), 포켓몬(PokéAPI) =====
    공통 규칙: 버튼을 누르기 전에는 외부로 요청하지 않는다. 받은 글자는 esc(), 그림 주소는 정해진 https 주소만 쓴다.
    실패해도 안내 문구만 나오고 블로그는 그대로 돈다. */
 const hostOk = (u, hosts) => { try { const x = new URL(u); return x.protocol === "https:" && hosts.some(h => x.hostname === h || x.hostname.endsWith("." + h)); } catch { return false; } };
@@ -752,43 +744,6 @@ const loadCat = () => funLoad("cat", "catBtn", "catMsg", "고양이를 부르는
   if ($("catBtn")) $("catBtn").textContent = "다른 고양이 보기";
 });
 
-/* 날씨 (키가 있을 때만) */
-let weather = null;
-const WEATHER_CACHE = "samsaekpen-weather";
-function weatherBody(){
-  if (!weather) return `<p class="sub">버튼을 누르면 ${esc(WEATHER_PLACE.name)}의 지금 날씨를 보여드려요.</p>`;
-  return `<div class="desc">${esc(weather.desc)}</div>
-    <div class="temp">${esc(weather.temp)}°C</div>
-    <div class="sub">체감 ${esc(weather.feels)}°C · 습도 ${esc(weather.hum)}% · ${esc(weather.at)} (KST) 기준</div>`;
-}
-function weatherCard(){
-  if (!OPENWEATHER_API_KEY) return isAdmin() ? `<section class="fun-card" aria-labelledby="wTitle"><h3 id="wTitle">날씨</h3>
-    <p class="hint">관리자에게만 보이는 안내: index.html 의 OPENWEATHER_API_KEY 에 OpenWeatherMap 키를 넣으면 방문자에게 날씨 카드가 보여요.</p></section>` : "";
-  return `<section class="fun-card" aria-labelledby="wTitle">
-    <h3 id="wTitle">${esc(WEATHER_PLACE.name)} 날씨</h3>
-    <p class="hint">공부하기 좋은 날씨인지 확인해 보세요. 자료: OpenWeatherMap</p>
-    <div class="weather-box" id="weatherBox">${weatherBody()}</div>
-    <button type="button" class="btn line" data-act="loadWeather" id="weatherBtn">${weather ? "다시 보기" : "날씨 보기"}</button>
-    <p class="msg" id="weatherMsg" role="status"></p>
-  </section>`;
-}
-const loadWeather = () => funLoad("weather", "weatherBtn", "weatherMsg", "날씨를 가져오는 중이에요.", async () => {
-  let w = null;
-  try { const c = JSON.parse(sessionStorage.getItem(WEATHER_CACHE) || "null"); if (c && Date.now() - c.saved < 10 * 60 * 1000) w = c.w; } catch {}
-  if (!w) {
-    const q = new URLSearchParams({ lat: WEATHER_PLACE.lat, lon: WEATHER_PLACE.lon, units: "metric", lang: "kr", appid: OPENWEATHER_API_KEY });
-    const d = await getJson("https://api.openweathermap.org/data/2.5/weather?" + q);
-    const num = v => typeof v === "number" && isFinite(v);
-    if (!d || !d.main || !num(d.main.temp) || !num(d.main.feels_like) || !Array.isArray(d.weather) || !d.weather[0]) throw new Error("bad data");
-    w = { desc: String(d.weather[0].description || "").slice(0, 30), temp: d.main.temp.toFixed(1), feels: Math.round(d.main.feels_like),
-          hum: num(d.main.humidity) ? Math.round(d.main.humidity) : "-", at: fmtTime(new Date((num(d.dt) ? d.dt * 1000 : Date.now())).toISOString()) };
-    try { sessionStorage.setItem(WEATHER_CACHE, JSON.stringify({ saved: Date.now(), w })); } catch {}
-  }
-  weather = w;
-  if ($("weatherBox")) $("weatherBox").innerHTML = weatherBody();
-  if ($("weatherBtn")) $("weatherBtn").textContent = "다시 보기";
-});
-
 /* 포켓몬 */
 const POKE_API = "https://pokeapi.co/api/v2/";
 const POKE_FALLBACK_MAX = 1025;
@@ -828,7 +783,7 @@ const loadPokemon = () => funLoad("pokemon", "pokeBtn", "pokeMsg", "포켓몬을
 });
 
 function funAside(){
-  return `<aside class="fun" aria-labelledby="funTitle"><section><h2 id="funTitle">쉬어가기</h2>${catCard()}${weatherCard()}${pokemonCard()}</section></aside>`;
+  return `<aside class="fun" aria-labelledby="funTitle"><section><h2 id="funTitle">쉬어가기</h2>${catCard()}${pokemonCard()}</section></aside>`;
 }
 
 /* ===== 조각 ===== */
@@ -1231,7 +1186,6 @@ document.addEventListener("click", async e => {
   if (act === "rmKept") { removedAtts.push(t.dataset.path); keptAtts = keptAtts.filter(a => a.path !== t.dataset.path); return renderPick(); }
   if (act === "replyComment") { replyTo = replyTo === t.dataset.id ? null : t.dataset.id; editingComment = null; render(); const r = $("rBody"); if (r) r.focus(); return; }
   if (act === "loadCat") return loadCat();
-  if (act === "loadWeather") return loadWeather();
   if (act === "loadPokemon") return loadPokemon();
   if (act === "copyShare") {
     const url = shareUrl(t.dataset.id);

@@ -27,7 +27,7 @@ AI 코딩 에이전트가 이 저장소에서 일할 때 가장 먼저 읽는 �
 | `p/`, `og/`, `sitemap.xml`, `robots.txt` | 생성기 결과물. **손으로 고치지 않는다** |
 | `.github/workflows/seo-pages.yml` | 생성기를 하루 2번 돌려 커밋하는 GitHub Actions |
 | `supabase-setup.sql` | 서버 표, 권한 규칙(RLS), 파일 보관함 설정. 여러 번 실행해도 안전해야 함 |
-| `tests/e2e.js` | 화면 테스트 73건 (Playwright, 체험 모드, 측정 ID 를 비운 복사본으로 실행) |
+| `tests/e2e.js` | 화면 테스트 71건 (Playwright, 체험 모드, 측정 ID 를 비운 복사본으로 실행) |
 | `tests/rls_test.py` | 서버 권한 테스트 25건 (로컬 PostgreSQL) |
 | `tests/pages_test.js` | 검색·공유 페이지 생성기 테스트 18건 |
 | `tests/stub_supabase.sql` | 로컬에서 Supabase 를 흉내 내는 준비 파일 |
@@ -93,6 +93,5 @@ node tests/pages_test.js
 - 빌드 도구나 프레임워크를 들이지 않는다. GitHub Pages 에 파일 그대로 올라가야 한다.
   - 예외는 `scripts/build-pages.js` 하나. 사이트를 바꾸지 않고 검색용 페이지만 덧붙이며, 이 스크립트가 없어도 블로그는 그대로 돈다. package.json 은 만들지 않는다.
 - 외부 스크립트를 늘리지 않는다. 지금은 Supabase JS 와 Google 태그(gtag.js) 두 개뿐이다. gtag.js 는 측정 ID 가 있을 때만 불러온다.
-  - 스크립트 없이 주소로 데이터만 받는 외부 API 는 세 개다: The Cat API, OpenWeatherMap, PokéAPI (첫 화면 "쉬어가기"). 방문자가 누를 때만 부르고, 받은 글자는 `esc()`, 그림 주소는 정해진 https 주소만 쓴다. 테스트는 가짜 응답으로 돈다.
-  - `OPENWEATHER_API_KEY` 는 공개되는 키다. 결제 수단을 연결한 키는 넣지 않는다.
+  - 스크립트 없이 주소로 데이터만 받는 외부 API 는 두 개다: The Cat API, PokéAPI (첫 화면 "쉬어가기"). 방문자가 누를 때만 부르고, 받은 글자는 `esc()`, 그림 주소는 정해진 https 주소만 쓴다. 테스트는 가짜 응답으로 돈다.
 - 테스트를 통과시키려고 테스트 기대값을 바꾸지 않는다. 기능이 바뀌었으면 그 이유를 커밋에 적는다.
