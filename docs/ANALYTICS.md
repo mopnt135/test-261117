@@ -62,7 +62,7 @@
 | `file_rejected` | 첨부 파일이 거절될 때 | reason=`type`/`mime_mismatch`/`signature`/`size`/`empty`/`count`, file_ext | 업로드 문제 |
 | `member_action` | 관리자가 경고, 추방, 되돌림을 할 때 | action=`warn`/`auto_ban`/`ban`/`unban`, warn_count | 운영 기록 |
 | `share_link_copy` | 글 상세에서 "공유 링크 복사"를 누를 때 | post_id | 어떤 글이 공유되나 |
-| `cat_load` | 첫 화면 "쉬어가기"에서 고양이 사진을 불러올 때 | result=`ok`/`error` | 재미 기능을 쓰는가, 외부 서비스가 잘 되는가 |
+| `cat_load` / `weather_load` / `pokemon_load` | 첫 화면 "쉬어가기"에서 고양이 사진, 날씨, 포켓몬을 불러올 때 | result=`ok`/`error`. 날씨 키는 보내지 않음 | 재미 기능을 쓰는가, 외부 서비스가 잘 되는가 |
 | `analytics_opt_out` / `analytics_opt_in` | 방문 통계 끄기와 켜기 | 없음 | |
 
 ### page_type 값과 경로

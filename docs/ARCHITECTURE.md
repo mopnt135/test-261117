@@ -123,7 +123,12 @@ flowchart LR
 
 ## 7. 알려진 한계
 
-- 첫 화면 "쉬어가기" 고양이 사진은 외부 서비스 The Cat API(키 없이 무료)에서 가져온다. 방문자가 버튼을 누를 때만 `api.thecatapi.com` 에 요청하고, 그림 주소는 `thecatapi.com` 의 https 주소만 받는다. 서비스가 멈추면 안내 문구만 나오고 블로그는 그대로 돈다.
+- 첫 화면 왼쪽 칸 "쉬어가기"는 외부 서비스 세 곳에서 데이터를 받는다. 모두 방문자가 버튼을 누를 때만 요청하고, 실패하면 안내 문구만 나온다.
+  | 카드 | 서비스 | 키 | 받는 그림 주소 |
+  | --- | --- | --- | --- |
+  | 고양이 | The Cat API `api.thecatapi.com` | 없음 | `thecatapi.com` https 만 |
+  | 날씨(서울) | OpenWeatherMap `api.openweathermap.org` | `OPENWEATHER_API_KEY`. 비면 방문자에게 카드 숨김, 관리자에게 안내. 키는 코드에 보이므로 무료 키만. 같은 탭에서 10분간 다시 묻지 않음 | 그림 없음 |
+  | 포켓몬 | PokéAPI `pokeapi.co` | 없음 | `raw.githubusercontent.com/PokeAPI/sprites` 의 공식 그림. 글번호는 코드가 만든 숫자만 씀 |
 
 - 새 글의 검색·공유 페이지는 Actions 가 돌아야 생긴다. 최대 반나절 늦다. 바로 필요하면 Actions 에서 직접 실행한다.
 

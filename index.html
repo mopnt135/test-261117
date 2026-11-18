@@ -184,13 +184,28 @@ aside h2{font-family:var(--f-display);font-weight:900;font-size:18px;margin:0 0 
 .article .meta{padding-bottom:20px;border-bottom:1px solid var(--line)}
 .article-body{white-space:pre-wrap;margin:28px 0 0;font-size:18px;line-height:1.9;max-width:65ch}
 .share{display:flex;gap:10px;flex-wrap:wrap;align-items:center;margin-top:28px}.share .msg{margin:0}
-.cat-card{margin-top:40px;padding-top:20px;border-top:2px solid var(--fg);max-width:420px}
-.cat-card h2{font-family:var(--f-display);font-size:20px;margin:0 0 4px}
-.cat-card .hint{color:var(--muted);font-size:14px;margin:0 0 12px}
-.cat-frame{aspect-ratio:4/3;background:var(--soft);border:2px solid var(--fg);display:flex;align-items:center;justify-content:center;overflow:hidden;margin:0 0 12px}
-.cat-frame img{width:100%;height:100%;object-fit:cover;display:block}
-.cat-frame p{color:var(--muted);font-size:15px;padding:16px;text-align:center;margin:0}
-.cat-card .msg{margin-top:8px}
+/* 쉬어가기: 왼쪽 칸 아래. 휴대폰에서는 최근 글 다음 */
+.body-grid.side-left{grid-template-rows:auto 1fr}
+.body-grid.side-left > aside:first-child{grid-column:1;grid-row:1}
+.body-grid.side-left > .main-col{grid-column:2;grid-row:1 / span 2}
+.body-grid.side-left > .fun{grid-column:1;grid-row:2;align-self:start}
+.fun-card + .fun-card{margin-top:28px}
+.fun-card h3{font-family:var(--f-display);font-size:17px;margin:0 0 4px}
+.fun-card .hint{color:var(--muted);font-size:14px;margin:0 0 10px}
+.fun-frame{aspect-ratio:4/3;background:var(--soft);border:2px solid var(--fg);display:flex;align-items:center;justify-content:center;overflow:hidden;margin:0 0 10px}
+.fun-frame img{width:100%;height:100%;object-fit:cover;display:block}
+.fun-frame.poke img{object-fit:contain;padding:8px}
+.fun-frame p{color:var(--muted);font-size:15px;padding:16px;text-align:center;margin:0}
+.fun-card .msg{margin-top:8px}
+.weather-box{border:2px solid var(--fg);padding:14px 16px;margin:0 0 10px;min-height:96px}
+.weather-box .temp{font-family:var(--f-mono);font-size:30px;line-height:1.2}
+.weather-box .desc{font-weight:700}
+.weather-box .sub{color:var(--muted);font-size:14px}
+.poke-info{margin:0 0 10px}
+.poke-info b{font-family:var(--f-display);font-size:18px}
+.poke-info .no{font-family:var(--f-mono);color:var(--muted);font-size:14px;margin-right:6px}
+.poke-info .genus{color:var(--orange);font-weight:700;font-size:14px;display:block}
+.poke-info p{font-size:14px;margin:6px 0 0;color:var(--fg)}
 .article-actions{display:flex;gap:10px;flex-wrap:wrap;margin-top:36px;align-items:center}
 .pager{display:grid;grid-template-columns:1fr 1fr;gap:0;margin-top:48px;border-top:2px solid var(--fg)}
 .pager a{display:flex;flex-direction:column;gap:2px;padding:18px 0;text-decoration:none;min-width:0}
@@ -241,6 +256,8 @@ footer{border-top:2px solid var(--fg)}
 
 @media (max-width:980px){
   .hero-grid,.body-grid,.body-grid.side-left{grid-template-columns:1fr;gap:32px}
+  .body-grid.side-left{grid-template-rows:none}
+  .body-grid.side-left > aside:first-child,.body-grid.side-left > .main-col,.body-grid.side-left > .fun{grid-column:auto;grid-row:auto}
   .search{width:auto;flex:1}
   nav.main{display:none}
   nav.main.open{display:flex;position:absolute;left:0;right:0;top:100%;flex-direction:column;background:var(--bg);border-bottom:2px solid var(--fg);padding:8px max(16px,env(safe-area-inset-left,0px))}
@@ -388,6 +405,11 @@ const SUPABASE_ANON_KEY = "";
 
 /* ===== 설정: Google Analytics 4 측정 ID (G-로 시작). 비워 두면 GA 를 불러오지 않습니다 ===== */
 const GA_MEASUREMENT_ID = "G-5HJBBKMVE3";
+
+/* ===== 설정: OpenWeatherMap API 키. 비워 두면 날씨 카드를 방문자에게 보여주지 않습니다 =====
+   주의: 이 키는 블로그 코드에 그대로 보입니다. 무료 키만 넣고, 결제 수단을 연결한 키는 넣지 마세요. */
+const OPENWEATHER_API_KEY = "";
+const WEATHER_PLACE = { name: "서울", lat: 37.5665, lon: 126.9780 };
 
 /* ===== 방문 통계 (GA4) =====
    규칙: 이메일, 댓글 내용, 비밀번호 같은 개인정보는 절대 보내지 않는다.
@@ -687,47 +709,126 @@ function checkReadComplete(){
 }
 const go = hash => { if (location.hash === hash || (hash === "#" && !location.hash)) render(); else location.hash = hash; };
 
-/* ===== 쉬어가기 고양이 (The Cat API, 키 없이 무료) =====
-   버튼을 누르기 전에는 외부로 요청하지 않는다. 그림 주소는 thecatapi.com 의 https 주소만 받는다. */
+/* ===== 쉬어가기: 고양이(The Cat API), 날씨(OpenWeatherMap), 포켓몬(PokéAPI) =====
+   공통 규칙: 버튼을 누르기 전에는 외부로 요청하지 않는다. 받은 글자는 esc(), 그림 주소는 정해진 https 주소만 쓴다.
+   실패해도 안내 문구만 나오고 블로그는 그대로 돈다. */
+const hostOk = (u, hosts) => { try { const x = new URL(u); return x.protocol === "https:" && hosts.some(h => x.hostname === h || x.hostname.endsWith("." + h)); } catch { return false; } };
+async function getJson(url, ms = 8000){
+  const ctrl = new AbortController(); const timer = setTimeout(() => ctrl.abort(), ms);
+  try { const r = await fetch(url, { signal: ctrl.signal, credentials: "omit", referrerPolicy: "no-referrer" }); if (!r.ok) throw new Error("status " + r.status); return await r.json(); }
+  finally { clearTimeout(timer); }
+}
+const preload = u => new Promise((ok, no) => { const im = new Image(); im.referrerPolicy = "no-referrer"; im.onload = ok; im.onerror = no; im.src = u; });
+const busy = {};
+async function funLoad(key, btnId, msgId, label, job){
+  if (busy[key]) return; busy[key] = true;
+  const btn = $(btnId); if (btn) btn.disabled = true;
+  msg(msgId, label);
+  try { await job(); msg(msgId, ""); analytics.track(key + "_load", { result: "ok" }); }
+  catch (err) { console.warn(key, "불러오지 못함", err && err.message); msg(msgId, "불러오지 못했어요. 잠시 뒤 다시 눌러 주세요.", true); analytics.track(key + "_load", { result: "error" }); }
+  finally { busy[key] = false; const b = $(btnId); if (b) b.disabled = false; }
+}
+
+/* 고양이 */
 const CAT_API = "https://api.thecatapi.com/v1/images/search";
-let catPic = null, catBusy = false;
-const catOk = u => { try { const x = new URL(u); return x.protocol === "https:" && (x.hostname === "thecatapi.com" || x.hostname.endsWith(".thecatapi.com")); } catch { return false; } };
+let catPic = null;
 const catImg = u => `<img src="${esc(u)}" alt="무작위 고양이 사진" referrerpolicy="no-referrer">`;
 function catCard(){
-  return `<section class="cat-card" aria-labelledby="catTitle">
-    <h2 id="catTitle">쉬어가기</h2>
-    <p class="hint">복습하다 지치면 고양이를 불러 보세요. 사진은 The Cat API 에서 가져옵니다.</p>
-    <div class="cat-frame" id="catFrame">${catPic ? catImg(catPic) : "<p>아직 고양이가 없어요</p>"}</div>
+  return `<section class="fun-card" aria-labelledby="catTitle">
+    <h3 id="catTitle">고양이</h3>
+    <p class="hint">복습하다 지치면 고양이를 불러 보세요. 사진: The Cat API</p>
+    <div class="fun-frame" id="catFrame">${catPic ? catImg(catPic) : "<p>아직 고양이가 없어요</p>"}</div>
     <button type="button" class="btn line" data-act="loadCat" id="catBtn">${catPic ? "다른 고양이 보기" : "고양이 보기"}</button>
     <p class="msg" id="catMsg" role="status"></p>
   </section>`;
 }
-async function loadCat(){
-  if (catBusy) return;
-  catBusy = true;
-  const btn = $("catBtn"); if (btn) btn.disabled = true;
-  msg("catMsg", "고양이를 부르는 중이에요.");
-  try {
-    const ctrl = new AbortController(); const timer = setTimeout(() => ctrl.abort(), 8000);
-    const r = await fetch(CAT_API, { signal: ctrl.signal, credentials: "omit", referrerPolicy: "no-referrer" });
-    clearTimeout(timer);
-    if (!r.ok) throw new Error("status " + r.status);
-    const d = await r.json();
-    const u = Array.isArray(d) && d[0] ? d[0].url : null;
-    if (!catOk(u)) throw new Error("bad url");
-    await new Promise((ok, no) => { const im = new Image(); im.referrerPolicy = "no-referrer"; im.onload = ok; im.onerror = no; im.src = u; });
-    catPic = u;
-    if ($("catFrame")) $("catFrame").innerHTML = catImg(u);
-    msg("catMsg", "");
-    analytics.track("cat_load", { result: "ok" });
-  } catch (err) {
-    console.warn("고양이 사진을 불러오지 못함", err && err.message);
-    msg("catMsg", "고양이를 불러오지 못했어요. 잠시 뒤 다시 눌러 주세요.", true);
-    analytics.track("cat_load", { result: "error" });
-  } finally {
-    catBusy = false;
-    const b = $("catBtn"); if (b) { b.disabled = false; b.textContent = catPic ? "다른 고양이 보기" : "고양이 보기"; }
+const loadCat = () => funLoad("cat", "catBtn", "catMsg", "고양이를 부르는 중이에요.", async () => {
+  const d = await getJson(CAT_API);
+  const u = Array.isArray(d) && d[0] ? d[0].url : null;
+  if (!hostOk(u, ["thecatapi.com"])) throw new Error("bad url");
+  await preload(u);
+  catPic = u;
+  if ($("catFrame")) $("catFrame").innerHTML = catImg(u);
+  if ($("catBtn")) $("catBtn").textContent = "다른 고양이 보기";
+});
+
+/* 날씨 (키가 있을 때만) */
+let weather = null;
+const WEATHER_CACHE = "samsaekpen-weather";
+function weatherBody(){
+  if (!weather) return `<p class="sub">버튼을 누르면 ${esc(WEATHER_PLACE.name)}의 지금 날씨를 보여드려요.</p>`;
+  return `<div class="desc">${esc(weather.desc)}</div>
+    <div class="temp">${esc(weather.temp)}°C</div>
+    <div class="sub">체감 ${esc(weather.feels)}°C · 습도 ${esc(weather.hum)}% · ${esc(weather.at)} (KST) 기준</div>`;
+}
+function weatherCard(){
+  if (!OPENWEATHER_API_KEY) return isAdmin() ? `<section class="fun-card" aria-labelledby="wTitle"><h3 id="wTitle">날씨</h3>
+    <p class="hint">관리자에게만 보이는 안내: index.html 의 OPENWEATHER_API_KEY 에 OpenWeatherMap 키를 넣으면 방문자에게 날씨 카드가 보여요.</p></section>` : "";
+  return `<section class="fun-card" aria-labelledby="wTitle">
+    <h3 id="wTitle">${esc(WEATHER_PLACE.name)} 날씨</h3>
+    <p class="hint">공부하기 좋은 날씨인지 확인해 보세요. 자료: OpenWeatherMap</p>
+    <div class="weather-box" id="weatherBox">${weatherBody()}</div>
+    <button type="button" class="btn line" data-act="loadWeather" id="weatherBtn">${weather ? "다시 보기" : "날씨 보기"}</button>
+    <p class="msg" id="weatherMsg" role="status"></p>
+  </section>`;
+}
+const loadWeather = () => funLoad("weather", "weatherBtn", "weatherMsg", "날씨를 가져오는 중이에요.", async () => {
+  let w = null;
+  try { const c = JSON.parse(sessionStorage.getItem(WEATHER_CACHE) || "null"); if (c && Date.now() - c.saved < 10 * 60 * 1000) w = c.w; } catch {}
+  if (!w) {
+    const q = new URLSearchParams({ lat: WEATHER_PLACE.lat, lon: WEATHER_PLACE.lon, units: "metric", lang: "kr", appid: OPENWEATHER_API_KEY });
+    const d = await getJson("https://api.openweathermap.org/data/2.5/weather?" + q);
+    const num = v => typeof v === "number" && isFinite(v);
+    if (!d || !d.main || !num(d.main.temp) || !num(d.main.feels_like) || !Array.isArray(d.weather) || !d.weather[0]) throw new Error("bad data");
+    w = { desc: String(d.weather[0].description || "").slice(0, 30), temp: d.main.temp.toFixed(1), feels: Math.round(d.main.feels_like),
+          hum: num(d.main.humidity) ? Math.round(d.main.humidity) : "-", at: fmtTime(new Date((num(d.dt) ? d.dt * 1000 : Date.now())).toISOString()) };
+    try { sessionStorage.setItem(WEATHER_CACHE, JSON.stringify({ saved: Date.now(), w })); } catch {}
   }
+  weather = w;
+  if ($("weatherBox")) $("weatherBox").innerHTML = weatherBody();
+  if ($("weatherBtn")) $("weatherBtn").textContent = "다시 보기";
+});
+
+/* 포켓몬 */
+const POKE_API = "https://pokeapi.co/api/v2/";
+const POKE_FALLBACK_MAX = 1025;
+let poke = null;
+const pokeArt = id => `https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/other/official-artwork/${id}.png`;
+function pokeBody(){
+  if (!poke) return `<div class="fun-frame poke" id="pokeFrame"><p>어떤 포켓몬이 나올까요?</p></div><div class="poke-info" id="pokeInfo"></div>`;
+  return `<div class="fun-frame poke" id="pokeFrame">${poke.img ? `<img src="${esc(poke.img)}" alt="${esc(poke.name)} 그림" referrerpolicy="no-referrer">` : "<p>그림을 불러오지 못했어요</p>"}</div>
+    <div class="poke-info" id="pokeInfo"><span class="no">No.${esc(poke.id)}</span><b>${esc(poke.name)}</b>${poke.genus ? `<span class="genus">${esc(poke.genus)}</span>` : ""}${poke.text ? `<p>${esc(poke.text)}</p>` : ""}</div>`;
+}
+function pokemonCard(){
+  return `<section class="fun-card" aria-labelledby="pTitle">
+    <h3 id="pTitle">오늘의 포켓몬</h3>
+    <p class="hint">무작위로 포켓몬 한 마리를 만나 보세요. 자료: PokéAPI</p>
+    <div id="pokeBody">${pokeBody()}</div>
+    <button type="button" class="btn line" data-act="loadPokemon" id="pokeBtn">${poke ? "다른 포켓몬 만나기" : "포켓몬 만나기"}</button>
+    <p class="msg" id="pokeMsg" role="status"></p>
+  </section>`;
+}
+let pokeMax = 0;
+const loadPokemon = () => funLoad("pokemon", "pokeBtn", "pokeMsg", "포켓몬을 찾는 중이에요.", async () => {
+  if (!pokeMax) { try { const c = await getJson(POKE_API + "pokemon-species?limit=1"); pokeMax = Number.isInteger(c.count) && c.count > 0 && c.count < 5000 ? c.count : POKE_FALLBACK_MAX; } catch { pokeMax = POKE_FALLBACK_MAX; } }
+  const id = 1 + Math.floor(Math.random() * pokeMax);
+  const d = await getJson(POKE_API + "pokemon-species/" + id);
+  if (!d || d.id !== id) throw new Error("bad data");
+  const ko = arr => (Array.isArray(arr) ? arr : []).filter(x => x && x.language && x.language.name === "ko");
+  const name = (ko(d.names)[0] || {}).name || d.name;
+  if (!name) throw new Error("no name");
+  const genus = (ko(d.genera)[0] || {}).genus || "";
+  const texts = ko(d.flavor_text_entries);
+  const text = texts.length ? String(texts[texts.length - 1].flavor_text || "").replace(/\s+/g, " ").trim().slice(0, 200) : "";
+  let img = pokeArt(id);
+  try { await preload(img); } catch { img = null; }
+  poke = { id, name: String(name).slice(0, 40), genus: String(genus).slice(0, 40), text, img };
+  if ($("pokeBody")) $("pokeBody").innerHTML = pokeBody();
+  if ($("pokeBtn")) $("pokeBtn").textContent = "다른 포켓몬 만나기";
+});
+
+function funAside(){
+  return `<aside class="fun" aria-labelledby="funTitle"><section><h2 id="funTitle">쉬어가기</h2>${catCard()}${weatherCard()}${pokemonCard()}</section></aside>`;
 }
 
 /* ===== 조각 ===== */
@@ -891,13 +992,13 @@ const views = {
     </nav></div>
     <div class="wrap body-grid side-left">
       <aside>${accountCard()}${rulesCard}</aside>
-      <section aria-label="최근 글">
+      <section class="main-col" aria-label="최근 글">
         <div class="sec-head"><h2>최근 글</h2><a class="link2" href="#list">전체 보기</a></div>
         ${loading ? `<p class="empty">글을 불러오는 중입니다.</p>`
           : loadError ? `<p class="empty"><strong>글을 불러오지 못했습니다.</strong>잠시 뒤 새로고침해 주세요.</p>`
           : `<ul class="posts">${recent.map(postItem).join("")}</ul>${posts.length ? "" : `<p class="empty">${isAdmin() ? "<strong>아직 올라온 글이 없습니다.</strong>글쓰기에서 첫 글을 올려 보세요." : "<strong>아직 올라온 글이 없습니다.</strong>지금은 공지만 있어요."}</p>`}`}
-        ${catCard()}
       </section>
+      ${funAside()}
     </div>`;
   },
 
@@ -1130,6 +1231,8 @@ document.addEventListener("click", async e => {
   if (act === "rmKept") { removedAtts.push(t.dataset.path); keptAtts = keptAtts.filter(a => a.path !== t.dataset.path); return renderPick(); }
   if (act === "replyComment") { replyTo = replyTo === t.dataset.id ? null : t.dataset.id; editingComment = null; render(); const r = $("rBody"); if (r) r.focus(); return; }
   if (act === "loadCat") return loadCat();
+  if (act === "loadWeather") return loadWeather();
+  if (act === "loadPokemon") return loadPokemon();
   if (act === "copyShare") {
     const url = shareUrl(t.dataset.id);
     analytics.track("share_link_copy", { post_id: String(t.dataset.id) });

@@ -17,7 +17,10 @@ const SOURCE = fs.readFileSync(path.join(ROOT, "index.html"), "utf8");
 if (!GA_ID_RE.test(SOURCE)) throw new Error("index.html 에서 GA_MEASUREMENT_ID 를 찾지 못했습니다");
 const withGaId = id => SOURCE.replace(GA_ID_RE, `const GA_MEASUREMENT_ID = "${id}";`);
 const TMP = fs.mkdtempSync(path.join(require("os").tmpdir(), "samsaekpen-e2e-"));
-fs.writeFileSync(path.join(TMP, "index.html"), withGaId(""));
+// 날씨 카드 시험용 가짜 키. 실제 OpenWeatherMap 은 부르지 않는다 (아래 page.route)
+const WEATHER_KEY_RE = /const OPENWEATHER_API_KEY = "[^"]*";/;
+if (!WEATHER_KEY_RE.test(SOURCE)) throw new Error("index.html 에서 OPENWEATHER_API_KEY 를 찾지 못했습니다");
+fs.writeFileSync(path.join(TMP, "index.html"), withGaId("").replace(WEATHER_KEY_RE, 'const OPENWEATHER_API_KEY = "test-key";'));
 const URL = "file://" + path.join(TMP, "index.html");
 const FIX = path.join(__dirname, "fixtures");
 const OUT = process.argv[2] || path.join(__dirname, "e2e-result.json");
@@ -43,6 +46,7 @@ const shot = async name => { if (SHOTS) await page.screenshot({ path: path.join(
 
 let postUrl = "";
 let catCalls = 0, catReply = { status: 500, body: "" };
+let weatherCalls = 0, weatherUrl = "", weatherReply = { status: 500, body: "" }, pokeCalls = 0, pokeReply = null;
 
 const tests = [
   // A. 공통 화면
@@ -376,6 +380,54 @@ const tests = [
     return expect(m.includes("잠시 뒤 다시") && !disabled && ev.params.result === "error", m.trim());
   }],
 
+  ["J", "T94", "날씨 보기를 누르면 서울 날씨가 나오고, 키는 주소에만 담긴다", async () => {
+    weatherReply = { status: 200, body: JSON.stringify({ dt: 1795000000, name: "Seoul", main: { temp: 12.34, feels_like: 10.6, humidity: 40 }, weather: [{ description: "맑음<script>" }] }) };
+    await goto(); const before = weatherCalls;
+    await page.click("#weatherBtn"); await wait(600);
+    const box = await text("#weatherBox");
+    const hasScript = await page.$("#weatherBox script");
+    const ev = await page.evaluate(() => window.samsaekpenEvents.filter(e => e.name === "weather_load").pop());
+    const u = new NodeURL(weatherUrl);
+    return expect(before === 0 && box.includes("12.3°C") && box.includes("체감 11°C") && box.includes("습도 40%") && box.includes("맑음<script>") && !hasScript
+      && u.searchParams.get("lat") === "37.5665" && u.searchParams.get("appid") === "test-key" && ev.params.result === "ok" && !JSON.stringify(ev.params).includes("test-key"), box.replace(/\s+/g, " ").trim());
+  }],
+  ["J", "T95", "날씨는 10분 안에 다시 누르면 서버에 다시 묻지 않는다", async () => {
+    const before = weatherCalls; await page.click("#weatherBtn"); await wait(400);
+    return expect(weatherCalls === before, `추가 요청 ${weatherCalls - before}번`);
+  }],
+  ["J", "T96", "포켓몬 만나기를 누르면 한국어 이름, 분류, 설명과 그림이 나온다", async () => {
+    pokeReply = null; await page.click("#pokeBtn"); await page.waitForSelector("#pokeFrame img", { timeout: 5000 });
+    const info = await text("#pokeInfo"), src = await page.getAttribute("#pokeFrame img", "src");
+    const ev = await page.evaluate(() => window.samsaekpenEvents.filter(e => e.name === "pokemon_load").pop());
+    await page.$eval(".fun", e => e.scrollIntoView()); await shot("home-fun");
+    return expect(info.includes("No.1") && info.includes("이상해씨") && info.includes("씨앗포켓몬") && info.includes("태어났을 때부터 등에 씨앗이 있다.")
+      && src.startsWith("https://raw.githubusercontent.com/PokeAPI/sprites/") && ev.params.result === "ok", info.replace(/\s+/g, " ").trim());
+  }],
+  ["J", "T97", "포켓몬 응답이 이상하면 안내가 나온다", async () => {
+    pokeReply = { id: 999999, names: [] }; await page.click("#pokeBtn"); await wait(600);
+    const m = await text("#pokeMsg"); pokeReply = null;
+    return expect(m.includes("불러오지 못했어요"), m.trim());
+  }],
+  ["J", "T98", "쉬어가기는 컴퓨터에서 왼쪽 칸, 휴대폰에서는 최근 글 아래에 있다", async () => {
+    await goto();
+    const desk = await page.evaluate(() => { const f = document.querySelector(".fun").getBoundingClientRect(), m = document.querySelector(".main-col").getBoundingClientRect(), a = document.querySelector(".body-grid > aside").getBoundingClientRect(); return { left: f.left < m.left, under: f.top >= a.bottom - 1 }; });
+    await page.setViewportSize({ width: 390, height: 844 }); await wait(200);
+    const mob = await page.evaluate(() => document.querySelector(".fun").getBoundingClientRect().top > document.querySelector(".main-col").getBoundingClientRect().bottom - 1);
+    await page.setViewportSize({ width: 1280, height: 900 });
+    return expect(desk.left && desk.under && mob, `컴퓨터 왼쪽 ${desk.left}, 계정 카드 아래 ${desk.under}, 휴대폰 최근 글 아래 ${mob}`);
+  }],
+  ["J", "T99", "날씨 키가 비어 있으면 방문자에게 날씨 카드가 보이지 않고, 관리자에게는 안내가 보인다", async () => {
+    const dir = fs.mkdtempSync(path.join(require("os").tmpdir(), "samsaekpen-nokey-"));
+    fs.writeFileSync(path.join(dir, "index.html"), withGaId(""));
+    const open = async () => { await page.goto("file://" + path.join(dir, "index.html")); await wait(500); };
+    await open(); await logout(); await open();
+    const n = await count("#weatherBtn"), cards = await count(".fun-card");
+    await login("boss@test.kr", true); await open();
+    const hint = await page.$eval(".fun", e => e.textContent.includes("관리자에게만 보이는 안내"));
+    await logout();
+    return expect(n === 0 && cards === 2 && hint, `방문자: 날씨 버튼 ${n}개, 카드 ${cards}개 / 관리자 안내 ${hint ? "보임" : "없음"}`);
+  }],
+
   // G. 화면 크기와 테마
   ["G", "T60", "휴대폰 너비에서 화면이 옆으로 넘치지 않는다", async () => {
     await page.setViewportSize({ width: 390, height: 844 });
@@ -401,6 +453,15 @@ const tests = [
   await page.route(/googletagmanager\.com|google-analytics\.com/, r => r.abort());
   // 고양이 API 는 실제로 부르지 않고 가짜로 답한다. 사진은 테스트용 PNG 를 준다
   await page.route("https://api.thecatapi.com/**", r => { catCalls++; r.fulfill({ status: catReply.status, contentType: "application/json", headers: { "Access-Control-Allow-Origin": "*" }, body: catReply.body }); });
+  await page.route("https://api.openweathermap.org/**", r => { weatherCalls++; weatherUrl = r.request().url(); r.fulfill({ status: weatherReply.status, contentType: "application/json", headers: { "Access-Control-Allow-Origin": "*" }, body: weatherReply.body }); });
+  await page.route("https://pokeapi.co/**", r => {
+    pokeCalls++;
+    const u = r.request().url();
+    const body = u.includes("limit=1") ? { count: 1 } : (pokeReply || { id: 1, name: "bulbasaur", names: [{ language: { name: "ko" }, name: "이상해씨" }, { language: { name: "en" }, name: "Bulbasaur" }],
+      genera: [{ language: { name: "ko" }, genus: "씨앗포켓몬" }], flavor_text_entries: [{ language: { name: "ko" }, flavor_text: "태어났을 때부터\n등에 씨앗이 있다." }] });
+    r.fulfill({ status: 200, contentType: "application/json", headers: { "Access-Control-Allow-Origin": "*" }, body: JSON.stringify(body) });
+  });
+  await page.route("https://raw.githubusercontent.com/PokeAPI/**", r => r.fulfill({ status: 200, contentType: "image/png", body: fs.readFileSync(path.join(FIX, "red.png")) }));
   await page.route("https://cdn2.thecatapi.com/**", r => r.fulfill({ status: 200, contentType: "image/png", headers: { "Access-Control-Allow-Origin": "*" }, body: fs.readFileSync(path.join(FIX, "red.png")) }));
   if (SHOTS) fs.mkdirSync(SHOTS, { recursive: true });
   for (const [area, id, name, fn] of tests) {
