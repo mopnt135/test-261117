@@ -418,7 +418,8 @@ const tests = [
   }],
   ["J", "T99", "날씨 키가 비어 있으면 방문자에게 날씨 카드가 보이지 않고, 관리자에게는 안내가 보인다", async () => {
     const dir = fs.mkdtempSync(path.join(require("os").tmpdir(), "samsaekpen-nokey-"));
-    fs.writeFileSync(path.join(dir, "index.html"), withGaId(""));
+    // 저장소의 실제 키와 상관없이, 키를 비운 복사본으로 시험한다
+    fs.writeFileSync(path.join(dir, "index.html"), withGaId("").replace(WEATHER_KEY_RE, 'const OPENWEATHER_API_KEY = "";'));
     const open = async () => { await page.goto("file://" + path.join(dir, "index.html")); await wait(500); };
     await open(); await logout(); await open();
     const n = await count("#weatherBtn"), cards = await count(".fun-card");
