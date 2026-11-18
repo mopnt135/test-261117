@@ -36,7 +36,8 @@
 - [ ] **검색·공유 자동 생성 확인.** GitHub 저장소 Settings > Actions > General 에서 "Read and write permissions" 를 켜고, Actions 탭에서 "검색·공유 페이지 만들기"를 한 번 직접 실행한다.
 - [ ] **검색엔진 등록.** Google Search Console, 네이버 서치어드바이저에 사이트를 등록하고 `sitemap.xml` 을 제출한다.
 
-- [ ] **날씨 키 처리 방법 결정.** OpenWeatherMap 키를 넣어 올리려 했으나 GitHub Push Protection 이 비밀 정보로 보고 막았다(2026-11-18). 선택지: GitHub 에서 허용 후 그대로 올리기, 키 없는 날씨 API(Open-Meteo 등)로 바꾸기, 배포 때만 넣기, Supabase 를 거쳐 부르기. 사람의 결정이 필요하다.
+- [x] 날씨 키 처리: OpenWeatherMap 무료 키를 그대로 공개해 쓰기로 결정(2026-11-18, 사용자 결정 A). GitHub Push Protection 은 사용자가 허용. 남용되면 OpenWeatherMap 에서 키를 새로 만들어 바꾼다.
+- [ ] **날씨 카드 실제 확인.** 배포 주소에서 "날씨 보기"를 눌러 서울 날씨가 나오는지 본다. 새 키는 쓸 수 있게 되기까지 시간이 걸릴 수 있다.
 
 ### 주황
 - [ ] 관리 기록 표 `admin_logs` 와 화면: 누가, 언제, 무엇을, 왜 (US-3, 4, 5)
