@@ -42,6 +42,7 @@ const expect = (cond, detail) => { if (!cond) throw new Error(detail); return de
 const shot = async name => { if (SHOTS) await page.screenshot({ path: path.join(SHOTS, name + ".png"), fullPage: false }); };
 
 let postUrl = "";
+let catCalls = 0, catReply = { status: 500, body: "" };
 
 const tests = [
   // A. 공통 화면
@@ -346,6 +347,35 @@ const tests = [
     return expect(og["og:image"] === "https://mopnt135.github.io/test-261117/og/site.png" && og["og:title"] && og["og:url"], `og:image ${og["og:image"]}`);
   }],
 
+  // J. 쉬어가기 고양이 (The Cat API). 실제 서버 대신 가짜 응답으로 시험한다
+  ["J", "T90", "첫 화면에 고양이 카드가 있고, 누르기 전에는 고양이 서버로 요청하지 않는다", async () => {
+    catCalls = 0; await goto(); await wait(300);
+    const has = await count("#catBtn"), frame = await text("#catFrame");
+    return expect(has === 1 && frame.includes("아직 고양이가 없어요") && catCalls === 0, `버튼 ${has}개, 요청 ${catCalls}번`);
+  }],
+  ["J", "T91", "고양이 보기를 누르면 사진이 나오고 기록이 남는다", async () => {
+    catReply = { status: 200, body: JSON.stringify([{ id: "t1", url: "https://cdn2.thecatapi.com/images/t1.png", width: 10, height: 10 }]) };
+    await page.click("#catBtn"); await page.waitForSelector("#catFrame img", { timeout: 5000 });
+    const src = await page.getAttribute("#catFrame img", "src"), alt = await page.getAttribute("#catFrame img", "alt");
+    const btn = await text("#catBtn");
+    const ev = await page.evaluate(() => window.samsaekpenEvents.filter(e => e.name === "cat_load").pop());
+    await shot("home-cat");
+    return expect(src === "https://cdn2.thecatapi.com/images/t1.png" && alt && btn.includes("다른 고양이") && ev && ev.params.result === "ok" && catCalls === 1, `사진 ${src}, 버튼 "${btn.trim()}"`);
+  }],
+  ["J", "T92", "고양이 서버가 아닌 주소의 사진은 넣지 않는다", async () => {
+    catReply = { status: 200, body: JSON.stringify([{ url: "http://evil.example/x.png" }]) };
+    await page.click("#catBtn"); await wait(600);
+    const src = await page.getAttribute("#catFrame img", "src"), m = await text("#catMsg");
+    return expect(src === "https://cdn2.thecatapi.com/images/t1.png" && m.includes("불러오지 못했어요"), `사진 그대로, 안내: ${m.trim()}`);
+  }],
+  ["J", "T93", "고양이 서버가 응답하지 않으면 안내가 나오고 다시 누를 수 있다", async () => {
+    catReply = { status: 500, body: "error" };
+    await page.click("#catBtn"); await wait(600);
+    const m = await text("#catMsg"), disabled = await page.$eval("#catBtn", b => b.disabled);
+    const ev = await page.evaluate(() => window.samsaekpenEvents.filter(e => e.name === "cat_load").pop());
+    return expect(m.includes("잠시 뒤 다시") && !disabled && ev.params.result === "error", m.trim());
+  }],
+
   // G. 화면 크기와 테마
   ["G", "T60", "휴대폰 너비에서 화면이 옆으로 넘치지 않는다", async () => {
     await page.setViewportSize({ width: 390, height: 844 });
@@ -369,6 +399,9 @@ const tests = [
   page = await browser.newPage({ viewport: { width: 1280, height: 900 } });
   page.on("pageerror", e => errors.push(e.message));
   await page.route(/googletagmanager\.com|google-analytics\.com/, r => r.abort());
+  // 고양이 API 는 실제로 부르지 않고 가짜로 답한다. 사진은 테스트용 PNG 를 준다
+  await page.route("https://api.thecatapi.com/**", r => { catCalls++; r.fulfill({ status: catReply.status, contentType: "application/json", headers: { "Access-Control-Allow-Origin": "*" }, body: catReply.body }); });
+  await page.route("https://cdn2.thecatapi.com/**", r => r.fulfill({ status: 200, contentType: "image/png", headers: { "Access-Control-Allow-Origin": "*" }, body: fs.readFileSync(path.join(FIX, "red.png")) }));
   if (SHOTS) fs.mkdirSync(SHOTS, { recursive: true });
   for (const [area, id, name, fn] of tests) {
     const t0 = Date.now();

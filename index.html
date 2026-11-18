@@ -184,6 +184,13 @@ aside h2{font-family:var(--f-display);font-weight:900;font-size:18px;margin:0 0 
 .article .meta{padding-bottom:20px;border-bottom:1px solid var(--line)}
 .article-body{white-space:pre-wrap;margin:28px 0 0;font-size:18px;line-height:1.9;max-width:65ch}
 .share{display:flex;gap:10px;flex-wrap:wrap;align-items:center;margin-top:28px}.share .msg{margin:0}
+.cat-card{margin-top:40px;padding-top:20px;border-top:2px solid var(--fg);max-width:420px}
+.cat-card h2{font-family:var(--f-display);font-size:20px;margin:0 0 4px}
+.cat-card .hint{color:var(--muted);font-size:14px;margin:0 0 12px}
+.cat-frame{aspect-ratio:4/3;background:var(--soft);border:2px solid var(--fg);display:flex;align-items:center;justify-content:center;overflow:hidden;margin:0 0 12px}
+.cat-frame img{width:100%;height:100%;object-fit:cover;display:block}
+.cat-frame p{color:var(--muted);font-size:15px;padding:16px;text-align:center;margin:0}
+.cat-card .msg{margin-top:8px}
 .article-actions{display:flex;gap:10px;flex-wrap:wrap;margin-top:36px;align-items:center}
 .pager{display:grid;grid-template-columns:1fr 1fr;gap:0;margin-top:48px;border-top:2px solid var(--fg)}
 .pager a{display:flex;flex-direction:column;gap:2px;padding:18px 0;text-decoration:none;min-width:0}
@@ -680,6 +687,49 @@ function checkReadComplete(){
 }
 const go = hash => { if (location.hash === hash || (hash === "#" && !location.hash)) render(); else location.hash = hash; };
 
+/* ===== 쉬어가기 고양이 (The Cat API, 키 없이 무료) =====
+   버튼을 누르기 전에는 외부로 요청하지 않는다. 그림 주소는 thecatapi.com 의 https 주소만 받는다. */
+const CAT_API = "https://api.thecatapi.com/v1/images/search";
+let catPic = null, catBusy = false;
+const catOk = u => { try { const x = new URL(u); return x.protocol === "https:" && (x.hostname === "thecatapi.com" || x.hostname.endsWith(".thecatapi.com")); } catch { return false; } };
+const catImg = u => `<img src="${esc(u)}" alt="무작위 고양이 사진" referrerpolicy="no-referrer">`;
+function catCard(){
+  return `<section class="cat-card" aria-labelledby="catTitle">
+    <h2 id="catTitle">쉬어가기</h2>
+    <p class="hint">복습하다 지치면 고양이를 불러 보세요. 사진은 The Cat API 에서 가져옵니다.</p>
+    <div class="cat-frame" id="catFrame">${catPic ? catImg(catPic) : "<p>아직 고양이가 없어요</p>"}</div>
+    <button type="button" class="btn line" data-act="loadCat" id="catBtn">${catPic ? "다른 고양이 보기" : "고양이 보기"}</button>
+    <p class="msg" id="catMsg" role="status"></p>
+  </section>`;
+}
+async function loadCat(){
+  if (catBusy) return;
+  catBusy = true;
+  const btn = $("catBtn"); if (btn) btn.disabled = true;
+  msg("catMsg", "고양이를 부르는 중이에요.");
+  try {
+    const ctrl = new AbortController(); const timer = setTimeout(() => ctrl.abort(), 8000);
+    const r = await fetch(CAT_API, { signal: ctrl.signal, credentials: "omit", referrerPolicy: "no-referrer" });
+    clearTimeout(timer);
+    if (!r.ok) throw new Error("status " + r.status);
+    const d = await r.json();
+    const u = Array.isArray(d) && d[0] ? d[0].url : null;
+    if (!catOk(u)) throw new Error("bad url");
+    await new Promise((ok, no) => { const im = new Image(); im.referrerPolicy = "no-referrer"; im.onload = ok; im.onerror = no; im.src = u; });
+    catPic = u;
+    if ($("catFrame")) $("catFrame").innerHTML = catImg(u);
+    msg("catMsg", "");
+    analytics.track("cat_load", { result: "ok" });
+  } catch (err) {
+    console.warn("고양이 사진을 불러오지 못함", err && err.message);
+    msg("catMsg", "고양이를 불러오지 못했어요. 잠시 뒤 다시 눌러 주세요.", true);
+    analytics.track("cat_load", { result: "error" });
+  } finally {
+    catBusy = false;
+    const b = $("catBtn"); if (b) { b.disabled = false; b.textContent = catPic ? "다른 고양이 보기" : "고양이 보기"; }
+  }
+}
+
 /* ===== 조각 ===== */
 function postItem(p){
   return `<li class="post">
@@ -846,6 +896,7 @@ const views = {
         ${loading ? `<p class="empty">글을 불러오는 중입니다.</p>`
           : loadError ? `<p class="empty"><strong>글을 불러오지 못했습니다.</strong>잠시 뒤 새로고침해 주세요.</p>`
           : `<ul class="posts">${recent.map(postItem).join("")}</ul>${posts.length ? "" : `<p class="empty">${isAdmin() ? "<strong>아직 올라온 글이 없습니다.</strong>글쓰기에서 첫 글을 올려 보세요." : "<strong>아직 올라온 글이 없습니다.</strong>지금은 공지만 있어요."}</p>`}`}
+        ${catCard()}
       </section>
     </div>`;
   },
@@ -1078,6 +1129,7 @@ document.addEventListener("click", async e => {
   if (act === "rmPending") { pendingFiles.splice(Number(t.dataset.i), 1); return renderPick(); }
   if (act === "rmKept") { removedAtts.push(t.dataset.path); keptAtts = keptAtts.filter(a => a.path !== t.dataset.path); return renderPick(); }
   if (act === "replyComment") { replyTo = replyTo === t.dataset.id ? null : t.dataset.id; editingComment = null; render(); const r = $("rBody"); if (r) r.focus(); return; }
+  if (act === "loadCat") return loadCat();
   if (act === "copyShare") {
     const url = shareUrl(t.dataset.id);
     analytics.track("share_link_copy", { post_id: String(t.dataset.id) });
