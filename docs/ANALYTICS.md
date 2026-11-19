@@ -125,7 +125,7 @@ GA4 는 **page_location(전체 주소)** 으로 "페이지 경로"를 정한다.
 | --- | --- |
 | 측정 ID | `index.html` 의 `GA_MEASUREMENT_ID` (현재 `G-5HJBBKMVE3`) |
 | 공통 함수 | `analytics.track(name, params)`, `analytics.setUser(role)` |
-| 화면 이동 | `trackPageView()`, `pageInfo()`, `siteBase()` |
+| 화면 이동 | `trackPageView()`, `pageInfo()`, `siteBase()`, `campaignQuery()` (UTM) |
 | 정적 페이지 GA | `scripts/build-pages.js` 의 `gaPost` 와 GA 코드. 블로그 화면과 이벤트 이름, 값을 맞춘다 |
 | 검색어 가리기 | `redactTerm()` |
 | 관리자 표시 | localStorage `samsaekpen-ga-internal` |
@@ -136,3 +136,31 @@ GA4 는 **page_location(전체 주소)** 으로 "페이지 경로"를 정한다.
 1. 이 문서의 이벤트 목록에 먼저 적는다.
 2. `analytics.track()` 으로만 보낸다. `gtag()` 를 직접 부르지 않는다.
 3. 개인정보가 안 들어가는지 T75 처럼 테스트한다.
+
+## 7. UTM 링크 (지인, 그룹에 알릴 때)
+
+### 규칙
+- 모두 영어 소문자와 밑줄. 한글은 쓰지 않는다(카카오톡에서 주소가 깨지거나 GA 에서 따로 집계될 수 있음).
+- `utm_` 값은 반드시 `?` 뒤, `#` 앞에 둔다. 예: `https://mopnt135.github.io/test-261117/?utm_source=…#post-12`
+- 글 하나를 알릴 때는 검색·공유 페이지(`p/<글번호>/`)에 붙인다. 카카오톡 미리보기에 글 썸네일이 나온다.
+- `utm_medium`: 메신저는 `social_group`(단톡방), `social_dm`(1:1). 이름에 social 이 있어야 GA 기본 채널에서 소셜로 묶인다. 메일은 `email`.
+- 블로그 화면은 주소의 `utm_` 값만 page_location 에 붙여 보낸다(`campaignQuery()`). 다른 값은 보내지 않는다.
+
+### 캠페인
+| utm_campaign | 목적 | 연결할 주소 |
+| --- | --- | --- |
+| `blog_open` | 블로그를 처음 알리기 | 첫 화면 |
+| `review_share` | 복습 노트 글 하나를 공유 | 그 글의 `p/<글번호>/` |
+
+### 링크 목록
+| 이름 | source | medium | campaign | content | 링크 |
+| --- | --- | --- | --- | --- | --- |
+| 수업 단톡방에 오픈 알림 | kakaotalk | social_group | blog_open | aipm_class | `https://mopnt135.github.io/test-261117/?utm_source=kakaotalk&utm_medium=social_group&utm_campaign=blog_open&utm_content=aipm_class` |
+| 지인에게 1:1 오픈 알림 | kakaotalk | social_dm | blog_open | friends | `https://mopnt135.github.io/test-261117/?utm_source=kakaotalk&utm_medium=social_dm&utm_campaign=blog_open&utm_content=friends` |
+| 강사님, 멘토에게 메일 | gmail | email | blog_open | mentor | `https://mopnt135.github.io/test-261117/?utm_source=gmail&utm_medium=email&utm_campaign=blog_open&utm_content=mentor` |
+| 수업 단톡방에 글 공유 (운영 기준 공지) | kakaotalk | social_group | review_share | notice_rules | `https://mopnt135.github.io/test-261117/p/notice-rules/?utm_source=kakaotalk&utm_medium=social_group&utm_campaign=review_share&utm_content=notice_rules` |
+
+새 글을 공유할 때는 마지막 줄에서 `p/notice-rules/` 와 `utm_content` 만 그 글로 바꾼다.
+
+### GA 에서 보는 곳
+보고서 > 획득 > 트래픽 획득. 측정기준을 "세션 소스/매체", "세션 캠페인"으로 바꾼다. `utm_content` 는 "세션 수동 광고 콘텐츠".

@@ -424,7 +424,7 @@ const analytics = (() => {
     document.head.appendChild(sc);
     on = true;
   };
-  const clean = params => { const o = {}; for (const [k, v] of Object.entries(params || {})) if (v !== undefined && v !== null && v !== "") o[k] = typeof v === "string" ? v.slice(0, 100) : v; return o; };
+  const clean = params => { const o = {}; for (const [k, v] of Object.entries(params || {})) if (v !== undefined && v !== null && v !== "") o[k] = typeof v === "string" ? v.slice(0, k === "page_location" ? 500 : 100) : v; return o; }; // 주소는 UTM 이 붙으면 길어서 500자까지
   const track = (name, params) => {
     const p = clean(params);
     buffer.push({ name, params: p, at: new Date().toISOString() });
@@ -675,11 +675,17 @@ function pageInfo(r){
 /* 검색어에 섞인 이메일, 전화번호 같은 긴 숫자는 GA 로 보내기 전에 가린다 */
 const redactTerm = q => String(q).replace(/[^\s@]+@[^\s@]+/g, "[이메일]").replace(/\d[\d\s-]{5,}\d/g, "[숫자]");
 const siteBase = () => new URL(".", location.href.split("#")[0].split("?")[0]).href; // 예: https://mopnt135.github.io/test-261117/
+/* UTM 링크로 들어왔을 때 GA 가 출처를 알 수 있게, 주소의 utm_ 값만 page_location 에 붙인다. 다른 값은 보내지 않는다 */
+const campaignQuery = () => {
+  const keep = new URLSearchParams();
+  for (const [k, v] of new URLSearchParams(location.search)) if (/^utm_(source|medium|campaign|content|term|id)$/.test(k)) keep.set(k, v.slice(0, 100));
+  const q = keep.toString(); return q ? "?" + q : "";
+};
 let pendingPageView = false, readTimer = null, viewStartedAt = 0;
 function trackPageView(){
   const r = parseRoute(), [rel, type] = pageInfo(r);
   const p = r.name === "post" ? findPost(r.id) : null;
-  const url = siteBase() + rel;
+  const url = siteBase() + rel + campaignQuery();
   analytics.track("page_view", {
     page_location: url, page_path: new URL(url).pathname, page_type: type, view_source: "app",
     page_title: p ? `${p.title} · 삼색펜` : document.title
