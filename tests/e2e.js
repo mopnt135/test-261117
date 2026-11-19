@@ -272,6 +272,15 @@ const tests = [
     await page.fill("#q", ""); await wait(300);
     return expect(sr && sr.params.search_term === "[이메일] [숫자] 운영", `기록된 검색어: ${sr && sr.params.search_term}`);
   }],
+  ["H", "T86", "UTM 링크로 들어오면 page_view 주소에 utm_ 값만 남는다", async () => {
+    await page.goto(URL + "?utm_source=kakaotalk&utm_medium=social_group&utm_campaign=blog_open&email=a@b.c#post-notice-rules"); await wait(500);
+    const pv = await page.evaluate(() => window.samsaekpenEvents.filter(e => e.name === "page_view").pop());
+    const u = new NodeURL(pv.params.page_location);
+    const ok = u.searchParams.get("utm_source") === "kakaotalk" && u.searchParams.get("utm_campaign") === "blog_open" && !u.searchParams.has("email")
+      && u.pathname.endsWith("/p/notice-rules/") && pv.params.page_path.endsWith("/p/notice-rules/") && !pv.params.page_path.includes("?");
+    await goto();
+    return expect(ok, pv.params.page_location.replace(/^.*\/p\//, ".../p/"));
+  }],
   ["H", "T85", "관리자로 로그인한 브라우저는 내부 방문으로 표시하고, 회원으로 로그인하면 표시를 지운다", async () => {
     const flag = () => page.evaluate(() => localStorage.getItem("samsaekpen-ga-internal"));
     await logout(); await login("boss@test.kr", true); const a = await flag();
