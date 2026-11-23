@@ -427,7 +427,7 @@ const tests = [
     await page.emulateMedia({ colorScheme: "dark" }); await goto();
     const [bg, fg] = await page.evaluate(() => { const s = getComputedStyle(document.body); return [s.backgroundColor, s.color]; });
     await shot("home-dark"); await page.emulateMedia({ colorScheme: "light" });
-    return expect(bg === "rgb(28, 28, 28)" && fg === "rgb(255, 255, 255)", `배경 ${bg}, 글자 ${fg}`); // 새 색: 배경 #1C1C1C, 글자 #FFFFFF
+    return expect(bg === "rgb(28, 28, 28)" && fg === "rgb(217, 230, 240)", `배경 ${bg}, 글자 ${fg}`); // 새 색: 배경 #1C1C1C, 글자 #D9E6F0
   }],
   ["G", "T62", "전체 테스트 동안 스크립트 오류가 없다", async () => expect(errors.length === 0, errors.length ? errors.join(" | ") : "오류 0건")],
 ];

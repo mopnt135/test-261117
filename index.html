@@ -25,15 +25,13 @@
 /* 레이아웃: 고정 헤더 + 화면 5개(첫 화면, 글 목록, 글 상세, 글쓰기, 관리자). 주소 끝 #이름으로 화면을 바꿈
    강조 3단계(초안): 파랑(1순위) > 남색(2순위) > 연파랑(3순위). 변수 이름은 예전 이름(--red 등)을 그대로 씀 */
 /* 기본 색 5가지: #005A9C 파랑, #003153 남색, #D9E6F0 연파랑, #1C1C1C 검정, #FFFFFF 흰색
-     --muted, --line 은 위 색에서 만든 보조 회색. 넓은 바탕 면(--soft)과 작은 배지(--chip-*)는 흰색이고 테두리로 구분한다.
-     --danger 는 되돌릴 수 없는 조치에만 */
+     --muted, --line, --soft 는 위 색에서 만든 보조 회색. --danger 는 되돌릴 수 없는 조치에만 */
 :root{
-  --bg:#FFFFFF;--fg:#1C1C1C;--muted:#4A5866;--line:#B9C9D8;--soft:#FFFFFF;
+  --bg:#FFFFFF;--fg:#1C1C1C;--muted:#4A5866;--line:#B9C9D8;--soft:#EEF3F8;
   --red:#005A9C;--on-red:#FFFFFF;
   --orange:#003153;--orange-fill:#003153;--on-orange:#FFFFFF;
   --mint:#005A9C;--mint-fill:#D9E6F0;--on-mint:#003153;
   --danger:#B42318;--on-danger:#FFFFFF;
-  --chip-bg:#FFFFFF;--chip-fg:#003153;--chip-line:#003153;
   --f-display:"Gothic A1","Apple SD Gothic Neo","Malgun Gothic",sans-serif;
   --f-body:"IBM Plex Sans KR","Apple SD Gothic Neo","Malgun Gothic",sans-serif;
   --f-mono:"IBM Plex Mono",ui-monospace,Menlo,monospace;
@@ -41,22 +39,20 @@
 }
 @media (prefers-color-scheme: dark){
   :root:not([data-theme="light"]){
-    --bg:#1C1C1C;--fg:#FFFFFF;--muted:#9DAAB6;--line:#33404C;--soft:#232B33;
+    --bg:#1C1C1C;--fg:#D9E6F0;--muted:#9DAAB6;--line:#33404C;--soft:#232B33;
     --red:#5CAEEA;--on-red:#1C1C1C;
     --orange:#A9CDEB;--orange-fill:#D9E6F0;--on-orange:#003153;
     --mint:#5CAEEA;--mint-fill:#003153;--on-mint:#D9E6F0;
     --danger:#FF7A6E;--on-danger:#1C1C1C;
-    --chip-bg:#003153;--chip-fg:#FFFFFF;--chip-line:#003153;
     color-scheme:dark;
   }
 }
 :root[data-theme="dark"]{
-  --bg:#1C1C1C;--fg:#FFFFFF;--muted:#9DAAB6;--line:#33404C;--soft:#232B33;
+  --bg:#1C1C1C;--fg:#D9E6F0;--muted:#9DAAB6;--line:#33404C;--soft:#232B33;
   --red:#5CAEEA;--on-red:#1C1C1C;
   --orange:#A9CDEB;--orange-fill:#D9E6F0;--on-orange:#003153;
   --mint:#5CAEEA;--mint-fill:#003153;--on-mint:#D9E6F0;
   --danger:#FF7A6E;--on-danger:#1C1C1C;
-  --chip-bg:#003153;--chip-fg:#FFFFFF;--chip-line:#003153;
   color-scheme:dark;
 }
 
@@ -109,7 +105,7 @@ nav.main a:hover{color:var(--orange)}
 .search svg{width:18px;height:18px;margin-right:12px;flex:none}
 .auth{display:flex;gap:8px;flex:none}
 .menu-btn{display:none}
-.demo-strip{background:var(--soft);font-size:14px;color:var(--muted);border-bottom:1px solid var(--line)}
+.demo-strip{background:var(--soft);font-size:14px;color:var(--muted)}
 .demo-strip .wrap{padding-block:8px;display:flex;gap:8px;align-items:center}
 .demo-strip b{color:var(--mint)}
 
@@ -157,9 +153,9 @@ nav.main a:hover{color:var(--orange)}
 .post time{font-family:var(--f-mono);font-size:13px;color:var(--muted);font-variant-numeric:tabular-nums}
 .badge{font-size:12px;font-weight:700;padding:1px 8px;white-space:nowrap;font-family:var(--f-body)}
 .badge.notice{background:var(--red);color:var(--on-red)}
-.badge.private{background:var(--chip-bg);color:var(--chip-fg);box-shadow:inset 0 0 0 1.5px var(--chip-line)}
+.badge.private{background:var(--mint-fill);color:var(--on-mint)}
 .badge.public{border:1.5px solid var(--fg)}
-.badge.role-pending{background:var(--chip-bg);color:var(--chip-fg);box-shadow:inset 0 0 0 1.5px var(--chip-line)}
+.badge.role-pending{background:var(--mint-fill);color:var(--on-mint)}
 .badge.role-writer{background:var(--orange-fill);color:var(--on-orange)}
 .badge.role-admin{background:var(--red);color:var(--on-red)}
 .post h3{font-family:var(--f-display);font-weight:700;font-size:23px;line-height:1.4;letter-spacing:-.02em;margin:0 0 8px;text-wrap:balance}
@@ -287,7 +283,7 @@ footer{border-top:2px solid var(--fg)}
   .article-body{font-size:17px}
 }
 @media (prefers-reduced-motion:reduce){*{transition:none!important}}
-.badge.role-member{background:var(--chip-bg);color:var(--chip-fg);box-shadow:inset 0 0 0 1.5px var(--chip-line)}
+.badge.role-member{background:var(--mint-fill);color:var(--on-mint)}
 .badge.role-warned{background:var(--orange-fill);color:var(--on-orange)}
 .badge.role-banned{background:var(--danger);color:var(--on-danger)}
 .m-acts{display:flex;gap:8px;flex-wrap:wrap}
@@ -309,7 +305,7 @@ nav.main a[hidden]{display:none}
 .c-form textarea:focus{outline:none;border-color:var(--red)}
 .c-form .actions{align-items:center}
 .c-label{font-weight:700;font-size:15px}
-.c-login{margin-top:20px;padding:16px;background:var(--soft);border:1px solid var(--line);display:flex;flex-wrap:wrap;gap:12px;align-items:center;justify-content:space-between}
+.c-login{margin-top:20px;padding:16px;background:var(--soft);display:flex;flex-wrap:wrap;gap:12px;align-items:center;justify-content:space-between}
 .c-login p{margin:0}
 .foot-links{display:flex;gap:16px;align-items:center;flex-wrap:wrap}
 .link-btn{background:none;border:0;padding:0;font:inherit;font-size:14px;color:var(--muted);text-decoration:underline;cursor:pointer;min-height:44px}
@@ -317,7 +313,7 @@ nav.main a[hidden]{display:none}
 .c-replies{list-style:none;margin:10px 0 0 22px;padding:0 0 0 16px;border-left:3px solid var(--line)}
 .c-replies .comment{padding:12px 0}
 .c-replies .comment:last-child{border-bottom:0}
-.c-rbadge{background:var(--soft);color:var(--fg);box-shadow:inset 0 0 0 1px var(--line)}
+.c-rbadge{background:var(--soft);color:var(--fg)}
 .comment.deleted > .c-body{color:var(--muted);font-style:italic}
 .c-reply-form{margin:12px 0 0 22px}
 @media (max-width:560px){.c-replies{margin-left:8px;padding-left:12px}.c-reply-form{margin-left:8px}}
@@ -327,9 +323,9 @@ nav.main a[hidden]{display:none}
 .att-pick .sz{font-family:var(--f-mono);font-size:13px;color:var(--muted);flex:none}
 .att-pick button{flex:none;background:none;border:0;color:var(--muted);text-decoration:underline;cursor:pointer;min-height:36px;font-size:14px}
 .att-pick button:hover{color:var(--red)}
-.att-kind{flex:none;font-size:12px;font-weight:700;padding:1px 8px;background:var(--soft);box-shadow:inset 0 0 0 1px var(--line)}
+.att-kind{flex:none;font-size:12px;font-weight:700;padding:1px 8px;background:var(--soft)}
 .att-kind.pdf{background:var(--red);color:var(--on-red)}
-.att-kind.img{background:var(--chip-bg);color:var(--chip-fg);box-shadow:inset 0 0 0 1.5px var(--chip-line)}
+.att-kind.img{background:var(--mint-fill);color:var(--on-mint)}
 .att-kind.keep{background:transparent;border:1.5px solid var(--line)}
 .file-btn{display:inline-flex;align-items:center;gap:8px;min-height:44px;padding:0 16px;border:2px dashed var(--fg);cursor:pointer;font-weight:700;width:fit-content}
 .file-btn:hover{border-color:var(--orange);color:var(--orange)}
