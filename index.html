@@ -32,6 +32,7 @@
   --orange:#003153;--orange-fill:#003153;--on-orange:#FFFFFF;
   --mint:#005A9C;--mint-fill:#D9E6F0;--on-mint:#003153;
   --danger:#B42318;--on-danger:#FFFFFF;
+  --footer-bg:#003153;--on-footer:#FFFFFF;--footer-hover:#D9E6F0;
   --f-display:"Gothic A1","Apple SD Gothic Neo","Malgun Gothic",sans-serif;
   --f-body:"IBM Plex Sans KR","Apple SD Gothic Neo","Malgun Gothic",sans-serif;
   --f-mono:"IBM Plex Mono",ui-monospace,Menlo,monospace;
@@ -44,6 +45,7 @@
     --orange:#A9CDEB;--orange-fill:#D9E6F0;--on-orange:#003153;
     --mint:#5CAEEA;--mint-fill:#003153;--on-mint:#D9E6F0;
     --danger:#FF7A6E;--on-danger:#1C1C1C;
+    --footer-bg:#003153;--on-footer:#D9E6F0;--footer-hover:#FFFFFF;
     color-scheme:dark;
   }
 }
@@ -53,6 +55,7 @@
   --orange:#A9CDEB;--orange-fill:#D9E6F0;--on-orange:#003153;
   --mint:#5CAEEA;--mint-fill:#003153;--on-mint:#D9E6F0;
   --danger:#FF7A6E;--on-danger:#1C1C1C;
+  --footer-bg:#003153;--on-footer:#D9E6F0;--footer-hover:#FFFFFF;
   color-scheme:dark;
 }
 
@@ -252,9 +255,12 @@ fieldset.field{border:0;padding:0;margin:0}
 .stat b{font-family:var(--f-display);font-size:28px;line-height:1.2}
 .stat span{font-size:14px;color:var(--muted)}
 
-footer{border-top:2px solid var(--fg)}
-.foot{display:flex;flex-wrap:wrap;justify-content:space-between;gap:12px;padding-block:28px;font-size:14px;color:var(--muted)}
-.foot a{color:var(--muted)}
+/* 푸터: 남색 바탕. 파랑(--red) 테두리는 남색 위에서 안 보여서 푸터 안에서는 글자색으로 */
+footer{background:var(--footer-bg);color:var(--on-footer)}
+.foot{display:flex;flex-wrap:wrap;justify-content:space-between;gap:12px;padding-block:28px;font-size:14px;color:var(--on-footer)}
+.foot a,footer .link-btn{color:var(--on-footer)}
+.foot a:hover,footer .link-btn:hover{color:var(--footer-hover)}
+footer :focus-visible{outline-color:var(--on-footer)}
 
 @media (max-width:980px){
   .hero-grid,.body-grid,.body-grid.side-left{grid-template-columns:1fr;gap:32px}
