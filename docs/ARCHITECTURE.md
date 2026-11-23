@@ -164,3 +164,32 @@ flowchart LR
 - 글 상세 화면의 "공유 링크 복사"는 `p/<글번호>/` 주소를 준다. 나만보기 글에는 버튼이 없다.
 - 화면이 바뀔 때 `meta description` 도 바꾸지만, 이것은 자바스크립트를 실행하는 검색엔진에만 의미가 있다.
 - `p/`, `og/`, `sitemap.xml`, `robots.txt` 는 **생성 결과물이다. 손으로 고치지 않는다.** `tests/pages_test.js` G12 가 확인한다.
+
+## 9. AI 도우미 (2026-11-23 추가)
+
+**왜 미리 만드나.** 독자가 글을 열 때마다 AI 를 부르면 독자가 많을수록 비용이 들고, AI 키를 화면 코드에 넣어야 한다. 그래서 GitHub Actions 가 글마다 한 번만 AI 를 부르고 결과를 파일로 저장한다. 독자는 저장된 결과만 본다.
+
+```mermaid
+flowchart LR
+  SRC["Supabase 공개글<br>(미연결이면 demo/posts.json)"] --> AI[scripts/ai-assist.js]
+  KEY[GitHub Secrets AI_API_KEY] --> AI
+  AI --> J["ai/글번호.json<br>요약, 제목 후보, 태그, 홍보 문구"]
+  AI --> R["ai/index.html<br>관리자 보고서"]
+  J --> GEN[scripts/build-pages.js]
+  GEN --> P["p/글번호/index.html<br>AI 3줄 요약 표시"]
+```
+
+| 파일 | 내용 |
+| --- | --- |
+| `scripts/ai-assist.js` | AI 도우미. 의존 패키지 없음. 공개글만 다룬다. 키가 없으면 시연용 가짜 AI(규칙으로 뽑기)로 돈다 |
+| `ai/<글번호>.json` | `summary`(독자용 3줄), `titles`(제목 후보 3), `tags`(태그 5), `sns`(홍보 문구), `hash`(글 내용 지문), `mode`(`mock` 또는 `gemini`), `model`, `generated_at`(KST) |
+| `ai/index.html` | 관리자용 보고서. 검색엔진 제외(noindex). **공개 저장소라 주소를 알면 누구나 볼 수 있다** |
+| `demo/posts.json` | Supabase 미연결 때 쓰는 시연용 글 3개. `demo: true` 라 정적 페이지에 댓글 버튼 대신 안내가 나온다 |
+
+- 무료 한도 아끼기: 글 내용(제목+본문)의 지문 `hash` 가 같으면 다시 부르지 않는다. 한 번 실행에 최대 5개 글. 429(한도 초과)를 받으면 그 실행에서 멈춘다.
+- 가짜 AI 결과는 키가 생기면 진짜 AI 로 다시 만든다.
+- 글을 고친 뒤 AI 를 아직 다시 돌리지 않았으면, 생성기는 예전 요약을 넣지 않는다(지문 비교).
+- AI 에게 보내는 글은 `<글>` 로 감싸고, 그 안의 지시를 따르지 말라고 적는다(프롬프트 주입 대비). 답은 JSON 만 받고, 모양이 틀리면 버리고 길이를 자른다.
+- 화면에 넣을 때는 모두 `esc()` 를 거친다.
+- 한계: 공개글만 다루므로 나만보기 초안 단계에서는 AI 추천을 받을 수 없다. 블로그 화면(index.html)의 관리자 화면에는 아직 AI 탭이 없다.
+- 테스트: `tests/ai_test.js` 19건. 가짜 AI 서버를 내 컴퓨터 안에 띄워 돈 없이 확인한다.

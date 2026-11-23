@@ -46,7 +46,7 @@
 | 이벤트 | 언제 | 파라미터 | 답하는 질문 |
 | --- | --- | --- | --- |
 | `page_view` | 화면이 바뀔 때마다 1번. 첫 접속은 데이터를 다 불러온 뒤 | page_location, page_type, page_title, view_source, page_path(참고) | 홈과 페이지별 방문자 |
-| `post_view` | 글 또는 공지 상세를 열 때. 정적 페이지에서도 보냄 | post_id, post_title, post_category, is_notice, attachment_count, view_source | 인기 글 |
+| `post_view` | 글 또는 공지 상세를 열 때. 정적 페이지에서도 보냄 | post_id, post_title, post_category, is_notice, attachment_count, view_source, has_ai_summary(정적 페이지만, AI 요약이 보였는지) | 인기 글 |
 | `post_read_complete` | 본문 끝이 화면에 보이고 글을 연 지 10초가 지났을 때, 글 하나에 1번 | post_id, post_title, post_category, engaged_seconds | 완독률 |
 | `search` | 검색어 입력이 1초 멈췄을 때 | search_term(이메일은 `[이메일]`, 6자리 넘는 숫자는 `[숫자]` 로 가림), result_count | 무엇을 찾는가, 못 찾는가 |
 | `category_filter` | 글 목록에서 카테고리를 누를 때 | category | 관심 주제 |

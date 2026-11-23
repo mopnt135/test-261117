@@ -12,11 +12,13 @@
  *  - --posts-json 은 테스트용. Supabase 대신 이 파일의 글을 쓴다.
  *  - 썸네일 PNG 는 Playwright(Chromium)로 그린다. 한글 글꼴이 설치돼 있어야 한다.
  *    OG_FONT_CSS 환경 변수로 @font-face CSS 파일을 줄 수도 있다.
+ *  - ai/<글번호>.json(scripts/ai-assist.js 결과)이 있고 글 내용이 그대로면, 글 페이지에 AI 3줄 요약을 넣는다.
  * 결과: p/<글번호>/index.html, p/<글번호>/og.png, og/site.png, sitemap.xml, robots.txt
  * 더 이상 공개가 아닌 글의 p/<글번호>/ 폴더는 지운다.
  */
 const fs = require("fs");
 const path = require("path");
+const crypto = require("crypto");
 
 const ROOT = path.resolve(__dirname, "..");
 const args = process.argv.slice(2);
@@ -70,8 +72,30 @@ const describe = p => {
   return flat.length > DESC_MAX ? flat.slice(0, DESC_MAX).trim() + "…" : flat;
 };
 
+/* ---------- AI 3줄 요약 (scripts/ai-assist.js 가 만든 파일) ----------
+ * 글을 고친 뒤 AI 를 아직 다시 돌리지 않았으면 예전 요약이 틀릴 수 있으므로 넣지 않는다(hash 비교). */
+const aiHash = p => crypto.createHash("sha256").update(`${p.title}\n${p.body}`).digest("hex").slice(0, 16);
+function loadAi(p) {
+  const id = safeId(p.id);
+  if (!id || p.notice) return null;
+  try {
+    const ai = JSON.parse(fs.readFileSync(path.join(OUT, "ai", `${id}.json`), "utf8"));
+    if (ai.hash !== aiHash(p) || !Array.isArray(ai.summary) || !ai.summary.length) return null;
+    return ai;
+  } catch (e) { return null; }
+}
+function aiBox(ai) {
+  if (!ai) return "";
+  const who = ai.mode === "mock" ? "시연용 가짜 AI 가 만든 요약입니다." : "AI 가 만든 요약입니다.";
+  return `<aside class="ai" aria-label="AI 3줄 요약">
+    <div class="ai-h">AI 3줄 요약</div>
+    <ol>${ai.summary.slice(0, 3).map(l => `<li>${esc(l)}</li>`).join("")}</ol>
+    <p class="ai-note">${who} 틀릴 수 있으니 본문을 꼭 확인하세요.</p>
+  </aside>`;
+}
+
 /* ---------- 글 페이지 HTML ---------- */
-function postPage(p) {
+function postPage(p, ai = null) {
   const id = safeId(p.id);
   const url = `${SITE_URL}p/${id}/`;
   // 카카오톡 등은 썸네일을 주소 기준으로 기억한다. 글을 고치면 주소 끝 ?v= 가 바뀌어 새 그림을 다시 가져간다
@@ -88,7 +112,7 @@ function postPage(p) {
   // GA: 블로그 화면(index.html)과 같은 이름, 같은 값으로 보낸다. 주소가 같아(p/글번호/) GA 보고서에서 한 줄로 모인다.
   // 이메일, 댓글 같은 개인정보는 이 페이지에 없으므로 보내지 않는다. 이벤트 규칙은 docs/ANALYTICS.md
   const gaPost = { post_id: String(id), post_title: String(p.title).slice(0, 100), post_category: String(p.notice ? "공지" : p.category).slice(0, 100),
-    is_notice: !!p.notice, attachment_count: Array.isArray(p.attachments) ? p.attachments.length : 0, view_source: "static" };
+    is_notice: !!p.notice, attachment_count: Array.isArray(p.attachments) ? p.attachments.length : 0, view_source: "static", has_ai_summary: !!ai };
   const ga = GA_ID ? `
 <script>
   (function () {
@@ -152,6 +176,10 @@ h1{font-family:"Gothic A1",sans-serif;font-weight:900;font-size:clamp(28px,5vw,4
 .btn{display:inline-flex;align-items:center;min-height:44px;padding:0 18px;font-weight:700;text-decoration:none;border:2px solid var(--fg)}
 .btn.main{background:var(--orange-fill);color:var(--on-orange);border-color:var(--orange-fill)}
 a:focus-visible{outline:3px solid var(--red);outline-offset:3px}
+.ai{margin:24px 0 0;padding:16px 18px;background:var(--mint-fill);border-left:6px solid var(--orange-fill)}
+.ai-h{font-family:"Gothic A1",sans-serif;font-weight:900;font-size:15px}
+.ai ol{margin:8px 0 0;padding-left:22px}
+.ai-note{margin:8px 0 0;font-size:13px;color:var(--muted)}
 </style>${ga}
 </head>
 <body>
@@ -161,9 +189,10 @@ a:focus-visible{outline:3px solid var(--red);outline-offset:3px}
   <div class="cat">${esc(p.notice ? "공지" : p.category)}</div>
   <h1>${esc(p.title)}</h1>
   <div class="meta">${esc(kstDate(p.created_at))} (KST)${p.updated_at ? ` · 수정 ${esc(kstDate(p.updated_at))}` : ""}</div>
+  ${aiBox(ai)}
   <div class="body">${esc(p.body)}</div>
   <div class="cta">
-    <a class="btn main" href="../../#post-${esc(id)}">블로그에서 보고 댓글 달기</a>
+    ${p.demo ? `<span class="btn main" aria-disabled="true">시연용 글이라 댓글은 달 수 없어요</span>` : `<a class="btn main" href="../../#post-${esc(id)}">블로그에서 보고 댓글 달기</a>`}
     <a class="btn" href="../../">${SITE_NAME} 첫 화면</a>
   </div>
 </article>
@@ -301,7 +330,7 @@ async function main() {
   for (const p of all) {
     const dir = path.join(pDir, safeId(p.id));
     fs.mkdirSync(dir, { recursive: true });
-    fs.writeFileSync(path.join(dir, "index.html"), postPage(p));
+    fs.writeFileSync(path.join(dir, "index.html"), postPage(p, loadAi(p)));
     if (!NO_IMAGES) cards.push({ file: path.join(dir, "og.png"), title: p.title, label: p.notice ? "공지" : p.category, isNotice: !!p.notice,
       date: `${kstDate(p.created_at)} · AIPM 복습 노트`, ...await cardContent(p) });
   }
@@ -317,4 +346,4 @@ async function main() {
 }
 
 if (require.main === module) main().catch(e => { console.error(e.message); process.exit(1); });
-module.exports = { describe, postPage, cardHtml, excerptLines, imgVersion, thumbImage };
+module.exports = { describe, postPage, cardHtml, excerptLines, imgVersion, thumbImage, aiBox, aiHash };

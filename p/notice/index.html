@@ -47,6 +47,10 @@ h1{font-family:"Gothic A1",sans-serif;font-weight:900;font-size:clamp(28px,5vw,4
 .btn{display:inline-flex;align-items:center;min-height:44px;padding:0 18px;font-weight:700;text-decoration:none;border:2px solid var(--fg)}
 .btn.main{background:var(--orange-fill);color:var(--on-orange);border-color:var(--orange-fill)}
 a:focus-visible{outline:3px solid var(--red);outline-offset:3px}
+.ai{margin:24px 0 0;padding:16px 18px;background:var(--mint-fill);border-left:6px solid var(--orange-fill)}
+.ai-h{font-family:"Gothic A1",sans-serif;font-weight:900;font-size:15px}
+.ai ol{margin:8px 0 0;padding-left:22px}
+.ai-note{margin:8px 0 0;font-size:13px;color:var(--muted)}
 </style>
 <script>
   (function () {
@@ -54,7 +58,7 @@ a:focus-visible{outline:3px solid var(--red);outline-offset:3px}
     if (ls("samsaekpen-ga-optout") === "1") { window["ga-disable-G-5HJBBKMVE3"] = true; return; }
     var s = document.createElement("script"); s.async = true; s.src = "https://www.googletagmanager.com/gtag/js?id=G-5HJBBKMVE3"; document.head.appendChild(s);
     window.dataLayer = window.dataLayer || []; window.gtag = function () { dataLayer.push(arguments); };
-    var post = {"post_id":"notice","post_title":"삼색펜 이용 안내","post_category":"공지","is_notice":true,"attachment_count":0,"view_source":"static"};
+    var post = {"post_id":"notice","post_title":"삼색펜 이용 안내","post_category":"공지","is_notice":true,"attachment_count":0,"view_source":"static","has_ai_summary":false};
     gtag("js", new Date());
     if (ls("samsaekpen-ga-internal") === "1") gtag("set", { traffic_type: "internal" });
     gtag("config", "G-5HJBBKMVE3", { page_type: post.is_notice ? "notice" : "post", view_source: "static" });
@@ -69,6 +73,7 @@ a:focus-visible{outline:3px solid var(--red);outline-offset:3px}
   <div class="cat">공지</div>
   <h1>삼색펜 이용 안내</h1>
   <div class="meta">2026.11.17 (KST) · 수정 2026.11.17</div>
+  
   <div class="body">삼색펜에 오신 것을 환영합니다.
 이 블로그는 아래 규칙으로 운영됩니다.
 

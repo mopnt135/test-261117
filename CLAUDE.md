@@ -17,6 +17,7 @@ AI 코딩 에이전트가 이 저장소에서 일할 때 가장 먼저 읽는 �
 | `docs/TASKS.md` | 끝낸 일, 남은 일, 알려진 문제 |
 | `docs/ANALYTICS.md` | GA4 방문 통계, 이벤트 택소노미, ASIS → TOBE |
 | `README.md` | 사람을 위한 짧은 소개와 실행 방법 |
+| `docs/HANDOFF-ai-assist.md` | claude.ai 채팅에서 넘어온 AI 자동화 과제 인수인계. 대화 규칙, 결정, 남은 일 |
 
 ## 파일 지도
 
@@ -30,6 +31,10 @@ AI 코딩 에이전트가 이 저장소에서 일할 때 가장 먼저 읽는 �
 | `tests/e2e.js` | 화면 테스트 73건 (Playwright, 체험 모드, 측정 ID 를 비운 복사본으로 실행) |
 | `tests/rls_test.py` | 서버 권한 테스트 25건 (로컬 PostgreSQL) |
 | `tests/pages_test.js` | 검색·공유 페이지 생성기 테스트 18건 |
+| `scripts/ai-assist.js` | 공개글마다 AI 결과(요약, 제목 후보, 태그, 홍보 문구)를 `ai/<글번호>.json` 에 미리 만드는 AI 도우미 |
+| `ai/` | AI 도우미 결과물과 관리자 보고서. **손으로 고치지 않는다** |
+| `demo/posts.json` | Supabase 미연결 때 쓰는 시연용 글 |
+| `tests/ai_test.js` | AI 도우미 테스트 19건 (가짜 AI 서버, 돈 들지 않음) |
 | `tests/stub_supabase.sql` | 로컬에서 Supabase 를 흉내 내는 준비 파일 |
 | `tests/fixtures/` | 첨부 테스트용 파일 |
 | `docs/reports/` | 테스트 보고서 PDF |
@@ -45,6 +50,7 @@ AI 코딩 에이전트가 이 저장소에서 일할 때 가장 먼저 읽는 �
 7. **화면 글자는 한국어, 쉬운 말로 쓴다.** 오류 문구는 무엇이 잘못됐고 어떻게 고치는지 말한다.
 8. **공지 내용은 마음대로 바꾸지 않는다.** `NOTICE`, `NOTICE_RULES` 는 운영 정책이다. 바꿀 때는 사람의 확인을 받는다.
 9. **글별 검색 정보는 생성기로만 만든다.** 글 제목, 설명, 썸네일이 바뀌는 기능을 고치면 `scripts/build-pages.js` 와 `tests/pages_test.js` 도 같이 고친다. 생성 페이지에도 `esc()` 와 같은 처리를 한다.
+11. **AI 키는 GitHub Secrets(`AI_API_KEY`)에만 둔다.** 화면 코드, 커밋, 실행 기록에 남기지 않는다. 독자가 글을 열 때 AI 를 부르는 기능은 만들지 않는다. AI 결과는 `scripts/ai-assist.js` 로만 만들고, 고치면 `tests/ai_test.js` 도 같이 고친다.
 10. **방문 통계 이벤트는 `analytics.track()` 으로만 보낸다.** 예외는 생성기가 만드는 정적 페이지의 GA 코드 하나다(`scripts/build-pages.js`). 둘 다 이름과 값은 `docs/ANALYTICS.md` 를 따르고, 글 주소는 `p/<글번호>/` 로 맞춘다. 이메일, 댓글 본문, 비밀번호는 절대 보내지 않는다.
 
 ## 디자인 규칙
@@ -80,6 +86,9 @@ python3 tests/rls_test.py
 ```
 ```bash
 node tests/pages_test.js
+```
+```bash
+node tests/ai_test.js
 ```
 - `e2e.js` 는 `require('playwright')` 가 되는 환경이 필요하다. Supabase 연결 없이 체험 모드로 돌아간다.
 - `rls_test.py` 는 로컬 PostgreSQL 16 과 `psql` 이 필요하다. 임시 데이터베이스를 만들고 끝나면 지운다.
