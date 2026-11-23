@@ -132,8 +132,8 @@ function postPage(p) {
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Gothic+A1:wght@700;900&family=IBM+Plex+Sans+KR:wght@400;700&display=swap">
 <style>
-:root{--bg:#fff;--fg:#0B0B0B;--muted:#545454;--line:#E2E2E2;--red:#D2141B;--orange:#C2410C;--orange-fill:#FF7A1A;--mint-fill:#7EEBD0;--on-orange:#0B0B0B}
-@media (prefers-color-scheme: dark){:root{--bg:#0D0D0D;--fg:#F5F5F5;--muted:#B0B0B0;--line:#2B2B2B;--red:#FF4A4F;--orange:#FF9B50;--orange-fill:#FF8A3D;--mint-fill:#2DD4B0;--on-orange:#0D0D0D;color-scheme:dark}}
+:root{--bg:#FFFFFF;--fg:#1C1C1C;--muted:#4A5866;--line:#B9C9D8;--red:#005A9C;--orange:#003153;--orange-fill:#003153;--mint-fill:#D9E6F0;--on-orange:#FFFFFF}
+@media (prefers-color-scheme: dark){:root{--bg:#1C1C1C;--fg:#D9E6F0;--muted:#9DAAB6;--line:#33404C;--red:#5CAEEA;--orange:#A9CDEB;--orange-fill:#D9E6F0;--mint-fill:#003153;--on-orange:#003153;color-scheme:dark}}
 *{box-sizing:border-box}
 body{margin:0;background:var(--bg);color:var(--fg);font-family:"IBM Plex Sans KR","Apple SD Gothic Neo","Malgun Gothic",sans-serif;font-size:17px;line-height:1.85;word-break:keep-all;overflow-wrap:break-word}
 a{color:inherit}
@@ -177,7 +177,7 @@ a:focus-visible{outline:3px solid var(--red);outline-offset:3px}
  * 글마다 다르게: 제목 + 본문 앞 세 줄(빨강, 주황, 민트 표시) + 날짜.
  * 글에 사진(JPG, PNG, GIF)이 첨부돼 있으면 첫 사진을 오른쪽에 넣는다.
  */
-const CARD_DESIGN = "c2"; // 카드 디자인을 바꾸면 이 값을 바꾼다. 썸네일 주소의 ?v= 가 바뀌어 카카오톡이 새로 가져간다
+const CARD_DESIGN = "c3"; // 카드 디자인을 바꾸면 이 값을 바꾼다. 썸네일 주소의 ?v= 가 바뀌어 카카오톡이 새로 가져간다
 const LINE_MAX = 60;
 // 사진이 있으면 세 줄(두 줄까지 줄바꿈), 없으면 네 줄
 async function cardContent(p) { const image = await thumbImage(p); return { image, lines: excerptLines(p, image ? 3 : 4) }; }
@@ -194,22 +194,22 @@ function cardHtml({ title, label, isNotice, date, lines = [], image, fontCss }) 
 ${fontCss || ""}
 *{box-sizing:border-box;margin:0;padding:0}
 html,body{width:1200px;height:630px}
-body{background:#fff;color:#0B0B0B;font-family:"Noto Sans KR","Noto Sans CJK KR","Apple SD Gothic Neo",sans-serif;position:relative;overflow:hidden;display:flex;gap:44px;padding:52px 64px 66px}
+body{background:#FFFFFF;color:#1C1C1C;font-family:"Noto Sans KR","Noto Sans CJK KR","Apple SD Gothic Neo",sans-serif;position:relative;overflow:hidden;display:flex;gap:44px;padding:52px 64px 66px}
 .main{flex:1;min-width:0;display:flex;flex-direction:column}
 .top{display:flex;align-items:center;justify-content:space-between;gap:16px}
 .brand{display:flex;align-items:center;gap:14px;font-size:32px;font-weight:900;letter-spacing:-.01em}
 .pens{display:flex;gap:5px;align-items:flex-end}.pens i{display:block;width:10px}
-.pens i:nth-child(1){height:36px;background:#D2141B}.pens i:nth-child(2){height:27px;background:#FF7A1A}.pens i:nth-child(3){height:18px;background:#7EEBD0}
-.label{font-size:24px;font-weight:700;color:#C2410C;white-space:nowrap}
-.label.notice{color:#fff;background:#D2141B;padding:2px 14px}
-h1{margin-top:34px;font-size:${tSize}px;line-height:1.2;font-weight:900;letter-spacing:-.025em;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;word-break:keep-all;padding-bottom:22px;border-bottom:3px solid #0B0B0B}
+.pens i:nth-child(1){height:36px;background:#005A9C}.pens i:nth-child(2){height:27px;background:#003153}.pens i:nth-child(3){height:18px;background:#D9E6F0}
+.label{font-size:24px;font-weight:700;color:#003153;white-space:nowrap}
+.label.notice{color:#fff;background:#005A9C;padding:2px 14px}
+h1{margin-top:34px;font-size:${tSize}px;line-height:1.2;font-weight:900;letter-spacing:-.025em;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;word-break:keep-all;padding-bottom:22px;border-bottom:3px solid #1C1C1C}
 ul{list-style:none;margin-top:24px;display:flex;flex-direction:column;gap:12px}
-li{display:flex;gap:16px;align-items:flex-start;font-size:${withImg ? 26 : 30}px;line-height:1.45;color:#2A2A2A}
+li{display:flex;gap:16px;align-items:flex-start;font-size:${withImg ? 26 : 30}px;line-height:1.45;color:#2E3A46}
 li i{flex:none;width:14px;height:14px;margin-top:${withImg ? 12 : 14}px}
 li span{display:-webkit-box;-webkit-line-clamp:${withImg ? 2 : 1};-webkit-box-orient:vertical;overflow:hidden;word-break:keep-all}
-li:nth-child(1) i{background:#D2141B}li:nth-child(2) i{background:#FF7A1A}li:nth-child(3) i{background:#7EEBD0}li:nth-child(4) i{background:#0B0B0B}
-.foot{margin-top:auto;display:flex;justify-content:space-between;font-size:22px;color:#545454}
-.pic{flex:none;width:400px;height:100%;border:3px solid #0B0B0B;background:#F4F4F4 center/cover no-repeat}
+li:nth-child(1) i{background:#005A9C}li:nth-child(2) i{background:#003153}li:nth-child(3) i{background:#D9E6F0}li:nth-child(4) i{background:#1C1C1C}
+.foot{margin-top:auto;display:flex;justify-content:space-between;font-size:22px;color:#4A5866}
+.pic{flex:none;width:400px;height:100%;border:3px solid #1C1C1C;background:#EEF3F8 center/cover no-repeat}
 .bars{position:absolute;left:0;right:0;bottom:0;height:14px;display:flex}.bars i{flex:1}
 </style></head><body>
 <div class="main">
@@ -219,7 +219,7 @@ li:nth-child(1) i{background:#D2141B}li:nth-child(2) i{background:#FF7A1A}li:nth
   <div class="foot"><span>${esc(date || "AIPM 복습 노트")}</span><span>mopnt135.github.io/test-261117</span></div>
 </div>
 ${withImg ? `<div class="pic" style="background-image:url('${image}')"></div>` : ""}
-<div class="bars"><i style="background:#D2141B"></i><i style="background:#FF7A1A"></i><i style="background:#7EEBD0"></i></div>
+<div class="bars"><i style="background:#005A9C"></i><i style="background:#003153"></i><i style="background:#D9E6F0"></i></div>
 </body></html>`;
 }
 
