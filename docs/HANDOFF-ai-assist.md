@@ -42,11 +42,11 @@
 
 ## 5. 남은 일 (우선순위 순)
 
-1. **OpenWeatherMap 키 폐기.** 키가 커밋 `7115c2c` 하나에 남아 있다(최신 코드에는 없음).
+1. **OpenWeatherMap 키 폐기.** 2026-11-23 에 커밋 기록에서 지웠다(`1fbbd3b` 부터 11개 커밋 번호가 바뀜). 남은 것은 사용자가 OpenWeatherMap 사이트에서 키를 끄는 일.
    - 먼저 사용자가 OpenWeatherMap 사이트에서 키를 끈다. 이것이 진짜 해결이다.
    - 사용자가 원하면 커밋 기록에서도 지운다: 새로 clone → `git filter-repo --replace-text`(키 → `OPENWEATHER_KEY_REMOVED`) → 기록 전체에 키가 없는지 확인 → **사용자 확인을 받은 뒤** `git push --force origin main`.
    - 키 값은 화면, 대화, 커밋 메시지에 절대 출력하지 않는다.
-   - 부작용: `7115c2c` 이후 커밋 번호가 바뀌어 docs/TASKS.md 표의 번호가 틀어진다. 다시 맞춘다. GitHub Actions 가 도는 06:17, 18:17 KST 근처는 피한다.
+   - 부작용: `1fbbd3b` 이후 커밋 번호가 바뀌어 docs/TASKS.md 표의 번호가 틀어진다. 다시 맞춘다. GitHub Actions 가 도는 06:17, 18:17 KST 근처는 피한다.
 2. Settings > Actions > General 에서 "Read and write permissions" 켜기(사용자), Actions 탭에서 수동 실행, 배포 확인:
    `p/demo-1/` 에 요약 상자, `ai/` 에 보고서.
 3. 사용자가 무료 키를 구하면 Secrets `AI_API_KEY` 등록 → 진짜 AI 결과 1건 이상 만들기. 무료 등급의 학습 데이터 사용 조건 [확인 필요].
