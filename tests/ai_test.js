@@ -232,6 +232,10 @@ const server = http.createServer((req, res) => {
   const pr = ai.chatPrompt(mdM);
   // AI 가 topic 을 빠뜨려도 그림은 "보여 주세요" 질문으로 따로 붙는다
   const att = ai.attachMedia({ greeting: "", items: [{ q: "블로그는요?", a: "복습 노트입니다.", topic: "없는 제목", keywords: [] }] }, mdM);
+  // 실제 Claude 처럼 괄호를 뺀 topic 이어도 그 답에 붙고, 따로 "보여 주세요" 질문을 만들지 않는다
+  const loose = ai.attachMedia({ greeting: "", items: [{ q: "작품도 있나요?", a: "예시 작품이 있습니다.", topic: "작품", keywords: [] }] }, mdM);
+  check("C10", "AI 가 주제 이름의 괄호 부분을 빼고 적어도 그림이 그 답에 붙고, 같은 주제 질문을 덧붙이지 않는다",
+    loose.items.length === 1 && loose.items[0].media && loose.items[0].media.length === 2, JSON.stringify(loose.items.map(x => [x.q, (x.media || []).length])));
   check("C9", "자료의 그림 줄에서 사진과 영상 썸네일을 뽑아 해당 답에 붙이고, 이상한 주소는 버리며, AI 에게는 주소 대신 설명만 준다",
     m1.code === 0 && withMedia.length === 1 && withMedia[0].media.length === 2 && withMedia[0].media[1].video === true && !withMedia[0].media[0].video
     && withMedia[0].media.every(m => m.src.startsWith("assets/portfolio/") && !m.src.includes("..")) && !withMedia[0].a.includes("assets/")

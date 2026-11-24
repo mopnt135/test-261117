@@ -143,7 +143,7 @@ async function callModel(text, schema) {
 
 /* ---------- 포트폴리오 안내 챗봇: 질문과 답을 미리 만든다 ---------- */
 const NOT_READY = "[작성 필요]";
-const CHAT_VER = "2"; // 11-24: 사진, 영상 썸네일 붙이기. 만드는 방식이 바뀌면 올려서 다시 만들게 한다
+const CHAT_VER = "3"; // 11-24: 사진, 영상 썸네일 붙이기. 만드는 방식이 바뀌면 올려서 다시 만들게 한다
 // 자료의 그림 줄: ![설명](assets/portfolio/파일). 설명이 영상: 으로 시작하면 영상 썸네일(재생 안 함)
 const IMG_LINE = /^[ \t]*!\[([^\]\n]*)\]\(([^)\s]+)\)[ \t]*$/gm;
 const MEDIA_PATH = /^assets\/portfolio\/[A-Za-z0-9._-]+\.(jpe?g|png|gif|webp)$/i;
@@ -177,11 +177,14 @@ function sections(md) {
 }
 // 그림 붙이기: AI 가 고른 topic 이 그림 있는 주제와 같으면 그 답에 붙인다.
 // 어느 답에도 안 붙은 주제는 "OO 보여 주세요" 질문을 하나 더 만든다(AI 가 빠뜨려도 그림은 반드시 나온다)
+const normTopic = x => String(x || "").replace(/\([^)]*\)/g, "").replace(/[\s#]/g, "").toLowerCase();
 function attachMedia(out, md) {
   const secs = sections(md).filter(x => x.media.length);
   const used = new Set();
   const items = out.items.map(({ topic, ...x }) => {
-    const sec = secs.find(s => s.title === topic);
+    const t = normTopic(topic);
+    // 11-24 실제 Claude 가 "(예시 작품, ...)" 같은 괄호를 빼고 적어 그림이 안 붙었다. 괄호, 빈칸, # 를 빼고 비교한다
+    const sec = t && (secs.find(s => normTopic(s.title) === t) || secs.find(s => { const n = normTopic(s.title); return n.length >= 2 && t.length >= 2 && (n.includes(t) || t.includes(n)); }));
     if (!sec || used.has(sec.title)) return x;
     used.add(sec.title);
     return { ...x, media: sec.media };
