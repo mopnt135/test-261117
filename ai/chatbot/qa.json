@@ -1,8 +1,8 @@
 {
-  "hash": "dcf84b526d2357a1",
+  "hash": "afe6c17c3a4767da",
   "mode": "mock",
   "model": "mock",
-  "generated_at": "2026-11-24T17:07:47+09:00",
+  "generated_at": "2026-11-24T17:35:39+09:00",
   "ready": false,
   "greeting": "안녕하세요. 포트폴리오 안내 챗봇입니다. 아래 질문을 눌러 보세요.",
   "items": [
@@ -48,6 +48,21 @@
         "작품,",
         "실제",
         "포트폴리오"
+      ],
+      "media": [
+        {
+          "src": "assets/portfolio/example-1-banner.jpg",
+          "alt": "예시 1. 웹툰풍 배너"
+        },
+        {
+          "src": "assets/portfolio/example-2-illust.jpg",
+          "alt": "예시 2. 판타지 일러스트"
+        },
+        {
+          "src": "assets/portfolio/example-3-video-thumb.jpg",
+          "alt": "예시 3. 5초 애니메이션 영상의 한 장면",
+          "video": true
+        }
       ]
     },
     {
