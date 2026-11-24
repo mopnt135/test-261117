@@ -211,7 +211,7 @@ a:focus-visible{outline:3px solid var(--orange);outline-offset:3px}
  * 글마다 다르게: 제목 + 본문 앞 세 줄(점 색: 강조, 문양, 선) + 날짜.
  * 글에 사진(JPG, PNG, GIF)이 첨부돼 있으면 첫 사진을 오른쪽에 넣는다.
  */
-const CARD_DESIGN = "c6"; // 카드 디자인을 바꾸면 이 값을 바꾼다. 썸네일 주소의 ?v= 가 바뀌어 카카오톡이 새로 가져간다
+const CARD_DESIGN = "c7"; // 카드 디자인을 바꾸면 이 값을 바꾼다. 썸네일 주소의 ?v= 가 바뀌어 카카오톡이 새로 가져간다
 const LINE_MAX = 60;
 // 사진이 있으면 세 줄(두 줄까지 줄바꿈), 없으면 네 줄
 async function cardContent(p) { const image = await thumbImage(p); return { image, lines: excerptLines(p, image ? 3 : 4) }; }
@@ -243,7 +243,6 @@ li span{display:-webkit-box;-webkit-line-clamp:${withImg ? 2 : 1};-webkit-box-or
 li:nth-child(1) i{background:#E5584B}li:nth-child(2) i{background:#2F3E63}li:nth-child(3) i{background:#C1C5C6}li:nth-child(4) i{background:#2B2622}
 .foot{margin-top:auto;display:flex;justify-content:space-between;font-size:22px;color:#6B6760}
 .pic{flex:none;width:400px;height:100%;border:3px solid #2B2622;background:#F3F3E8 center/cover no-repeat}
-.bars{position:absolute;left:0;right:0;bottom:0;height:14px;display:flex}.bars i{flex:1}
 </style></head><body>
 <div class="main">
   <div class="top"><div class="brand"><img src="${LOGO_URI}" alt="">${SITE_NAME}</div><span class="label${isNotice ? " notice" : ""}">${esc(label)}</span></div>
@@ -252,7 +251,6 @@ li:nth-child(1) i{background:#E5584B}li:nth-child(2) i{background:#2F3E63}li:nth
   <div class="foot"><span>${esc(date || "AIPM 복습 노트")}</span><span>mopnt135.github.io/thinkandmake</span></div>
 </div>
 ${withImg ? `<div class="pic" style="background-image:url('${image}')"></div>` : ""}
-<div class="bars"><i style="background:#E5584B"></i><i style="background:#2F3E63"></i><i style="background:#2B2622"></i></div>
 </body></html>`;
 }
 

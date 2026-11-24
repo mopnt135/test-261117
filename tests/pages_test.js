@@ -120,6 +120,11 @@ check("G19", "시연용 글은 누를 수 없는 가짜 버튼 대신 안내 문
   const ok = h.includes('class="demo-note"') && !h.includes('aria-disabled') && !h.includes('href="../../#post-demo-9"');
   return [ok, ok ? "안내 문구, 댓글 링크 없음" : "가짜 버튼이나 댓글 링크가 남아 있음"];
 });
+check("G20", "썸네일 카드 아래에 예전 세 줄 색 띠가 없고, 로고 그림이 들어간다", () => {
+  const h = gen.cardHtml({ title: "띠 확인", label: "실습 기록", lines: ["한 줄"] });
+  const ok = !h.includes('class="bars"') && h.includes("data:image/png;base64,");
+  return [ok, ok ? "띠 없음, 로고 있음" : "띠가 남아 있거나 로고가 없음"];
+});
 check("G14", "썸네일 카드에 글 제목과 본문 앞줄이 들어가고, HTML 기호는 글자로 바뀐다", () => {
   const p = { title: "<b>제목</b>", body: "첫 줄 <script>x</script>\n\n둘째 줄\n셋째 줄\n넷째 줄\n다섯째 줄" };
   const lines = gen.excerptLines(p, 4);
