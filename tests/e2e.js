@@ -427,13 +427,13 @@ const tests = [
     await page.emulateMedia({ colorScheme: "dark" }); await goto();
     const [bg, fg] = await page.evaluate(() => { const s = getComputedStyle(document.body); return [s.backgroundColor, s.color]; });
     await shot("home-dark"); await page.emulateMedia({ colorScheme: "light" });
-    return expect(bg === "rgb(28, 28, 28)" && fg === "rgb(217, 230, 240)", `배경 ${bg}, 글자 ${fg}`); // 새 색: 배경 #1C1C1C, 글자 #D9E6F0
+    return expect(bg === "rgb(53, 56, 57)" && fg === "rgb(255, 255, 255)", `배경 ${bg}, 글자 ${fg}`); // 11-24 새 색: 배경 #353839, 글자 #FFFFFF
   }],
-  ["G", "T63", "푸터는 남색 바탕에 밝은 글자다 (밝은 화면, 어두운 화면)", async () => {
+  ["G", "T63", "푸터는 문양색 #2F3E63 바탕에 밝은 글자다 (밝은 화면, 어두운 화면)", async () => {
     const read = () => page.evaluate(() => { const f = getComputedStyle(document.querySelector("footer")), a = getComputedStyle(document.querySelector("footer a")); return [f.backgroundColor, f.color, a.color]; });
     await goto(); const light = await read();
     await page.emulateMedia({ colorScheme: "dark" }); await goto(); const dark = await read(); await page.emulateMedia({ colorScheme: "light" });
-    const ok = light[0] === "rgb(0, 49, 83)" && light[1] === "rgb(255, 255, 255)" && light[2] === "rgb(255, 255, 255)" && dark[0] === "rgb(0, 49, 83)" && dark[1] === "rgb(217, 230, 240)";
+    const ok = light[0] === "rgb(47, 62, 99)" && light[1] === "rgb(255, 255, 240)" && light[2] === "rgb(255, 255, 240)" && dark[0] === "rgb(47, 62, 99)" && dark[1] === "rgb(255, 255, 255)";
     return expect(ok, `밝게 ${light.join(" / ")}, 어둡게 ${dark.join(" / ")}`);
   }],
   ["G", "T62", "전체 테스트 동안 스크립트 오류가 없다", async () => expect(errors.length === 0, errors.length ? errors.join(" | ") : "오류 0건")],

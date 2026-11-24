@@ -23,16 +23,18 @@
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.min.js"></script>
 <style>
 /* 레이아웃: 고정 헤더 + 화면 5개(첫 화면, 글 목록, 글 상세, 글쓰기, 관리자). 주소 끝 #이름으로 화면을 바꿈
-   강조 3단계(초안): 파랑(1순위) > 남색(2순위) > 연파랑(3순위). 변수 이름은 예전 이름(--red 등)을 그대로 씀 */
-/* 기본 색 5가지: #005A9C 파랑, #003153 남색, #D9E6F0 연파랑, #1C1C1C 검정, #FFFFFF 흰색
-     --muted, --line, --soft 는 위 색에서 만든 보조 회색. --danger 는 되돌릴 수 없는 조치에만 */
+   변수 이름은 예전 이름(--red 등)을 그대로 씀: --red=강조색, --orange/--mint=문양색 */
+/* 색 (2026-11-24 변경). 밝은 모드: 베이스 #FFFFF0, 글자 #2B2622, 문양 #2F3E63, 강조 #E5584B
+     다크 모드: 베이스 #353839, 글자 #FFFFFF, 문양 #D5E8F5, 강조 #C2185B
+     강조색은 글자 대비가 모자라(3.6:1, 2.0:1) 칠하는 곳(버튼, 배지, 밑줄 표시, 로고)에만 쓴다. 글자, 테두리, 포커스는 문양색
+     --muted, --line, --soft, --mint-fill 은 위 색을 섞어 만든 보조 색. --danger 는 강조색과 같다(예전 빨강은 없앰) */
 :root{
-  --bg:#FFFFFF;--fg:#1C1C1C;--muted:#4A5866;--line:#B9C9D8;--soft:#EEF3F8;
-  --red:#005A9C;--on-red:#FFFFFF;
-  --orange:#003153;--orange-fill:#003153;--on-orange:#FFFFFF;
-  --mint:#005A9C;--mint-fill:#D9E6F0;--on-mint:#003153;
-  --danger:#B42318;--on-danger:#FFFFFF;
-  --footer-bg:#003153;--on-footer:#FFFFFF;--footer-hover:#D9E6F0;
+  --bg:#FFFFF0;--fg:#2B2622;--muted:#6B6760;--line:#C1C5C6;--soft:#F3F3E8;
+  --red:#E5584B;--on-red:#2B2622;
+  --orange:#2F3E63;--orange-fill:#2F3E63;--on-orange:#FFFFF0;
+  --mint:#2F3E63;--mint-fill:#E6E8DF;--on-mint:#2F3E63;
+  --danger:#E5584B;--on-danger:#2B2622;
+  --footer-bg:#2F3E63;--on-footer:#FFFFF0;--footer-hover:#D5E8F5;
   --f-display:"Gothic A1","Apple SD Gothic Neo","Malgun Gothic",sans-serif;
   --f-body:"IBM Plex Sans KR","Apple SD Gothic Neo","Malgun Gothic",sans-serif;
   --f-mono:"IBM Plex Mono",ui-monospace,Menlo,monospace;
@@ -40,22 +42,22 @@
 }
 @media (prefers-color-scheme: dark){
   :root:not([data-theme="light"]){
-    --bg:#1C1C1C;--fg:#D9E6F0;--muted:#9DAAB6;--line:#33404C;--soft:#232B33;
-    --red:#5CAEEA;--on-red:#1C1C1C;
-    --orange:#A9CDEB;--orange-fill:#D9E6F0;--on-orange:#003153;
-    --mint:#5CAEEA;--mint-fill:#003153;--on-mint:#D9E6F0;
-    --danger:#FF7A6E;--on-danger:#1C1C1C;
-    --footer-bg:#003153;--on-footer:#D9E6F0;--footer-hover:#FFFFFF;
+    --bg:#353839;--fg:#FFFFFF;--muted:#C2C3C4;--line:#5D6468;--soft:#2D3030;
+    --red:#C2185B;--on-red:#FFFFFF;
+    --orange:#D5E8F5;--orange-fill:#D5E8F5;--on-orange:#353839;
+    --mint:#D5E8F5;--mint-fill:#4D5255;--on-mint:#FFFFFF;
+    --danger:#C2185B;--on-danger:#FFFFFF;
+    --footer-bg:#2F3E63;--on-footer:#FFFFFF;--footer-hover:#D5E8F5;
     color-scheme:dark;
   }
 }
 :root[data-theme="dark"]{
-  --bg:#1C1C1C;--fg:#D9E6F0;--muted:#9DAAB6;--line:#33404C;--soft:#232B33;
-  --red:#5CAEEA;--on-red:#1C1C1C;
-  --orange:#A9CDEB;--orange-fill:#D9E6F0;--on-orange:#003153;
-  --mint:#5CAEEA;--mint-fill:#003153;--on-mint:#D9E6F0;
-  --danger:#FF7A6E;--on-danger:#1C1C1C;
-  --footer-bg:#003153;--on-footer:#D9E6F0;--footer-hover:#FFFFFF;
+  --bg:#353839;--fg:#FFFFFF;--muted:#C2C3C4;--line:#5D6468;--soft:#2D3030;
+  --red:#C2185B;--on-red:#FFFFFF;
+  --orange:#D5E8F5;--orange-fill:#D5E8F5;--on-orange:#353839;
+  --mint:#D5E8F5;--mint-fill:#4D5255;--on-mint:#FFFFFF;
+  --danger:#C2185B;--on-danger:#FFFFFF;
+  --footer-bg:#2F3E63;--on-footer:#FFFFFF;--footer-hover:#D5E8F5;
   color-scheme:dark;
 }
 
@@ -67,7 +69,7 @@ img{max-width:100%}
 body{background:var(--bg);color:var(--fg);font-family:var(--f-body);font-size:17px;line-height:1.7;word-break:keep-all;overflow-wrap:break-word}
 a{color:inherit}
 button{font:inherit}
-:focus-visible{outline:3px solid var(--red);outline-offset:3px;border-radius:2px}
+:focus-visible{outline:3px solid var(--orange);outline-offset:3px;border-radius:2px}
 h1:focus{outline:none}
 .wrap{max-width:var(--wrap);margin:0 auto;padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px))}
 .skip{position:absolute;left:-999px;top:8px;background:var(--red);color:var(--on-red);padding:10px 16px;z-index:50;font-weight:700}
@@ -96,7 +98,7 @@ header.site{position:sticky;top:env(safe-area-inset-top,0px);z-index:20;backgrou
 .pens i{display:block;width:6px;border-radius:1px}
 .pens i:nth-child(1){height:20px;background:var(--red)}
 .pens i:nth-child(2){height:15px;background:var(--orange-fill)}
-.pens i:nth-child(3){height:10px;background:var(--mint-fill)}
+.pens i:nth-child(3){height:10px;background:var(--fg)}
 nav.main{display:flex;gap:2px;margin-left:auto}
 nav.main a{text-decoration:none;padding:10px 12px;font-weight:500;min-height:44px;display:flex;align-items:center;white-space:nowrap}
 nav.main a[aria-current="page"]{box-shadow:inset 0 -3px 0 var(--orange-fill)}
@@ -104,7 +106,7 @@ nav.main a:hover{color:var(--orange)}
 .search{display:flex;align-items:center;border:2px solid var(--fg);height:44px;width:180px;min-width:0}
 .search input{flex:1;min-width:0;border:0;background:transparent;color:var(--fg);font:inherit;font-size:15px;padding:0 12px;height:100%}
 .search input:focus{outline:none}
-.search:focus-within{border-color:var(--red)}
+.search:focus-within{border-color:var(--orange)}
 .search svg{width:18px;height:18px;margin-right:12px;flex:none}
 .auth{display:flex;gap:8px;flex:none}
 .menu-btn{display:none}
@@ -128,7 +130,7 @@ nav.main a:hover{color:var(--orange)}
 .tile b::after{content:"→";color:var(--orange);transition:transform .2s}
 .tile:hover b::after{transform:translateX(4px)}
 .tile span{color:var(--muted);font-size:15px}
-.tile.primary b::after{color:var(--red)}
+.tile.primary b::after{color:var(--orange)}
 
 /* 공통 화면 머리 */
 .page{padding-block:40px 72px}
@@ -226,7 +228,7 @@ aside h2{font-family:var(--f-display);font-weight:900;font-size:18px;margin:0 0 
 .field label,.field legend{font-size:15px;font-weight:700}
 .field input,.field textarea{font:inherit;font-size:16px;color:var(--fg);background:var(--bg);border:2px solid var(--fg);padding:10px 12px;min-height:48px;width:100%}
 .field textarea{min-height:320px;resize:vertical;line-height:1.7}
-.field input:focus,.field textarea:focus{outline:none;border-color:var(--red)}
+.field input:focus,.field textarea:focus{outline:none;border-color:var(--orange)}
 .hint{font-size:13px;color:var(--muted)}
 fieldset.field{border:0;padding:0;margin:0}
 .vis{display:grid;grid-template-columns:1fr 1fr;gap:8px}
@@ -237,7 +239,7 @@ fieldset.field{border:0;padding:0;margin:0}
 .vis label:has(input:checked){border-color:var(--fg);background:var(--soft)}
 .actions{display:flex;gap:10px;flex-wrap:wrap}
 .msg{font-size:14px;margin:0;min-height:1.4em}
-.msg.err{color:var(--danger);font-weight:700}
+.msg.err{color:var(--fg);font-weight:700;border-left:4px solid var(--danger);padding-left:10px}
 .btn[data-armed="1"]{background:var(--danger);color:var(--on-danger);border-color:var(--danger)}
 .switch{font-size:14px;color:var(--muted);margin:0}
 .switch button{background:none;border:0;color:var(--orange);font-weight:700;cursor:pointer;text-decoration:underline;padding:4px}
@@ -255,8 +257,8 @@ fieldset.field{border:0;padding:0;margin:0}
 .stat b{font-family:var(--f-display);font-size:28px;line-height:1.2}
 .stat span{font-size:14px;color:var(--muted)}
 
-/* 푸터: 남색 바탕. 파랑(--red) 테두리는 남색 위에서 안 보여서 푸터 안에서는 글자색으로 */
-footer{background:var(--footer-bg);color:var(--on-footer)}
+/* 푸터: 문양색 #2F3E63 바탕(다크 모드도 같음). 위에 강조색 띠. 강조색 테두리는 푸터 안에서 안 보여서 글자색으로 */
+footer{background:var(--footer-bg);color:var(--on-footer);border-top:4px solid var(--red)}
 .foot{display:flex;flex-wrap:wrap;justify-content:space-between;gap:12px;padding-block:28px;font-size:14px;color:var(--on-footer)}
 .foot a,footer .link-btn{color:var(--on-footer)}
 .foot a:hover,footer .link-btn:hover{color:var(--footer-hover)}
@@ -308,7 +310,7 @@ nav.main a[hidden]{display:none}
 .c-actions button:hover{color:var(--orange)}
 .c-form{display:flex;flex-direction:column;gap:8px;margin-top:20px}
 .c-form textarea{font:inherit;font-size:16px;line-height:1.6;color:var(--fg);background:var(--bg);border:2px solid var(--fg);padding:10px 12px;min-height:110px;width:100%;resize:vertical}
-.c-form textarea:focus{outline:none;border-color:var(--red)}
+.c-form textarea:focus{outline:none;border-color:var(--orange)}
 .c-form .actions{align-items:center}
 .c-label{font-weight:700;font-size:15px}
 .c-login{margin-top:20px;padding:16px;background:var(--soft);display:flex;flex-wrap:wrap;gap:12px;align-items:center;justify-content:space-between}
@@ -328,14 +330,14 @@ nav.main a[hidden]{display:none}
 .att-pick .nm{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .att-pick .sz{font-family:var(--f-mono);font-size:13px;color:var(--muted);flex:none}
 .att-pick button{flex:none;background:none;border:0;color:var(--muted);text-decoration:underline;cursor:pointer;min-height:36px;font-size:14px}
-.att-pick button:hover{color:var(--red)}
+.att-pick button:hover{color:var(--orange)}
 .att-kind{flex:none;font-size:12px;font-weight:700;padding:1px 8px;background:var(--soft)}
 .att-kind.pdf{background:var(--red);color:var(--on-red)}
 .att-kind.img{background:var(--mint-fill);color:var(--on-mint)}
 .att-kind.keep{background:transparent;border:1.5px solid var(--line)}
 .file-btn{display:inline-flex;align-items:center;gap:8px;min-height:44px;padding:0 16px;border:2px dashed var(--fg);cursor:pointer;font-weight:700;width:fit-content}
 .file-btn:hover{border-color:var(--orange);color:var(--orange)}
-.file-btn:focus-within{outline:3px solid var(--red);outline-offset:3px}
+.file-btn:focus-within{outline:3px solid var(--orange);outline-offset:3px}
 .file-btn input{position:absolute;width:1px;height:1px;opacity:0}
 .atts{margin-top:32px;padding-top:16px;border-top:1px solid var(--line)}
 .atts h2{font-family:var(--f-display);font-weight:900;font-size:18px;margin:0 0 12px}
