@@ -43,7 +43,8 @@
 | 2026-11-24 | 로고를 세 막대에서 사용자가 준 전구와 톱니 그림(assets/logo.png, 배경 투명)으로. 헤더, 검색 페이지, 썸네일(c6). 테스트 T104 | `f84217c` |
 | 2026-11-24 | 로고 이름 아래 'THINK & MAKE'(금색). 푸터 로고를 왼쪽으로, 전구·이름 흰색, 톱니·영문 금색(assets/logo-footer.png). 테스트 T105 | `891bb03` |
 | 2026-11-24 | 파비콘을 새 로고로(assets/favicon.ico 16·32·48, favicon-32/192.png, apple-touch-icon.png). 블로그와 검색 페이지에 연결. 테스트 T106 | `33375fe` |
-| 2026-11-24 | 검색 설명(description, og:description)과 블로그 대표 썸네일 문구를 새 이름에 맞게. 예전 '빨강, 주황, 민트' 설명 없앰. 테스트 T80 기대값 | 이 줄을 추가한 커밋 |
+| 2026-11-24 | 검색 설명(description, og:description)과 블로그 대표 썸네일 문구를 새 이름에 맞게. 예전 '빨강, 주황, 민트' 설명 없앰. 테스트 T80 기대값 | `506ecea` |
+| 2026-11-24 | 주소를 mopnt135.github.io/thinkandmake 로 바꾸는 준비: 코드, 테스트, 문서, PRD 의 주소. 저장소 이름 변경(test-261117 -> thinkandmake)은 사용자가 GitHub 설정에서 한다(이 환경에서 막힘) | 이 줄을 추가한 커밋 |
 
 ## 남은 일
 
@@ -54,7 +55,7 @@
 - [ ] **GA4 DebugView 로 실제 수집 확인.** 배포 주소에서 page_view, post_view 가 들어오는지 본다.
 - [ ] **Supabase 연결 후 실제 환경 테스트.** `tests/rls_test.py` 는 로컬 흉내 환경이다. 실제 Supabase 에서 회원 계정으로 남의 댓글 삭제, 글쓰기, 초안 파일 읽기가 거절되는지 확인한다.
 - [ ] **지운 글과 댓글 복구 여부 결정.** PRD 결정 사항에 "다시 정해야 함"으로 남아 있다. 사람의 결정이 필요하다.
-- [ ] **배포된 주소에서 확인.** https://mopnt135.github.io/test-261117/ 을 실제 브라우저로 열어 최신 커밋이 반영됐는지 본다.
+- [ ] **배포된 주소에서 확인.** https://mopnt135.github.io/thinkandmake/ 을 실제 브라우저로 열어 최신 커밋이 반영됐는지 본다.
 
 - [ ] **검색·공유 자동 생성 확인.** GitHub 저장소 Settings > Actions > General 에서 "Read and write permissions" 를 켜고, Actions 탭에서 "검색·공유 페이지 만들기"를 한 번 직접 실행한다.
 - [ ] **검색엔진 등록.** Google Search Console, 네이버 서치어드바이저에 사이트를 등록하고 `sitemap.xml` 을 제출한다.

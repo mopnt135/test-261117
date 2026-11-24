@@ -11,14 +11,14 @@
 <link rel="icon" type="image/png" href="assets/favicon-192.png" sizes="192x192">
 <link rel="apple-touch-icon" href="assets/apple-touch-icon.png">
 <!-- 검색, 공유 미리보기용. 글마다 다른 정보는 scripts/build-pages.js 가 만드는 p/<글번호>/ 페이지에 있다 -->
-<link rel="canonical" href="https://mopnt135.github.io/test-261117/">
+<link rel="canonical" href="https://mopnt135.github.io/thinkandmake/">
 <meta property="og:type" content="website">
 <meta property="og:site_name" content="생각하는 공방">
 <meta property="og:locale" content="ko_KR">
 <meta property="og:title" content="생각하는 공방 · AIPM 복습 노트">
 <meta property="og:description" content="AIPM 수업에서 생각하고 만든 것을 기록하는 복습 노트 블로그. THINK &amp; MAKE">
-<meta property="og:url" content="https://mopnt135.github.io/test-261117/">
-<meta property="og:image" content="https://mopnt135.github.io/test-261117/og/site.png">
+<meta property="og:url" content="https://mopnt135.github.io/thinkandmake/">
+<meta property="og:image" content="https://mopnt135.github.io/thinkandmake/og/site.png">
 <meta property="og:image:width" content="1200">
 <meta property="og:image:height" content="630">
 <meta name="twitter:card" content="summary_large_image">
@@ -669,7 +669,7 @@ function parseRoute(){
 }
 /* 주소 # 뒤를 GA 가 읽는 경로로 바꾼다. GA4 는 page_location(전체 주소)으로 페이지 경로를 정한다.
    글은 검색·공유 페이지와 같은 실제 주소(p/12/)로 보내, 어느 쪽으로 읽어도 GA 에서 한 줄로 모인다.
-   나머지 화면은 사이트 주소 뒤에 붙는 가상 경로다. 예: #list → /test-261117/list */
+   나머지 화면은 사이트 주소 뒤에 붙는 가상 경로다. 예: #list → /thinkandmake/list */
 function pageInfo(r){
   const map = { home:["", "home"], list:["list", "list"], write:["write", "write"], login:["login", "login"] };
   if (r.name === "post") return [`p/${r.id}/`, String(r.id).startsWith("notice") ? "notice" : "post"];
@@ -679,7 +679,7 @@ function pageInfo(r){
 }
 /* 검색어에 섞인 이메일, 전화번호 같은 긴 숫자는 GA 로 보내기 전에 가린다 */
 const redactTerm = q => String(q).replace(/[^\s@]+@[^\s@]+/g, "[이메일]").replace(/\d[\d\s-]{5,}\d/g, "[숫자]");
-const siteBase = () => new URL(".", location.href.split("#")[0].split("?")[0]).href; // 예: https://mopnt135.github.io/test-261117/
+const siteBase = () => new URL(".", location.href.split("#")[0].split("?")[0]).href; // 예: https://mopnt135.github.io/thinkandmake/
 /* UTM 링크로 들어왔을 때 GA 가 출처를 알 수 있게, 주소의 utm_ 값만 page_location 에 붙인다. 다른 값은 보내지 않는다 */
 const campaignQuery = () => {
   const keep = new URLSearchParams();

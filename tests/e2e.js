@@ -231,7 +231,7 @@ const tests = [
   ["H", "T70", "첫 화면을 열면 홈 page_view 가 1건 기록된다", async () => {
     await goto(); await wait(300);
     const ev = await page.evaluate(() => window.samsaekpenEvents.filter(e => e.name === "page_view"));
-    // GA4 는 page_location 으로 경로를 정한다. 첫 화면은 사이트 주소 그대로 (배포 주소에서는 /test-261117/)
+    // GA4 는 page_location 으로 경로를 정한다. 첫 화면은 사이트 주소 그대로 (배포 주소에서는 /thinkandmake/)
     const home = new NodeURL(".", URL).href;
     return expect(ev.length === 1 && ev[0].params.page_type === "home" && ev[0].params.page_location === home && ev[0].params.page_path === new NodeURL(home).pathname && ev[0].params.view_source === "app", `page_view ${ev.length}건, ${ev[0] && ev[0].params.page_location}`);
   }],
@@ -354,7 +354,7 @@ const tests = [
   }],
   ["I", "T84", "첫 화면에 사이트 공유 미리보기 정보(og)가 있다", async () => {
     const og = await page.evaluate(() => Object.fromEntries([...document.querySelectorAll('meta[property^="og:"]')].map(m => [m.getAttribute("property"), m.content])));
-    return expect(og["og:image"] === "https://mopnt135.github.io/test-261117/og/site.png" && og["og:title"] && og["og:url"], `og:image ${og["og:image"]}`);
+    return expect(og["og:image"] === "https://mopnt135.github.io/thinkandmake/og/site.png" && og["og:title"] && og["og:url"], `og:image ${og["og:image"]}`);
   }],
 
   // J. 첫 화면. 11-24 쉬어가기(고양이, 포켓몬)를 사용자 결정으로 없애며 T90~T99 를 지우고 T102 로 대신한다

@@ -8,7 +8,7 @@
 
 ## 1. 개요
 
-관리자가 글마다 손으로 하던 홍보 준비를 AI 가 미리 해 둔다: 제목 후보, 태그, SNS 문구, 독자용 3줄 요약. 지금은 가짜 AI 결과이고 진짜 키는 11-25. 예산 0원. [요약 보이는 글](https://mopnt135.github.io/test-261117/p/demo-1/) · [관리자 보고서](https://mopnt135.github.io/test-261117/ai/) · [저장소](https://github.com/mopnt135/test-261117)
+관리자가 글마다 손으로 하던 홍보 준비를 AI 가 미리 해 둔다: 제목 후보, 태그, SNS 문구, 독자용 3줄 요약. 지금은 가짜 AI 결과이고 진짜 키는 11-25. 예산 0원. [요약 보이는 글](https://mopnt135.github.io/thinkandmake/p/demo-1/) · [관리자 보고서](https://mopnt135.github.io/thinkandmake/ai/) · [저장소](https://github.com/mopnt135/thinkandmake)
 
 ## 2. 문제
 

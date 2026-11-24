@@ -14,7 +14,7 @@ const FIX = path.join(__dirname, "fixtures");
 // 생성기 함수를 직접 부를 때 쓸 첨부 폴더 (모듈이 읽을 때 인자를 본다)
 process.argv.push("--attachments-dir", FIX);
 const gen = require(path.join(ROOT, "scripts/build-pages.js"));
-const SITE = "https://mopnt135.github.io/test-261117/";
+const SITE = "https://mopnt135.github.io/thinkandmake/";
 const tmp = fs.mkdtempSync(path.join(os.tmpdir(), "samsaekpen-pages-"));
 const out = path.join(tmp, "site");
 const postsFile = path.join(tmp, "posts.json");

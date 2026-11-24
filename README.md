@@ -3,7 +3,7 @@
 AIPM 수업 복습 노트를 올리는 블로그입니다.
 글은 관리자만 쓰고, 회원은 읽고 댓글을 달 수 있습니다.
 
-- 주소: https://mopnt135.github.io/test-261117/
+- 주소: https://mopnt135.github.io/thinkandmake/
 - 구성: `index.html` 하나 + Supabase(로그인, 데이터, 첨부 파일)
 - Supabase 를 연결하지 않으면 브라우저에만 저장되는 체험 모드로 동작합니다.
 
@@ -30,7 +30,7 @@ AIPM 수업 복습 노트를 올리는 블로그입니다.
 글마다 AI 가 3줄 요약(독자용)과 제목 후보, 태그, SNS 홍보 문구(관리자용)를 미리 만듭니다.
 아래 [자동 실행](#자동-실행-github-actions) 표의 "검색·공유 페이지 만들기"가 같이 돌립니다. 독자가 글을 볼 때는 AI 를 부르지 않아 비용이 들지 않습니다.
 
-- 관리자 보고서: https://mopnt135.github.io/test-261117/ai/
+- 관리자 보고서: https://mopnt135.github.io/thinkandmake/ai/
 - AI 키가 없으면 시연용 가짜 AI 로 만듭니다. 결과에 "시연용"이라고 표시됩니다.
 - 진짜 AI 를 쓰려면 저장소 Settings > Secrets and variables > Actions 에서 `AI_API_KEY` 를 등록합니다. 모델 이름은 Variables 의 `AI_MODEL` 로 바꿀 수 있습니다.
 - Supabase 를 연결하기 전에는 `demo/posts.json` 의 시연용 글로 돕니다.

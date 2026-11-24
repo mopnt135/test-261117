@@ -28,7 +28,7 @@ const POSTS_JSON = arg("--posts-json");
 const NO_IMAGES = args.includes("--no-images");
 const ATT_DIR = arg("--attachments-dir"); // 테스트용. Supabase 보관함 대신 이 폴더에서 첨부 사진을 읽는다
 
-const SITE_URL = "https://mopnt135.github.io/test-261117/";
+const SITE_URL = "https://mopnt135.github.io/thinkandmake/";
 const SITE_NAME = "생각하는 공방";
 // 로고(전구와 톱니). 썸네일 카드는 파일 주소 대신 데이터로 넣어야 그림 그리기 브라우저가 바로 읽는다
 const LOGO_URI = "data:image/png;base64," + fs.readFileSync(path.join(__dirname, "..", "assets", "logo.png")).toString("base64");
@@ -249,7 +249,7 @@ li:nth-child(1) i{background:#E5584B}li:nth-child(2) i{background:#2F3E63}li:nth
   <div class="top"><div class="brand"><img src="${LOGO_URI}" alt="">${SITE_NAME}</div><span class="label${isNotice ? " notice" : ""}">${esc(label)}</span></div>
   <h1>${esc(title)}</h1>
   <ul>${lines.map(l => `<li><i></i><span>${esc(l)}</span></li>`).join("")}</ul>
-  <div class="foot"><span>${esc(date || "AIPM 복습 노트")}</span><span>mopnt135.github.io/test-261117</span></div>
+  <div class="foot"><span>${esc(date || "AIPM 복습 노트")}</span><span>mopnt135.github.io/thinkandmake</span></div>
 </div>
 ${withImg ? `<div class="pic" style="background-image:url('${image}')"></div>` : ""}
 <div class="bars"><i style="background:#E5584B"></i><i style="background:#2F3E63"></i><i style="background:#2B2622"></i></div>

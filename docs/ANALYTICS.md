@@ -19,7 +19,7 @@
 | 구분 | ASIS (이전) | TOBE (이번 변경 뒤) |
 | --- | --- | --- |
 | 방문자 수 | 알 수 없음 | 홈과 페이지별 방문자 수를 GA4 에서 확인 |
-| 화면 구분 | 블로그가 `#post-12` 같은 # 주소로 화면을 바꿈. GA 기본 설정에 맡기면 화면 이동이 정확히 집계될지 보장할 수 없음 | 화면이 바뀔 때마다 코드가 직접 `page_view` 를 보냄. `#post-12` → `/test-261117/p/12/` 처럼 검색·공유 페이지와 같은 실제 주소로 바꿔 보냄 (2026-11-18 변경) |
+| 화면 구분 | 블로그가 `#post-12` 같은 # 주소로 화면을 바꿈. GA 기본 설정에 맡기면 화면 이동이 정확히 집계될지 보장할 수 없음 | 화면이 바뀔 때마다 코드가 직접 `page_view` 를 보냄. `#post-12` → `/thinkandmake/p/12/` 처럼 검색·공유 페이지와 같은 실제 주소로 바꿔 보냄 (2026-11-18 변경) |
 | 인기 글 | 댓글 수로만 짐작 | 글별 조회(`post_view`)와 끝까지 읽음(`post_read_complete`)을 따로 셈 |
 | 지역, 기기, OS | 없음 | GA 자동 수집: 국가, 지역, 도시, 기기 종류, OS, 브라우저, 화면 크기, 언어 |
 | 사용자 행동 | 없음 | 검색, 카테고리 선택, 댓글과 답글, 첨부 열기, 가입과 로그인 |
@@ -67,17 +67,17 @@
 ### page_type 값과 경로
 
 GA4 는 **page_location(전체 주소)** 으로 "페이지 경로"를 정한다. `page_path` 는 GA4 공식 값이 아니라 참고용으로만 같이 보낸다.
-배포 주소가 `https://mopnt135.github.io/test-261117/` 라서 GA 보고서의 경로는 모두 `/test-261117/` 로 시작한다.
+배포 주소가 `https://mopnt135.github.io/thinkandmake/` 라서 GA 보고서의 경로는 모두 `/thinkandmake/` 로 시작한다.
 
 | page_type | GA 보고서의 페이지 경로 | 화면 | 실제로 있는 주소인가 |
 | --- | --- | --- | --- |
-| home | `/test-261117/` | 첫 화면 | 예 |
-| list | `/test-261117/list` | 글 목록 | 아니오 (가상 경로) |
-| post | `/test-261117/p/<글번호>/` | 글 상세 | 예. 검색·공유 페이지와 같은 주소 |
-| notice | `/test-261117/p/notice/`, `/test-261117/p/notice-rules/` | 공지 상세 | 예 |
-| write / edit | `/test-261117/write`, `/test-261117/edit/<글번호>` | 글쓰기, 글 수정 | 아니오 |
-| login | `/test-261117/login` | 로그인 | 아니오 |
-| admin / admin_comments | `/test-261117/admin`, `/test-261117/admin/comments` | 관리자 화면 | 아니오 |
+| home | `/thinkandmake/` | 첫 화면 | 예 |
+| list | `/thinkandmake/list` | 글 목록 | 아니오 (가상 경로) |
+| post | `/thinkandmake/p/<글번호>/` | 글 상세 | 예. 검색·공유 페이지와 같은 주소 |
+| notice | `/thinkandmake/p/notice/`, `/thinkandmake/p/notice-rules/` | 공지 상세 | 예 |
+| write / edit | `/thinkandmake/write`, `/thinkandmake/edit/<글번호>` | 글쓰기, 글 수정 | 아니오 |
+| login | `/thinkandmake/login` | 로그인 | 아니오 |
+| admin / admin_comments | `/thinkandmake/admin`, `/thinkandmake/admin/comments` | 관리자 화면 | 아니오 |
 
 **글은 어디로 들어와도 한 줄로 모인다.** 블로그 화면에서 읽어도, 검색이나 카카오톡 링크로 정적 페이지(`p/<글번호>/`)에 들어와도 같은 경로로 기록된다. 어느 쪽으로 들어왔는지는 `view_source` 로 나눠 본다.
 
@@ -98,7 +98,7 @@ GA4 는 **page_location(전체 주소)** 으로 "페이지 경로"를 정한다.
 화면 메뉴 이름은 Google 이 자주 바꿉니다. 아래와 다르면 비슷한 이름을 찾아 주세요.
 
 1. analytics.google.com 에서 계정과 **속성**을 만든다. 시간대는 대한민국, 통화는 원(KRW).
-2. **웹 데이터 스트림**을 만든다. 주소는 `https://mopnt135.github.io/test-261117/`.
+2. **웹 데이터 스트림**을 만든다. 주소는 `https://mopnt135.github.io/thinkandmake/`.
 3. 나온 **측정 ID** (`G-` 로 시작)를 `index.html` 의 `GA_MEASUREMENT_ID` 에 넣고 배포한다.
 4. 데이터 스트림 > **향상된 측정** > 페이지 조회수 옆 설정(톱니바퀴) > "브라우저 기록 이벤트에 따른 페이지 변경"을 **끈다.** Google 문서에 따르면 이 기능은 코드의 `send_page_view: false` 와 상관없이 따로 page_view 를 보낸다. 켜 두면 화면 이동이 두 번 셀 수 있다. 페이지 조회수 자체는 켜 둔다(정적 페이지가 쓴다).
 5. 관리 > **맞춤 정의**에서 아래를 등록한다. 등록해야 보고서에서 측정기준으로 고를 수 있다.
@@ -140,7 +140,7 @@ GA4 는 **page_location(전체 주소)** 으로 "페이지 경로"를 정한다.
 
 ### 규칙
 - 모두 영어 소문자와 밑줄. 한글은 쓰지 않는다(카카오톡에서 주소가 깨지거나 GA 에서 따로 집계될 수 있음).
-- `utm_` 값은 반드시 `?` 뒤, `#` 앞에 둔다. 예: `https://mopnt135.github.io/test-261117/?utm_source=…#post-12`
+- `utm_` 값은 반드시 `?` 뒤, `#` 앞에 둔다. 예: `https://mopnt135.github.io/thinkandmake/?utm_source=…#post-12`
 - 글 하나를 알릴 때는 검색·공유 페이지(`p/<글번호>/`)에 붙인다. 카카오톡 미리보기에 글 썸네일이 나온다.
 - `utm_medium`: 메신저는 `social_group`(단톡방), `social_dm`(1:1). 이름에 social 이 있어야 GA 기본 채널에서 소셜로 묶인다. 메일은 `email`.
 - 블로그 화면은 주소의 `utm_` 값만 page_location 에 붙여 보낸다(`campaignQuery()`). 다른 값은 보내지 않는다.
@@ -154,10 +154,10 @@ GA4 는 **page_location(전체 주소)** 으로 "페이지 경로"를 정한다.
 ### 링크 목록
 | 이름 | source | medium | campaign | content | 링크 |
 | --- | --- | --- | --- | --- | --- |
-| 수업 단톡방에 오픈 알림 | kakaotalk | social_group | blog_open | aipm_class | `https://mopnt135.github.io/test-261117/?utm_source=kakaotalk&utm_medium=social_group&utm_campaign=blog_open&utm_content=aipm_class` |
-| 지인에게 1:1 오픈 알림 | kakaotalk | social_dm | blog_open | friends | `https://mopnt135.github.io/test-261117/?utm_source=kakaotalk&utm_medium=social_dm&utm_campaign=blog_open&utm_content=friends` |
-| 강사님, 멘토에게 메일 | gmail | email | blog_open | mentor | `https://mopnt135.github.io/test-261117/?utm_source=gmail&utm_medium=email&utm_campaign=blog_open&utm_content=mentor` |
-| 수업 단톡방에 글 공유 (운영 기준 공지) | kakaotalk | social_group | review_share | notice_rules | `https://mopnt135.github.io/test-261117/p/notice-rules/?utm_source=kakaotalk&utm_medium=social_group&utm_campaign=review_share&utm_content=notice_rules` |
+| 수업 단톡방에 오픈 알림 | kakaotalk | social_group | blog_open | aipm_class | `https://mopnt135.github.io/thinkandmake/?utm_source=kakaotalk&utm_medium=social_group&utm_campaign=blog_open&utm_content=aipm_class` |
+| 지인에게 1:1 오픈 알림 | kakaotalk | social_dm | blog_open | friends | `https://mopnt135.github.io/thinkandmake/?utm_source=kakaotalk&utm_medium=social_dm&utm_campaign=blog_open&utm_content=friends` |
+| 강사님, 멘토에게 메일 | gmail | email | blog_open | mentor | `https://mopnt135.github.io/thinkandmake/?utm_source=gmail&utm_medium=email&utm_campaign=blog_open&utm_content=mentor` |
+| 수업 단톡방에 글 공유 (운영 기준 공지) | kakaotalk | social_group | review_share | notice_rules | `https://mopnt135.github.io/thinkandmake/p/notice-rules/?utm_source=kakaotalk&utm_medium=social_group&utm_campaign=review_share&utm_content=notice_rules` |
 
 새 글을 공유할 때는 마지막 줄에서 `p/notice-rules/` 와 `utm_content` 만 그 글로 바꾼다.
 
