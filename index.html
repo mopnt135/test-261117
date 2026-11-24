@@ -114,14 +114,11 @@ nav.main a:hover{color:var(--orange)}
 .demo-strip .wrap{padding-block:8px;display:flex;gap:8px;align-items:center}
 .demo-strip b{color:var(--mint)}
 
-/* 첫 화면: 메인 사진 띠 + 가운데 한 줄 글 카드 + 전체 글 보기 + 쉬어가기 (참고 레이아웃, 11-24) */
+/* 첫 화면: 메인 사진 띠 + 가운데 한 줄 글 카드 + 전체 글 보기 (참고 레이아웃, 11-24. 쉬어가기는 같은 날 없앰) */
 .feed{max-width:860px;padding-block:40px 72px}
 .feed .sec-head h1{font-family:var(--f-display);font-weight:900;font-size:20px;margin:0}
 .all-posts{display:flex;justify-content:center;margin:36px 0 56px}
 .all-posts .btn{min-width:220px}
-.feed .fun > section{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:24px}
-.feed .fun h2{grid-column:1 / -1;font-family:var(--f-display);font-weight:900;font-size:20px;margin:0;padding-bottom:10px;border-bottom:2px solid var(--fg)}
-.feed .fun .fun-card + .fun-card{margin-top:0}
 /* 헤더 '내 계정' 메뉴 */
 .acct-menu{position:relative;order:-1}
 .acct-menu > summary{list-style:none}
@@ -199,20 +196,6 @@ aside h2{font-family:var(--f-display);font-weight:900;font-size:18px;margin:0 0 
 .article .meta{padding-bottom:20px;border-bottom:1px solid var(--line)}
 .article-body{white-space:pre-wrap;margin:28px 0 0;font-size:18px;line-height:1.9;max-width:65ch}
 .share{display:flex;gap:10px;flex-wrap:wrap;align-items:center;margin-top:28px}.share .msg{margin:0}
-/* 쉬어가기: 왼쪽 칸 아래. 휴대폰에서는 최근 글 다음 */
-.fun-card + .fun-card{margin-top:28px}
-.fun-card h3{font-family:var(--f-display);font-size:17px;margin:0 0 4px}
-.fun-card .hint{color:var(--muted);font-size:14px;margin:0 0 10px}
-.fun-frame{aspect-ratio:4/3;background:var(--soft);border:2px solid var(--fg);display:flex;align-items:center;justify-content:center;overflow:hidden;margin:0 0 10px}
-.fun-frame img{width:100%;height:100%;object-fit:cover;display:block}
-.fun-frame.poke img{object-fit:contain;padding:8px}
-.fun-frame p{color:var(--muted);font-size:15px;padding:16px;text-align:center;margin:0}
-.fun-card .msg{margin-top:8px}
-.poke-info{margin:0 0 10px}
-.poke-info b{font-family:var(--f-display);font-size:18px}
-.poke-info .no{font-family:var(--f-mono);color:var(--muted);font-size:14px;margin-right:6px}
-.poke-info .genus{color:var(--orange);font-weight:700;font-size:14px;display:block}
-.poke-info p{font-size:14px;margin:6px 0 0;color:var(--fg)}
 .article-actions{display:flex;gap:10px;flex-wrap:wrap;margin-top:36px;align-items:center}
 .pager{display:grid;grid-template-columns:1fr 1fr;gap:0;margin-top:48px;border-top:2px solid var(--fg)}
 .pager a{display:flex;flex-direction:column;gap:2px;padding:18px 0;text-decoration:none;min-width:0}
@@ -277,7 +260,6 @@ footer :focus-visible{outline-color:var(--on-footer)}
   body{font-size:16px}
   .post{grid-template-columns:1fr}
   .post .body{padding:16px 18px}
-  .feed .fun > section{grid-template-columns:1fr}
   .acct-pop{position:fixed;left:16px;right:16px;top:72px;width:auto}
   .logo .name{display:none}
   .auth .btn{padding:0 12px}
@@ -719,91 +701,6 @@ function checkReadComplete(){
 }
 const go = hash => { if (location.hash === hash || (hash === "#" && !location.hash)) render(); else location.hash = hash; };
 
-/* ===== 쉬어가기: 고양이(The Cat API), 포켓몬(PokéAPI) =====
-   공통 규칙: 버튼을 누르기 전에는 외부로 요청하지 않는다. 받은 글자는 esc(), 그림 주소는 정해진 https 주소만 쓴다.
-   실패해도 안내 문구만 나오고 블로그는 그대로 돈다. */
-const hostOk = (u, hosts) => { try { const x = new URL(u); return x.protocol === "https:" && hosts.some(h => x.hostname === h || x.hostname.endsWith("." + h)); } catch { return false; } };
-async function getJson(url, ms = 8000){
-  const ctrl = new AbortController(); const timer = setTimeout(() => ctrl.abort(), ms);
-  try { const r = await fetch(url, { signal: ctrl.signal, credentials: "omit", referrerPolicy: "no-referrer" }); if (!r.ok) throw new Error("status " + r.status); return await r.json(); }
-  finally { clearTimeout(timer); }
-}
-const preload = u => new Promise((ok, no) => { const im = new Image(); im.referrerPolicy = "no-referrer"; im.onload = ok; im.onerror = no; im.src = u; });
-const busy = {};
-async function funLoad(key, btnId, msgId, label, job){
-  if (busy[key]) return; busy[key] = true;
-  const btn = $(btnId); if (btn) btn.disabled = true;
-  msg(msgId, label);
-  try { await job(); msg(msgId, ""); analytics.track(key + "_load", { result: "ok" }); }
-  catch (err) { console.warn(key, "불러오지 못함", err && err.message); msg(msgId, "불러오지 못했어요. 잠시 뒤 다시 눌러 주세요.", true); analytics.track(key + "_load", { result: "error" }); }
-  finally { busy[key] = false; const b = $(btnId); if (b) b.disabled = false; }
-}
-
-/* 고양이 */
-const CAT_API = "https://api.thecatapi.com/v1/images/search";
-let catPic = null;
-const catImg = u => `<img src="${esc(u)}" alt="무작위 고양이 사진" referrerpolicy="no-referrer">`;
-function catCard(){
-  return `<section class="fun-card" aria-labelledby="catTitle">
-    <h3 id="catTitle">고양이</h3>
-    <p class="hint">복습하다 지치면 고양이를 불러 보세요. 사진: The Cat API</p>
-    <div class="fun-frame" id="catFrame">${catPic ? catImg(catPic) : "<p>아직 고양이가 없어요</p>"}</div>
-    <button type="button" class="btn line" data-act="loadCat" id="catBtn">${catPic ? "다른 고양이 보기" : "고양이 보기"}</button>
-    <p class="msg" id="catMsg" role="status"></p>
-  </section>`;
-}
-const loadCat = () => funLoad("cat", "catBtn", "catMsg", "고양이를 부르는 중이에요.", async () => {
-  const d = await getJson(CAT_API);
-  const u = Array.isArray(d) && d[0] ? d[0].url : null;
-  if (!hostOk(u, ["thecatapi.com"])) throw new Error("bad url");
-  await preload(u);
-  catPic = u;
-  if ($("catFrame")) $("catFrame").innerHTML = catImg(u);
-  if ($("catBtn")) $("catBtn").textContent = "다른 고양이 보기";
-});
-
-/* 포켓몬 */
-const POKE_API = "https://pokeapi.co/api/v2/";
-const POKE_FALLBACK_MAX = 1025;
-let poke = null;
-const pokeArt = id => `https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/other/official-artwork/${id}.png`;
-function pokeBody(){
-  if (!poke) return `<div class="fun-frame poke" id="pokeFrame"><p>어떤 포켓몬이 나올까요?</p></div><div class="poke-info" id="pokeInfo"></div>`;
-  return `<div class="fun-frame poke" id="pokeFrame">${poke.img ? `<img src="${esc(poke.img)}" alt="${esc(poke.name)} 그림" referrerpolicy="no-referrer">` : "<p>그림을 불러오지 못했어요</p>"}</div>
-    <div class="poke-info" id="pokeInfo"><span class="no">No.${esc(poke.id)}</span><b>${esc(poke.name)}</b>${poke.genus ? `<span class="genus">${esc(poke.genus)}</span>` : ""}${poke.text ? `<p>${esc(poke.text)}</p>` : ""}</div>`;
-}
-function pokemonCard(){
-  return `<section class="fun-card" aria-labelledby="pTitle">
-    <h3 id="pTitle">오늘의 포켓몬</h3>
-    <p class="hint">무작위로 포켓몬 한 마리를 만나 보세요. 자료: PokéAPI</p>
-    <div id="pokeBody">${pokeBody()}</div>
-    <button type="button" class="btn line" data-act="loadPokemon" id="pokeBtn">${poke ? "다른 포켓몬 만나기" : "포켓몬 만나기"}</button>
-    <p class="msg" id="pokeMsg" role="status"></p>
-  </section>`;
-}
-let pokeMax = 0;
-const loadPokemon = () => funLoad("pokemon", "pokeBtn", "pokeMsg", "포켓몬을 찾는 중이에요.", async () => {
-  if (!pokeMax) { try { const c = await getJson(POKE_API + "pokemon-species?limit=1"); pokeMax = Number.isInteger(c.count) && c.count > 0 && c.count < 5000 ? c.count : POKE_FALLBACK_MAX; } catch { pokeMax = POKE_FALLBACK_MAX; } }
-  const id = 1 + Math.floor(Math.random() * pokeMax);
-  const d = await getJson(POKE_API + "pokemon-species/" + id);
-  if (!d || d.id !== id) throw new Error("bad data");
-  const ko = arr => (Array.isArray(arr) ? arr : []).filter(x => x && x.language && x.language.name === "ko");
-  const name = (ko(d.names)[0] || {}).name || d.name;
-  if (!name) throw new Error("no name");
-  const genus = (ko(d.genera)[0] || {}).genus || "";
-  const texts = ko(d.flavor_text_entries);
-  const text = texts.length ? String(texts[texts.length - 1].flavor_text || "").replace(/\s+/g, " ").trim().slice(0, 200) : "";
-  let img = pokeArt(id);
-  try { await preload(img); } catch { img = null; }
-  poke = { id, name: String(name).slice(0, 40), genus: String(genus).slice(0, 40), text, img };
-  if ($("pokeBody")) $("pokeBody").innerHTML = pokeBody();
-  if ($("pokeBtn")) $("pokeBtn").textContent = "다른 포켓몬 만나기";
-});
-
-function funAside(){
-  return `<aside class="fun" aria-labelledby="funTitle"><section><h2 id="funTitle">쉬어가기</h2>${catCard()}${pokemonCard()}</section></aside>`;
-}
-
 /* ===== 조각 ===== */
 function postItem(p){
   /* 카드 사진: 생성기가 만든 공유 썸네일 p/<글번호>/og.png. 없으면(새 글, 나만보기) 제목 첫 글자를 보여 준다 */
@@ -957,7 +854,6 @@ const views = {
           : `<ul class="posts">${recent.map(postItem).join("")}</ul>${posts.length ? "" : `<p class="empty">${isAdmin() ? "<strong>아직 올라온 글이 없습니다.</strong>글쓰기에서 첫 글을 올려 보세요." : "<strong>아직 올라온 글이 없습니다.</strong>지금은 공지만 있어요."}</p>`}`}
       </section>
       <div class="all-posts"><a class="btn" href="#list">전체 글 보기</a></div>
-      ${funAside()}
     </div>`;
   },
 
@@ -1190,8 +1086,6 @@ document.addEventListener("click", async e => {
   if (act === "rmPending") { pendingFiles.splice(Number(t.dataset.i), 1); return renderPick(); }
   if (act === "rmKept") { removedAtts.push(t.dataset.path); keptAtts = keptAtts.filter(a => a.path !== t.dataset.path); return renderPick(); }
   if (act === "replyComment") { replyTo = replyTo === t.dataset.id ? null : t.dataset.id; editingComment = null; render(); const r = $("rBody"); if (r) r.focus(); return; }
-  if (act === "loadCat") return loadCat();
-  if (act === "loadPokemon") return loadPokemon();
   if (act === "copyShare") {
     const url = shareUrl(t.dataset.id);
     analytics.track("share_link_copy", { post_id: String(t.dataset.id) });
