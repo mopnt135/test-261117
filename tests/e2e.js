@@ -50,7 +50,7 @@ const tests = [
   ["A", "T01", "첫 화면이 오류 없이 열리고 글 카드가 사진 칸과 함께 보인다", async () => { await goto(); await shot("home-desktop"); const n = await count(".post .thumb"); return expect(errors.length === 0 && n >= 2, `글 카드 ${n}개, 스크립트 오류 ${errors.length}건`); }],
   ["A", "T02", "첫 화면 제목은 '최근 글'이고 첫 카드는 공지 '운영 기준'이다", async () => { const h = await text("#view h1"), t = await text(".post h3"); return expect(h === "최근 글" && t.includes("운영 기준"), `제목: ${h}, 첫 카드: ${t}`); }],
   ["A", "T03", "글 목록 맨 위에 공지 2개가 있다", async () => { await goto("#list"); const t = await page.$$eval(".post h3", a => a.slice(0, 2).map(x => x.textContent)); return expect(t.length === 2 && t[0].includes("운영 기준") && t[1].includes("이용 안내"), t.join(", ")); }],
-  ["A", "T04", "공지 상세와 다른 글 이동이 된다", async () => { await goto("#post-notice-rules"); const pager = await page.$$eval(".pager a span", a => a.map(x => x.textContent)); return expect((await text("#view h1")).includes("운영 기준") && pager.includes("삼색펜 이용 안내"), "다른 글: " + pager.join(", ")); }],
+  ["A", "T04", "공지 상세와 다른 글 이동이 된다", async () => { await goto("#post-notice-rules"); const pager = await page.$$eval(".pager a span", a => a.map(x => x.textContent)); return expect((await text("#view h1")).includes("운영 기준") && pager.includes("생각하는 공방 이용 안내"), "다른 글: " + pager.join(", ")); }],
   ["A", "T05", "검색 결과가 없으면 안내가 나온다", async () => { await goto("#list"); await page.fill("#q", "없는검색어"); await wait(); const e = await text(".empty"); await page.fill("#q", ""); await wait(); return expect(e.includes("검색 결과가 없습니다"), e.trim()); }],
 
   // B. 권한
