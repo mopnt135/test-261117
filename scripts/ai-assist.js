@@ -117,8 +117,8 @@ const str = { type: "string" }, strs = { type: "array", items: str };
 const POST_SCHEMA = { type: "object", additionalProperties: false, required: ["summary", "titles", "tags", "sns"],
   properties: { summary: strs, titles: strs, tags: strs, sns: str } };
 const CHAT_SCHEMA = { type: "object", additionalProperties: false, required: ["greeting", "items"],
-  properties: { greeting: str, items: { type: "array", items: { type: "object", additionalProperties: false, required: ["q", "a", "keywords"],
-    properties: { q: str, a: str, keywords: strs } } } } };
+  properties: { greeting: str, items: { type: "array", items: { type: "object", additionalProperties: false, required: ["q", "a", "topic", "keywords"],
+    properties: { q: str, a: str, topic: str, keywords: strs } } } } };
 
 async function callAi(p) { return clean(await callModel(prompt(p), POST_SCHEMA)); }
 
@@ -143,10 +143,25 @@ async function callModel(text, schema) {
 
 /* ---------- 포트폴리오 안내 챗봇: 질문과 답을 미리 만든다 ---------- */
 const NOT_READY = "[작성 필요]";
+const CHAT_VER = "2"; // 11-24: 사진, 영상 썸네일 붙이기. 만드는 방식이 바뀌면 올려서 다시 만들게 한다
+// 자료의 그림 줄: ![설명](assets/portfolio/파일). 설명이 영상: 으로 시작하면 영상 썸네일(재생 안 함)
+const IMG_LINE = /^[ \t]*!\[([^\]\n]*)\]\(([^)\s]+)\)[ \t]*$/gm;
+const MEDIA_PATH = /^assets\/portfolio\/[A-Za-z0-9._-]+\.(jpe?g|png|gif|webp)$/i;
+function mediaOf(text) {
+  const out = [];
+  for (const [, alt, src] of String(text).matchAll(IMG_LINE)) {
+    if (!MEDIA_PATH.test(src) || src.includes("..") || !fs.existsSync(path.join(ROOT, src))) { console.error(`챗봇 그림을 건너뜀(assets/portfolio/ 안의 jpg, png, gif, webp 만, 파일이 있어야 함): ${src}`); continue; }
+    const video = /^\s*영상\s*:/.test(alt);
+    out.push({ src, alt: clip(alt.replace(/^\s*영상\s*:\s*/, ""), 80) || "포트폴리오 그림", ...(video ? { video: true } : {}) });
+  }
+  return out.slice(0, 6);
+}
+// AI 와 가짜 AI 에게는 그림 주소 대신 설명만 준다
+const noImg = text => String(text).replace(IMG_LINE, (m, alt) => `(그림: ${alt.replace(/^\s*영상\s*:\s*/, "영상 ")})`);
 function cleanChat(raw) {
   const o = typeof raw === "string" ? JSON.parse(raw.replace(/^```(?:json)?\s*|\s*```$/g, "")) : raw;
   const items = (Array.isArray(o.items) ? o.items : []).map(x => ({
-    q: clip(x && x.q, 60), a: clip(x && x.a, 400),
+    q: clip(x && x.q, 60), a: clip(x && x.a, 400), topic: clip(x && x.topic, 80),
     keywords: (Array.isArray(x && x.keywords) ? x.keywords : []).map(k => clip(k, 20).replace(/\s+/g, "")).filter(Boolean).slice(0, 6)
   })).filter(x => x.q && x.a).slice(0, 8);
   if (!items.length) throw new Error("AI 결과에 질문과 답이 없습니다");
@@ -156,16 +171,35 @@ function cleanChat(raw) {
 function sections(md) {
   return String(md).replace(/<!--[\s\S]*?-->/g, "").split(/^##\s+/m).slice(1).map(s => {
     const [head, ...rest] = s.split("\n");
-    return { title: head.trim(), text: rest.join("\n").replace(/[#*_`>]/g, "").trim() };
+    const body = rest.join("\n");
+    return { title: head.trim(), media: mediaOf(body), text: body.replace(IMG_LINE, "").replace(/[#*_`>]/g, "").replace(/\n{3,}/g, "\n\n").trim() };
   }).filter(x => x.title && x.text);
+}
+// 그림 붙이기: AI 가 고른 topic 이 그림 있는 주제와 같으면 그 답에 붙인다.
+// 어느 답에도 안 붙은 주제는 "OO 보여 주세요" 질문을 하나 더 만든다(AI 가 빠뜨려도 그림은 반드시 나온다)
+function attachMedia(out, md) {
+  const secs = sections(md).filter(x => x.media.length);
+  const used = new Set();
+  const items = out.items.map(({ topic, ...x }) => {
+    const sec = secs.find(s => s.title === topic);
+    if (!sec || used.has(sec.title)) return x;
+    used.add(sec.title);
+    return { ...x, media: sec.media };
+  });
+  for (const sec of secs.filter(s => !used.has(s.title))) {
+    items.push({ q: clip(`${sec.title.replace(/\s*\(.*\)\s*$/, "")} 보여 주세요`, 60),
+      a: clip(sec.text.split(/(?<=[.!?])\s+|\n+/).map(t => t.trim()).filter(Boolean).slice(0, 2).join(" "), 400),
+      keywords: sec.title.replace(/[()]/g, " ").split(/[\s,]+/).filter(w => w.length >= 2).slice(0, 6), media: sec.media });
+  }
+  return { ...out, items: items.slice(0, 10) };
 }
 // 시연용 가짜 AI: 주제마다 질문 하나, 답은 앞 세 문장
 function mockChat(md) {
   return cleanChat({
     greeting: "안녕하세요. 포트폴리오 안내 챗봇입니다. 아래 질문을 눌러 보세요.",
     items: sections(md).map(x => ({
-      q: `${x.title} 알려 주세요`,
-      a: x.text.split(/(?<=[.!?])\s+|\n+/).map(t => t.trim()).filter(Boolean).slice(0, 3).join(" "),
+      q: `${x.title} 알려 주세요`, topic: x.title,
+      a: x.text.split(/(?<=[.!?])\s+|\n+/).map(t => t.trim()).filter(t => t.length > 4).slice(0, 3).join(" "), // "예시 1." 같은 토막은 버린다
       keywords: x.title.split(/\s+/)
     }))
   });
@@ -176,14 +210,15 @@ function chatPrompt(md) {
     "블로그 방문자(채용 담당자, 수업 동기, 지인)가 물어볼 만한 질문 5~8개와 답을 만든다.",
     "한국어, 존댓말, 쉬운 말. 자료에 없는 사실, 숫자, 경력은 지어내지 않는다. 답은 300자 이내. 이모지를 쓰지 않는다.",
     "JSON 하나만 답한다. 설명이나 ``` 표시를 붙이지 않는다. 모양:",
-    '{"greeting":"첫인사 한 문장","items":[{"q":"질문","a":"답","keywords":["질문을 찾을 낱말1","낱말2"]}]}',
-    `<자료>\n${String(md).replace(/<!--[\s\S]*?-->/g, "").slice(0, 12000)}\n</자료>`
+    "topic 에는 그 답의 바탕이 된 자료의 ## 제목을 글자 그대로 적는다. 그림은 화면이 따로 붙이니 답에 파일 주소를 쓰지 않는다.",
+    '{"greeting":"첫인사 한 문장","items":[{"q":"질문","a":"답","topic":"## 제목 그대로","keywords":["질문을 찾을 낱말1","낱말2"]}]}',
+    `<자료>\n${noImg(String(md).replace(/<!--[\s\S]*?-->/g, "")).slice(0, 12000)}\n</자료>`
   ].join("\n");
 }
 async function buildChatbot(dir) {
   if (!fs.existsSync(PROFILE)) return { note: "챗봇 자료 없음" };
   const md = fs.readFileSync(PROFILE, "utf8");
-  const hash = crypto.createHash("sha256").update(md).digest("hex").slice(0, 16);
+  const hash = crypto.createHash("sha256").update(CHAT_VER + "\n" + md).digest("hex").slice(0, 16);
   const cdir = path.join(dir, "chatbot");
   fs.mkdirSync(cdir, { recursive: true });
   const file = path.join(cdir, "qa.json");
@@ -191,7 +226,7 @@ async function buildChatbot(dir) {
   try { old = JSON.parse(fs.readFileSync(file, "utf8")); } catch (e) { old = null; }
   if (old && old.hash === hash && (old.mode !== "mock" || MOCK)) return { note: "챗봇 그대로" };
   try {
-    const out = MOCK ? mockChat(md) : cleanChat(await callModel(chatPrompt(md), CHAT_SCHEMA));
+    const out = attachMedia(MOCK ? mockChat(md) : cleanChat(await callModel(chatPrompt(md), CHAT_SCHEMA)), md);
     const data = { hash, mode: MOCK ? "mock" : PROVIDER, model: MOCK ? "mock" : MODEL, generated_at: kstNow(), ready: !md.includes(NOT_READY), ...out };
     fs.writeFileSync(file, JSON.stringify(data, null, 2) + "\n");
     // 화면은 파일 주소(file://)에서도 읽을 수 있게 스크립트 모양으로도 저장한다. 데이터뿐이고 다른 코드는 없다
@@ -323,4 +358,4 @@ async function main() {
 }
 
 if (require.main === module) main().catch(e => { console.error(e.message); process.exit(1); });
-module.exports = { clean, mockAi, prompt, reportHtml, hashOf, cleanChat, mockChat, chatPrompt, sections };
+module.exports = { clean, mockAi, prompt, reportHtml, hashOf, cleanChat, mockChat, chatPrompt, sections, mediaOf, attachMedia };

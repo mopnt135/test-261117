@@ -223,6 +223,21 @@ const server = http.createServer((req, res) => {
     k2.code === 0 && readQa(outK).generated_at === kept && k2.log.includes("챗봇 실패") && (!hasSdk || k2.log.includes("refusal")), k2.log.trim());
   mode = "ok";
 
+  // C9: 사진과 영상 썸네일은 코드가 자료에서 뽑아 붙인다(AI 에게 주소를 주지 않음). 저장소 밖, 없는 파일, 다른 형식은 버린다
+  const outM = path.join(tmp, "media");
+  const mdM = "# 자료\n\n## 블로그\n\n복습 노트입니다.\n\n## 작품 (예시)\n\n예시 작품입니다. 실제가 아닙니다.\n![예시 1 배너](assets/portfolio/example-1-banner.jpg)\n![영상: 예시 3 장면](assets/portfolio/example-3-video-thumb.jpg)\n![바깥](https://evil.example/x.jpg)\n![경로](assets/portfolio/../../index.html)\n![없음](assets/portfolio/none.jpg)\n![영상 파일](assets/portfolio/example-3-video.mp4)\n";
+  fs.writeFileSync(prof, mdM);
+  const m1 = await run(outM, ["--profile", prof]);
+  const qm = readQa(outM), withMedia = qm.items.filter(x => x.media);
+  const pr = ai.chatPrompt(mdM);
+  // AI 가 topic 을 빠뜨려도 그림은 "보여 주세요" 질문으로 따로 붙는다
+  const att = ai.attachMedia({ greeting: "", items: [{ q: "블로그는요?", a: "복습 노트입니다.", topic: "없는 제목", keywords: [] }] }, mdM);
+  check("C9", "자료의 그림 줄에서 사진과 영상 썸네일을 뽑아 해당 답에 붙이고, 이상한 주소는 버리며, AI 에게는 주소 대신 설명만 준다",
+    m1.code === 0 && withMedia.length === 1 && withMedia[0].media.length === 2 && withMedia[0].media[1].video === true && !withMedia[0].media[0].video
+    && withMedia[0].media.every(m => m.src.startsWith("assets/portfolio/") && !m.src.includes("..")) && !withMedia[0].a.includes("assets/")
+    && !pr.includes("assets/") && pr.includes("(그림: 영상 예시 3 장면)") && att.items.length === 2 && att.items[1].q.startsWith("작품") && att.items[1].media.length === 2 && !("topic" in att.items[0]),
+    JSON.stringify(withMedia[0] && withMedia[0].media) + " / " + m1.log.trim().slice(0, 200));
+
   server.close();
   fs.rmSync(tmp, { recursive: true, force: true });
   for (const r of results) console.log(`${r.pass ? "PASS" : "FAIL"} ${r.id} ${r.name}${r.detail ? ` — ${r.detail}` : ""}`);

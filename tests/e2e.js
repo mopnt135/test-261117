@@ -437,6 +437,23 @@ const tests = [
     writeChat(CHAT_QA); await page.reload(); await wait(400);
     return expect(a && b, `작성 전 숨김 ${a}, 파일 없음 숨김 ${b}`);
   }],
+  ["K", "T115", "답에 그림이 있으면 답 아래에 사진과 영상 썸네일(재생 안 됨 표시, 영상 태그 없음)이 나오고, 저장소 밖 주소는 버린다", async () => {
+    writeChat({ ...CHAT_QA, items: [...CHAT_QA.items, { q: "예시 작품 보여 주세요", a: "예시 작품입니다.", keywords: ["작품"], media: [
+      { src: "assets/portfolio/example-1-banner.jpg", alt: "예시 1 <b>배너</b>" },
+      { src: "assets/portfolio/example-3-video-thumb.jpg", alt: "예시 3 영상 한 장면", video: true },
+      { src: "https://evil.example/x.jpg", alt: "바깥 주소" }, { src: "assets/portfolio/../../secret.jpg", alt: "경로 공격" }] }] });
+    await page.reload(); await wait(400); await page.click("#chatFab"); await wait(200);
+    await page.click("#chatChips button >> nth=2"); await wait(600);
+    const r = await page.evaluate(() => { const figs = [...document.querySelectorAll("#chatLog .chat-media figure")];
+      return { n: figs.length, srcs: figs.map(f => f.querySelector("img").getAttribute("src")), ok: figs.every(f => f.querySelector("img").naturalWidth > 0),
+        cap: figs.map(f => f.querySelector("figcaption").textContent), bold: document.querySelectorAll("#chatLog b").length,
+        tag: figs.map(f => (f.querySelector(".chat-media-tag") || {}).textContent || ""), video: document.querySelectorAll("#chatLog video").length,
+        wide: Math.max(...figs.map(f => f.getBoundingClientRect().right)) <= document.querySelector("#chatPanel").getBoundingClientRect().right }; });
+    await shot("chatbot-media");
+    await page.click("#chatClose"); writeChat(CHAT_QA); await page.reload(); await wait(400);
+    return expect(r.n === 2 && r.ok && r.srcs.every(x => x.startsWith("assets/portfolio/")) && r.cap[0] === "예시 1 <b>배너</b>" && r.bold === 0
+      && r.tag[0] === "" && r.tag[1].includes("재생 안 됨") && r.video === 0 && r.wide, JSON.stringify(r));
+  }],
   ["J", "T101", "로그인하면 헤더의 '내 계정'을 눌러 계정 상자를 연다", async () => {
     await logout(); await login("boss@test.kr", true); await goto();
     const closed = await page.$eval(".acct-menu", d => d.open);
