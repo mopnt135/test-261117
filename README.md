@@ -35,6 +35,19 @@ GitHub Actions 가 하루 두 번 돌고, Actions 탭에서 "검색·공유 페�
 - 진짜 AI 를 쓰려면 저장소 Settings > Secrets and variables > Actions 에서 `AI_API_KEY` 를 등록합니다. 모델 이름은 Variables 의 `AI_MODEL` 로 바꿀 수 있습니다.
 - Supabase 를 연결하기 전에는 `demo/posts.json` 의 시연용 글로 돕니다.
 
+## 자동 실행 (GitHub Actions)
+
+저장소에는 자동으로 도는 작업이 두 개 있습니다. 결과는 저장소의 Actions 탭에서 봅니다. 초록 체크는 성공, 빨간 X 는 실패입니다.
+
+| 이름 | 파일 | 언제 도나 | 하는 일 |
+| --- | --- | --- | --- |
+| 검색·공유 페이지 만들기 | `.github/workflows/seo-pages.yml` | 매일 06:17, 18:17 KST. `index.html`, 생성기, AI 도우미, 시연용 글이 바뀔 때 | AI 결과, 글별 정적 페이지, 썸네일, 사이트맵을 만들고 저장소에 올림 |
+| 규칙 문서 확인 | `.github/workflows/docs-check.yml` | `CLAUDE.md`, `AGENTS.md`, `tests/docs_test.js` 가 바뀔 때만 | 두 규칙 문서가 같은지 확인. 아무것도 올리지 않음 |
+
+- 두 작업 모두 Actions 탭에서 작업 이름을 고른 뒤 "Run workflow" 를 눌러 바로 돌릴 수 있습니다.
+- 두 작업은 따로 돕니다. "규칙 문서 확인"이 실패해도 블로그와 검색 페이지 만들기는 멈추지 않습니다.
+- "규칙 문서 확인"이 실패하면 `CLAUDE.md` 와 `AGENTS.md` 중 한쪽만 고친 것입니다. 실행 기록에 몇 번째 줄이 다른지 나오니 두 파일을 똑같이 맞춥니다.
+
 ## Supabase 연결
 
 1. Supabase 프로젝트를 만들고 SQL Editor 에서 `supabase-setup.sql` 을 실행합니다.
@@ -54,4 +67,7 @@ node tests/pages_test.js
 ```
 ```bash
 node tests/ai_test.js
+```
+```bash
+node tests/docs_test.js
 ```
