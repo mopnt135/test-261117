@@ -19,6 +19,12 @@ const withGaId = id => SOURCE.replace(GA_ID_RE, `const GA_MEASUREMENT_ID = "${id
 const TMP = fs.mkdtempSync(path.join(require("os").tmpdir(), "samsaekpen-e2e-"));
 fs.writeFileSync(path.join(TMP, "index.html"), withGaId(""));
 fs.cpSync(path.join(ROOT, "assets"), path.join(TMP, "assets"), { recursive: true }); // 메인 사진 등 그림 파일
+// 챗봇 시험용 답 파일(진짜 ai/chatbot/qa.js 대신). HTML 기호가 글자로만 보이는지도 본다
+const CHAT_QA = { ready: true, greeting: "안녕하세요. 포트폴리오 안내입니다.", items: [
+  { q: "어떤 블로그인가요?", a: "복습 노트 블로그입니다.", keywords: ["블로그", "소개"] },
+  { q: "<img src=x onerror=alert(1)>도구는요?", a: "HTML 과 <b>Supabase</b> 를 썼습니다.", keywords: ["도구", "기술"] }] };
+const writeChat = d => { fs.mkdirSync(path.join(TMP, "ai/chatbot"), { recursive: true }); fs.writeFileSync(path.join(TMP, "ai/chatbot/qa.js"), d ? `window.CHATBOT_QA = ${JSON.stringify(d)};` : ""); };
+writeChat(CHAT_QA);
 const URL = "file://" + path.join(TMP, "index.html");
 const FIX = path.join(__dirname, "fixtures");
 const OUT = process.argv[2] || path.join(__dirname, "e2e-result.json");
@@ -389,6 +395,47 @@ const tests = [
     const missing = links.filter(h => !fs.existsSync(path.join(ROOT, h)));
     const loaded = await page.evaluate(async () => { const i = new Image(); i.src = "assets/favicon-32.png"; await i.decode().catch(() => {}); return i.naturalWidth; });
     return expect(links.length >= 3 && links.every(h => h.startsWith("assets/")) && missing.length === 0 && loaded === 32, `연결 ${links.length}개, 없는 파일 ${missing.length}개, 32px 그림 너비 ${loaded}`);
+  }],
+  ["K", "T110", "챗봇 답 파일이 준비되면 오른쪽 아래에 말풍선 버튼이 보이고, 누르면 인사와 준비된 질문이 나온다", async () => {
+    await goto(); await wait(300);
+    const pos = await page.$eval("#chatFab", b => { const r = b.getBoundingClientRect(); return { right: innerWidth - r.right, bottom: innerHeight - r.bottom, h: r.height }; });
+    await page.click("#chatFab"); await wait(200);
+    const r = await page.evaluate(() => ({ open: !$("chatPanel").hidden, hello: $("chatLog").textContent, chips: document.querySelectorAll("#chatChips button").length }));
+    await shot("chatbot-open");
+    return expect(pos.right < 40 && pos.bottom < 40 && pos.h >= 44 && r.open && r.hello.includes("포트폴리오 안내") && r.chips === 2, `오른쪽 ${pos.right}px, 아래 ${pos.bottom}px, 높이 ${pos.h}px, 질문 ${r.chips}개`);
+  }],
+  ["K", "T111", "준비된 질문을 누르면 그 답이 나오고, 답 속 HTML 기호는 글자로만 보인다", async () => {
+    await page.click("#chatChips button >> nth=1"); await wait(150);
+    const r = await page.evaluate(() => ({ text: $("chatLog").textContent, tags: $("chatLog").querySelectorAll("img, b").length }));
+    const ev = await page.evaluate(() => window.samsaekpenEvents.filter(e => e.name === "chatbot_question").pop());
+    return expect(r.text.includes("<b>Supabase</b>") && r.tags === 0 && ev && ev.params.q_index === 2 && ev.params.source === "chip", `태그 ${r.tags}개, 기록 ${JSON.stringify(ev && ev.params)}`);
+  }],
+  ["K", "T112", "직접 적은 질문은 낱말로 맞는 답을 찾고, 없으면 준비된 질문을 고르라고 안내한다. 적은 글자는 기록에 보내지 않는다", async () => {
+    await page.fill("#chatQ", "어떤 기술을 썼나요"); await page.press("#chatQ", "Enter"); await wait(150);
+    const hit = await page.evaluate(() => [...document.querySelectorAll("#chatLog .bubble.bot")].pop().textContent);
+    await page.fill("#chatQ", "점심 메뉴 추천해 줘"); await page.press("#chatQ", "Enter"); await wait(150);
+    const miss = await page.evaluate(() => [...document.querySelectorAll("#chatLog .bubble.bot")].pop().textContent);
+    const ev = await page.evaluate(() => window.samsaekpenEvents.filter(e => e.name === "chatbot_question").slice(-2));
+    const leaked = JSON.stringify(ev).includes("점심") || JSON.stringify(ev).includes("기술을");
+    return expect(hit.includes("Supabase") && miss.includes("준비된 질문") && ev[1].params.matched === false && !leaked, `맞춤: ${hit.slice(0, 20)}, 없음: ${miss.slice(0, 20)}, 글자 보냄 ${leaked}`);
+  }],
+  ["K", "T113", "Esc 나 닫기 버튼으로 닫히고, 휴대폰 너비에서도 창이 화면 안에 들어간다", async () => {
+    await page.press("#chatQ", "Escape"); await wait(100);
+    const closed = await page.evaluate(() => $("chatPanel").hidden && document.activeElement === $("chatFab"));
+    await page.setViewportSize({ width: 390, height: 844 }); await goto(); await wait(300);
+    await page.click("#chatFab"); await wait(200);
+    const box = await page.$eval("#chatPanel", p => { const r = p.getBoundingClientRect(); return { l: r.left, r: r.right, t: r.top, w: innerWidth, over: document.documentElement.scrollWidth > innerWidth }; });
+    await shot("chatbot-mobile");
+    await page.click("#chatClose"); await page.setViewportSize({ width: 1280, height: 900 });
+    return expect(closed && box.l >= 0 && box.r <= box.w && box.t >= 0 && !box.over, `Esc 로 닫힘 ${closed}, 창 ${Math.round(box.l)}~${Math.round(box.r)} / ${box.w}`);
+  }],
+  ["K", "T114", "자료 작성 전(ready: false)이거나 답 파일이 없으면 말풍선을 보이지 않는다", async () => {
+    writeChat({ ...CHAT_QA, ready: false }); await page.reload(); await wait(500);
+    const a = await page.$eval("#chatFab", b => b.hidden);
+    writeChat(null); await page.reload(); await wait(500);
+    const b = await page.$eval("#chatFab", b => b.hidden);
+    writeChat(CHAT_QA); await page.reload(); await wait(400);
+    return expect(a && b, `작성 전 숨김 ${a}, 파일 없음 숨김 ${b}`);
   }],
   ["J", "T101", "로그인하면 헤더의 '내 계정'을 눌러 계정 상자를 연다", async () => {
     await logout(); await login("boss@test.kr", true); await goto();

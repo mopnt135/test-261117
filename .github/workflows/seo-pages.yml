@@ -11,7 +11,7 @@ on:
     - cron: "17 9 * * *"    # 매일 18:17 KST
   push:
     branches: [main]
-    paths: ["index.html", "scripts/build-pages.js", "scripts/ai-assist.js", "demo/posts.json"]
+    paths: ["index.html", "scripts/build-pages.js", "scripts/ai-assist.js", "demo/posts.json", "portfolio/profile.md"]
 
 permissions:
   contents: write
