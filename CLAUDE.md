@@ -13,6 +13,7 @@ AI 코딩 에이전트가 이 저장소에서 일할 때 가장 먼저 읽는 �
 | 문서 | 내용 |
 | --- | --- |
 | `docs/PRD.md` | 누가 무엇을 할 수 있나, 사용자 스토리, 인수 조건, 결정 사항 |
+| `docs/PRD-ai-assist.md` | AI 도우미 과제 기획서 (Claude Docs 원본을 옮긴 것, 2쪽 분량) |
 | `docs/ARCHITECTURE.md` | 파일 구조, 데이터 표, 권한 규칙, 화면 흐름 |
 | `docs/TASKS.md` | 끝낸 일, 남은 일, 알려진 문제 |
 | `docs/ANALYTICS.md` | GA4 방문 통계, 이벤트 택소노미, ASIS → TOBE |

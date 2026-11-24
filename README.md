@@ -13,6 +13,7 @@ AIPM 수업 복습 노트를 올리는 블로그입니다.
 | --- | --- |
 | [CLAUDE.md](CLAUDE.md) | AI 코딩 에이전트 작업 규칙 |
 | [docs/PRD.md](docs/PRD.md) | 권한, 사용자 스토리, 결정 사항 |
+| [docs/PRD-ai-assist.md](docs/PRD-ai-assist.md) | AI 도우미 과제 기획서 |
 | [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) | 구조, 데이터 표, 권한 규칙 |
 | [docs/TASKS.md](docs/TASKS.md) | 끝낸 일과 남은 일 |
 | [docs/reports/](docs/reports/) | 테스트 보고서 |
