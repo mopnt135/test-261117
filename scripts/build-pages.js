@@ -175,6 +175,7 @@ h1{font-family:"Gothic A1",sans-serif;font-weight:900;font-size:clamp(28px,5vw,4
 .cta{display:flex;flex-wrap:wrap;gap:10px;margin-top:40px;padding-top:24px;border-top:2px solid var(--fg)}
 .btn{display:inline-flex;align-items:center;min-height:44px;padding:0 18px;font-weight:700;text-decoration:none;border:2px solid var(--fg)}
 .btn.main{background:var(--orange-fill);color:var(--on-orange);border-color:var(--orange-fill)}
+.demo-note{flex-basis:100%;margin:0;font-size:14px;color:var(--muted)}
 a:focus-visible{outline:3px solid var(--red);outline-offset:3px}
 .ai{margin:24px 0 0;padding:16px 18px;background:var(--mint-fill);border-left:6px solid var(--orange-fill)}
 .ai-h{font-family:"Gothic A1",sans-serif;font-weight:900;font-size:15px}
@@ -192,7 +193,7 @@ a:focus-visible{outline:3px solid var(--red);outline-offset:3px}
   ${aiBox(ai)}
   <div class="body">${esc(p.body)}</div>
   <div class="cta">
-    ${p.demo ? `<span class="btn main" aria-disabled="true">시연용 글이라 댓글은 달 수 없어요</span>` : `<a class="btn main" href="../../#post-${esc(id)}">블로그에서 보고 댓글 달기</a>`}
+    ${p.demo ? `<p class="demo-note">시연용 글이라 댓글은 달 수 없어요. 블로그 첫 화면에서 다른 글을 볼 수 있어요.</p>` : `<a class="btn main" href="../../#post-${esc(id)}">블로그에서 보고 댓글 달기</a>`}
     <a class="btn" href="../../">${SITE_NAME} 첫 화면</a>
   </div>
 </article>

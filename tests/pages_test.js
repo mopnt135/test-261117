@@ -115,6 +115,11 @@ check("G18", "정적 페이지도 같은 주소 규칙으로 post_view 를 보�
     && !/@|email|comment/i.test(JSON.stringify(post)) && (ga.match(/<\/script>/g) || []).length === 1;
   return [ok, `post_view 값: ${Object.keys(post).join(", ")}`];
 });
+check("G19", "시연용 글은 누를 수 없는 가짜 버튼 대신 안내 문구를 보여준다", () => {
+  const h = gen.postPage({ id: "demo-9", title: "시연", body: "본문", category: "일반", created_at: "2026-11-24T01:00:00Z", demo: true });
+  const ok = h.includes('class="demo-note"') && !h.includes('aria-disabled') && !h.includes('href="../../#post-demo-9"');
+  return [ok, ok ? "안내 문구, 댓글 링크 없음" : "가짜 버튼이나 댓글 링크가 남아 있음"];
+});
 check("G14", "썸네일 카드에 글 제목과 본문 앞줄이 들어가고, HTML 기호는 글자로 바뀐다", () => {
   const p = { title: "<b>제목</b>", body: "첫 줄 <script>x</script>\n\n둘째 줄\n셋째 줄\n넷째 줄\n다섯째 줄" };
   const lines = gen.excerptLines(p, 4);
