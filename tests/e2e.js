@@ -370,6 +370,11 @@ const tests = [
     const ok = n.length >= 2 && n.every(x => x.src === "assets/notice-card.jpg") && o.every(x => /^p\/.+\/og\.png$/.test(x.src));
     return expect(ok, `공지 ${n.length}개: ${[...new Set(n.map(x => x.src))].join(", ")} / 일반 ${o.length}개`);
   }],
+  ["J", "T104", "헤더 로고는 전구와 톱니 그림(assets/logo.png)이고 제대로 보인다", async () => {
+    await goto();
+    const r = await page.evaluate(() => { const i = document.querySelector("header .logo img"); return i ? { src: i.getAttribute("src"), ok: i.complete && i.naturalWidth > 0, h: Math.round(i.getBoundingClientRect().height) } : null; });
+    return expect(r && r.src === "assets/logo.png" && r.ok && r.h >= 24, r ? `그림 ${r.src}, 보임 ${r.ok}, 높이 ${r.h}px` : "로고 그림 없음");
+  }],
   ["J", "T101", "로그인하면 헤더의 '내 계정'을 눌러 계정 상자를 연다", async () => {
     await logout(); await login("boss@test.kr", true); await goto();
     const closed = await page.$eval(".acct-menu", d => d.open);

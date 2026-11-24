@@ -30,6 +30,8 @@ const ATT_DIR = arg("--attachments-dir"); // 테스트용. Supabase 보관함 �
 
 const SITE_URL = "https://mopnt135.github.io/test-261117/";
 const SITE_NAME = "생각하는 공방";
+// 로고(전구와 톱니). 썸네일 카드는 파일 주소 대신 데이터로 넣어야 그림 그리기 브라우저가 바로 읽는다
+const LOGO_URI = "data:image/png;base64," + fs.readFileSync(path.join(__dirname, "..", "assets", "logo.png")).toString("base64");
 const SITE_DESC = "AIPM 수업을 복습하는 블로그. 중요한 내용은 빨강, 함께 볼 내용은 주황, 참고는 민트로 표시한 복습 노트를 올립니다.";
 const DESC_MAX = 120;
 
@@ -165,8 +167,7 @@ a{color:inherit}
 header{border-bottom:2px solid var(--fg)}
 header .wrap{display:flex;align-items:center;min-height:64px}
 .logo{display:flex;align-items:center;gap:12px;text-decoration:none;font-family:"Gothic A1",sans-serif;font-weight:900;font-size:22px}
-.pens{display:flex;gap:3px;align-items:flex-end}.pens i{display:block;width:6px}
-.pens i:nth-child(1){height:20px;background:var(--red)}.pens i:nth-child(2){height:15px;background:var(--orange-fill)}.pens i:nth-child(3){height:10px;background:var(--mint-fill)}
+.logo img{display:block;height:30px;width:auto}
 article{padding-block:40px 64px}
 .cat{font-size:14px;font-weight:700;color:var(--orange)}
 h1{font-family:"Gothic A1",sans-serif;font-weight:900;font-size:clamp(28px,5vw,42px);line-height:1.3;letter-spacing:-.02em;margin:8px 0 12px}
@@ -184,7 +185,7 @@ a:focus-visible{outline:3px solid var(--orange);outline-offset:3px}
 </style>${ga}
 </head>
 <body>
-<header><div class="wrap"><a class="logo" href="../../"><span class="pens" aria-hidden="true"><i></i><i></i><i></i></span>${SITE_NAME}</a></div></header>
+<header><div class="wrap"><a class="logo" href="../../"><img src="../../assets/logo.png" alt="" width="198" height="265">${SITE_NAME}</a></div></header>
 <main class="wrap">
 <article>
   <div class="cat">${esc(p.notice ? "공지" : p.category)}</div>
@@ -207,7 +208,7 @@ a:focus-visible{outline:3px solid var(--orange);outline-offset:3px}
  * 글마다 다르게: 제목 + 본문 앞 세 줄(빨강, 주황, 민트 표시) + 날짜.
  * 글에 사진(JPG, PNG, GIF)이 첨부돼 있으면 첫 사진을 오른쪽에 넣는다.
  */
-const CARD_DESIGN = "c5"; // 카드 디자인을 바꾸면 이 값을 바꾼다. 썸네일 주소의 ?v= 가 바뀌어 카카오톡이 새로 가져간다
+const CARD_DESIGN = "c6"; // 카드 디자인을 바꾸면 이 값을 바꾼다. 썸네일 주소의 ?v= 가 바뀌어 카카오톡이 새로 가져간다
 const LINE_MAX = 60;
 // 사진이 있으면 세 줄(두 줄까지 줄바꿈), 없으면 네 줄
 async function cardContent(p) { const image = await thumbImage(p); return { image, lines: excerptLines(p, image ? 3 : 4) }; }
@@ -228,8 +229,7 @@ body{background:#FFFFF0;color:#2B2622;font-family:"Noto Sans KR","Noto Sans CJK 
 .main{flex:1;min-width:0;display:flex;flex-direction:column}
 .top{display:flex;align-items:center;justify-content:space-between;gap:16px}
 .brand{display:flex;align-items:center;gap:14px;font-size:32px;font-weight:900;letter-spacing:-.01em}
-.pens{display:flex;gap:5px;align-items:flex-end}.pens i{display:block;width:10px}
-.pens i:nth-child(1){height:36px;background:#E5584B}.pens i:nth-child(2){height:27px;background:#2F3E63}.pens i:nth-child(3){height:18px;background:#2B2622}
+.brand img{display:block;height:56px;width:auto}
 .label{font-size:24px;font-weight:700;color:#2F3E63;white-space:nowrap}
 .label.notice{color:#2B2622;background:#E5584B;padding:2px 14px}
 h1{margin-top:34px;font-size:${tSize}px;line-height:1.2;font-weight:900;letter-spacing:-.025em;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;word-break:keep-all;padding-bottom:22px;border-bottom:3px solid #2B2622}
@@ -243,7 +243,7 @@ li:nth-child(1) i{background:#E5584B}li:nth-child(2) i{background:#2F3E63}li:nth
 .bars{position:absolute;left:0;right:0;bottom:0;height:14px;display:flex}.bars i{flex:1}
 </style></head><body>
 <div class="main">
-  <div class="top"><div class="brand"><span class="pens"><i></i><i></i><i></i></span>${SITE_NAME}</div><span class="label${isNotice ? " notice" : ""}">${esc(label)}</span></div>
+  <div class="top"><div class="brand"><img src="${LOGO_URI}" alt="">${SITE_NAME}</div><span class="label${isNotice ? " notice" : ""}">${esc(label)}</span></div>
   <h1>${esc(title)}</h1>
   <ul>${lines.map(l => `<li><i></i><span>${esc(l)}</span></li>`).join("")}</ul>
   <div class="foot"><span>${esc(date || "AIPM 복습 노트")}</span><span>mopnt135.github.io/test-261117</span></div>
