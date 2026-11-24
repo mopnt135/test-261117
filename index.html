@@ -94,7 +94,10 @@ body::before{content:"";position:fixed;inset:0 0 auto;height:env(safe-area-inset
 header.site{position:sticky;top:env(safe-area-inset-top,0px);z-index:20;background:var(--bg);border-bottom:2px solid var(--fg)}
 .bar{display:flex;align-items:center;gap:20px;min-height:68px;position:relative}
 .logo{display:flex;align-items:center;gap:12px;text-decoration:none;font-family:var(--f-display);font-weight:900;font-size:23px;letter-spacing:-.02em;flex:none}
-.logo-img{display:block;height:36px;width:auto} /* 전구와 톱니 로고(사용자 제공, 배경 투명). 밝은·다크 모드 같은 그림 */
+.logo-img{display:block;height:40px;width:auto}
+.logo .name{display:flex;flex-direction:column;line-height:1.1}
+/* 'THINK & MAKE': 로고 톱니와 같은 금색 #B8862B. 로고 그림의 색이라 기본 색 규칙 밖 */
+.tagline{font-family:var(--f-body);font-weight:700;font-size:11px;letter-spacing:.28em;color:#B8862B;margin-top:3px} /* 전구와 톱니 로고(사용자 제공, 배경 투명). 밝은·다크 모드 같은 그림 */
 nav.main{display:flex;gap:2px;margin-left:auto}
 nav.main a{text-decoration:none;padding:10px 12px;font-weight:500;min-height:44px;display:flex;align-items:center;white-space:nowrap}
 nav.main a[aria-current="page"]{box-shadow:inset 0 -3px 0 var(--orange-fill)}
@@ -239,8 +242,13 @@ fieldset.field{border:0;padding:0;margin:0}
 
 /* 푸터: 문양색 #2F3E63 바탕(다크 모드도 같음). 위에 강조색 띠. 강조색 테두리는 푸터 안에서 안 보여서 글자색으로 */
 footer{background:var(--footer-bg);color:var(--on-footer);border-top:4px solid var(--red)}
-.foot{display:flex;flex-direction:column;align-items:center;text-align:center;gap:10px;padding-block:36px;font-size:14px;color:var(--on-footer)}
-.foot-name{margin:0 0 4px;font-family:var(--f-display);font-weight:900;font-size:20px;letter-spacing:.35em;padding-left:.35em}
+.foot{display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:20px 32px;padding-block:32px;font-size:14px;color:var(--on-footer)}
+/* 푸터 로고: 전구와 이름은 흰색, 톱니와 THINK & MAKE 는 금색(사용자 결정, 11-24) */
+.foot-brand{display:flex;align-items:center;gap:12px}
+.foot-brand img{display:block;height:48px;width:auto}
+.foot-brand p{margin:0;display:flex;flex-direction:column;line-height:1.15}
+.foot-name{font-family:var(--f-display);font-weight:900;font-size:22px;color:#FFFFFF;letter-spacing:-.01em}
+.foot-info{display:flex;flex-direction:column;align-items:flex-end;gap:8px;text-align:right}
 .foot a,footer .link-btn{color:var(--on-footer)}
 .foot a:hover,footer .link-btn:hover{color:var(--footer-hover)}
 footer :focus-visible{outline-color:var(--on-footer)}
@@ -253,6 +261,7 @@ footer :focus-visible{outline-color:var(--on-footer)}
   .bar{gap:10px}
 }
 @media (max-width:640px){
+  .foot-info{align-items:flex-start;text-align:left}
   body{font-size:16px}
   .post{grid-template-columns:1fr}
   .post .thumb{min-height:0;aspect-ratio:1200/630}
@@ -351,7 +360,7 @@ nav.main a[hidden]{display:none}
 
 <header class="site">
   <div class="wrap bar">
-    <a class="logo" href="#" aria-label="생각하는 공방 첫 화면"><img class="logo-img" src="assets/logo.png" alt="" width="198" height="265"><span class="name">생각하는 공방</span></a>
+    <a class="logo" href="#" aria-label="생각하는 공방 첫 화면"><img class="logo-img" src="assets/logo.png" alt="" width="198" height="265"><span class="name"><span class="name-main">생각하는 공방</span><span class="tagline">THINK &amp; MAKE</span></span></a>
     <nav class="main" id="mainnav" aria-label="주 메뉴">
       <a href="#" data-nav="home">홈</a>
       <a href="#list" data-nav="list">글 목록</a>
@@ -378,9 +387,9 @@ nav.main a[hidden]{display:none}
 
 <footer>
   <div class="wrap foot">
-    <p class="foot-name">생각하는 공방</p>
-    <span>© 2026 생각하는 공방 · 모든 시간은 한국 시간(KST) 기준입니다</span>
-    <span class="foot-links"><button type="button" class="link-btn" id="gaToggle" hidden></button><a href="#admin">관리자 로그인</a></span>
+    <div class="foot-brand"><img src="assets/logo-footer.png" alt="" width="198" height="265"><p><span class="foot-name">생각하는 공방</span><span class="tagline">THINK &amp; MAKE</span></p></div>
+    <div class="foot-info"><span>© 2026 생각하는 공방 · 모든 시간은 한국 시간(KST) 기준입니다</span>
+    <span class="foot-links"><button type="button" class="link-btn" id="gaToggle" hidden></button><a href="#admin">관리자 로그인</a></span></div>
   </div>
 </footer>
 

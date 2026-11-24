@@ -375,6 +375,14 @@ const tests = [
     const r = await page.evaluate(() => { const i = document.querySelector("header .logo img"); return i ? { src: i.getAttribute("src"), ok: i.complete && i.naturalWidth > 0, h: Math.round(i.getBoundingClientRect().height) } : null; });
     return expect(r && r.src === "assets/logo.png" && r.ok && r.h >= 24, r ? `그림 ${r.src}, 보임 ${r.ok}, 높이 ${r.h}px` : "로고 그림 없음");
   }],
+  ["J", "T105", "헤더와 푸터에 'THINK & MAKE'(금색)가 있고, 푸터 로고는 왼쪽에 흰 전구 그림이다", async () => {
+    await goto();
+    const r = await page.evaluate(() => { const tg = [...document.querySelectorAll(".tagline")].map(e => [e.textContent, getComputedStyle(e).color]);
+      const fb = document.querySelector(".foot-brand"), img = fb && fb.querySelector("img"), info = document.querySelector(".foot-info");
+      return { tg, name: fb ? getComputedStyle(fb.querySelector(".foot-name")).color : "", img: img && img.getAttribute("src"), ok: img && img.naturalWidth > 0, left: fb && info && fb.getBoundingClientRect().left < info.getBoundingClientRect().left }; });
+    const gold = r.tg.length === 2 && r.tg.every(([t, c]) => t === "THINK & MAKE" && c === "rgb(184, 134, 43)");
+    return expect(gold && r.name === "rgb(255, 255, 255)" && r.img === "assets/logo-footer.png" && r.ok && r.left, `글자 ${r.tg.length}곳 금색 ${gold}, 이름 ${r.name}, 그림 ${r.img}, 왼쪽 ${r.left}`);
+  }],
   ["J", "T101", "로그인하면 헤더의 '내 계정'을 눌러 계정 상자를 연다", async () => {
     await logout(); await login("boss@test.kr", true); await goto();
     const closed = await page.$eval(".acct-menu", d => d.open);
