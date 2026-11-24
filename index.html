@@ -703,9 +703,11 @@ const go = hash => { if (location.hash === hash || (hash === "#" && !location.ha
 
 /* ===== 조각 ===== */
 function postItem(p){
-  /* 카드 사진: 생성기가 만든 공유 썸네일 p/<글번호>/og.png. 없으면(새 글, 나만보기) 제목 첫 글자를 보여 준다 */
+  /* 카드 사진: 공지는 공지 그림(assets/notice-card.jpg, 사용자 제공). 나머지는 생성기가 만든 공유 썸네일 p/<글번호>/og.png.
+     없으면(새 글, 나만보기) 제목 첫 글자를 보여 준다 */
   const ch = esc((p.title || "?").trim().charAt(0) || "?");
-  const img = p.visibility === "private" ? "" : `<img src="p/${encodeURIComponent(p.id)}/og.png" alt="" loading="lazy" decoding="async">`;
+  const src = p.notice ? "assets/notice-card.jpg" : p.visibility === "private" ? "" : `p/${encodeURIComponent(p.id)}/og.png`;
+  const img = src ? `<img src="${src}" alt="" loading="lazy" decoding="async">` : "";
   return `<li class="post">
     <a class="thumb" href="#post-${esc(p.id)}" tabindex="-1" aria-hidden="true"><span class="ch">${ch}</span>${img}</a>
     <div class="body">

@@ -363,6 +363,13 @@ const tests = [
     const n = await count(".fun, .fun-card"), apis = /thecatapi|pokeapi|openweathermap/i.test(SOURCE);
     return expect(n === 0 && !apis, `쉬어가기 요소 ${n}개, 외부 API 코드 ${apis ? "남아 있음" : "없음"}`);
   }],
+  ["J", "T103", "공지 글 카드의 사진은 공지 그림이고, 일반 글은 공유 썸네일을 쓴다", async () => {
+    await goto("#list");
+    const r = await page.$$eval(".post", a => a.map(li => ({ notice: !!li.querySelector(".badge.notice"), src: (li.querySelector(".thumb img") || {}).getAttribute?.("src") || "" })));
+    const n = r.filter(x => x.notice), o = r.filter(x => !x.notice && x.src);
+    const ok = n.length >= 2 && n.every(x => x.src === "assets/notice-card.jpg") && o.every(x => /^p\/.+\/og\.png$/.test(x.src));
+    return expect(ok, `공지 ${n.length}개: ${[...new Set(n.map(x => x.src))].join(", ")} / 일반 ${o.length}개`);
+  }],
   ["J", "T101", "로그인하면 헤더의 '내 계정'을 눌러 계정 상자를 연다", async () => {
     await logout(); await login("boss@test.kr", true); await goto();
     const closed = await page.$eval(".acct-menu", d => d.open);
