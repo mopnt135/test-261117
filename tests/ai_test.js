@@ -43,28 +43,36 @@ const server = http.createServer((req, res) => {
   let body = "";
   req.on("data", c => body += c);
   req.on("end", () => {
-    hits++; lastKey = req.headers["x-goog-api-key"]; lastBody = body;
+    hits++; lastKey = req.headers["x-goog-api-key"] || req.headers["x-api-key"]; lastBody = body;
+    // Claude(Anthropic) 모양 답: /v1/messages
+    const claude = req.url.startsWith("/v1/messages");
+    const send = text => {
+      res.writeHead(200, { "Content-Type": "application/json" });
+      if (!claude) return res.end(JSON.stringify({ candidates: [{ content: { parts: [{ text }] } }] }));
+      res.end(JSON.stringify({ id: "msg_fake", type: "message", role: "assistant", model: "fake-model",
+        content: mode === "refusal" ? [] : [{ type: "text", text }], stop_reason: mode === "refusal" ? "refusal" : "end_turn",
+        stop_sequence: null, usage: { input_tokens: 1, output_tokens: 1 } }));
+    };
     if (mode === "429") { res.writeHead(429); return res.end("{}"); }
     if (mode === "401") { res.writeHead(401); return res.end("{}"); } // 키가 끝났을 때
     if (body.includes("<자료>")) { // 챗봇 질문과 답 만들기 요청
       const t = JSON.stringify({ greeting: "안녕하세요", items: [
         { q: "어떤 블로그인가요?", a: "복습 노트 블로그입니다. " + "길게 ".repeat(200), keywords: ["블로그", "소개 글"] },
         { q: "<b>도구</b>는요?", a: "HTML 과 Supabase 입니다.", keywords: ["도구"] }, { q: "", a: "빈 질문은 버림" }] });
-      res.writeHead(200, { "Content-Type": "application/json" });
-      return res.end(JSON.stringify({ candidates: [{ content: { parts: [{ text: t }] } }] }));
+      return send(t);
     }
     const text = mode === "bad" ? "이건 JSON 이 아닙니다"
       : JSON.stringify({ summary: ["첫째 요약", "둘째 요약", "셋째 요약", "넷째는 버려야 함"], titles: ["후보1", "후보2", "후보3"],
         tags: ["#PRD", "기획 문서", "c", "d", "e", "f"], sns: "x".repeat(400) });
-    res.writeHead(200, { "Content-Type": "application/json" });
-    res.end(JSON.stringify({ candidates: [{ content: { parts: [{ text }] } }] }));
+    send(text);
   });
 });
 
 (async () => {
   await new Promise(r => server.listen(0, "127.0.0.1", r));
   const BASE = `http://127.0.0.1:${server.address().port}`;
-  const realEnv = { AI_API_KEY: "test-key-not-real", AI_BASE_URL: BASE, AI_MODEL: "fake-model" };
+  const realEnv = { AI_PROVIDER: "gemini", AI_API_KEY: "test-key-not-real", AI_BASE_URL: BASE, AI_MODEL: "fake-model" };
+  const claudeEnv = { AI_API_KEY: "test-claude-key-not-real", AI_BASE_URL: BASE, AI_MODEL: "fake-model" }; // AI_PROVIDER 없음 = 기본 Claude
 
   // A1~A5: 키가 없으면 시연용 가짜 AI
   writePosts(basePosts);
@@ -189,6 +197,30 @@ const server = http.createServer((req, res) => {
   const c6b = await run(outC, ["--profile", prof]);
   check("C6", "키가 끝나 AI 가 거절해도(401), 키를 지워도(자료 그대로) 예전 진짜 챗봇 답을 지키고 실행은 성공한다",
     c6.code === 0 && c6b.code === 0 && keptOn401 && readQa(outC).mode === "gemini" && readQa(outC).generated_at === t3 && c6.log.includes("챗봇 실패"), c6.log.trim());
+  mode = "ok";
+
+  // C7~C8: Claude(기본). 공식 SDK 가 있으면 가짜 서버로 진짜 경로를 돌리고, 없으면 예전 결과를 지키며 알려 주는지 본다
+  let hasSdk = true; try { require.resolve("@anthropic-ai/sdk"); } catch { hasSdk = false; }
+  const outK = path.join(tmp, "claude");
+  fs.writeFileSync(prof, "# 자료\n\n## 블로그\n\n복습 노트 블로그입니다.\n");
+  await run(outK, ["--profile", prof]); // 먼저 가짜 결과를 만들어 둔다
+  const beforeK = readQa(outK).generated_at;
+  hits = 0; mode = "ok";
+  const k1 = await run(outK, ["--profile", prof], claudeEnv);
+  const qk = readQa(outK);
+  if (hasSdk) {
+    check("C7", "AI_PROVIDER 가 없으면 Claude 로 부른다: 공식 SDK, 키는 x-api-key, JSON 스키마와 서버 대체 모델 설정",
+      k1.code === 0 && qk.mode === "anthropic" && lastKey === claudeEnv.AI_API_KEY && lastBody.includes('"json_schema"') && lastBody.includes('"fallbacks":"default"') && !k1.log.includes(claudeEnv.AI_API_KEY), k1.log.trim());
+  } else {
+    check("C7", "공식 SDK 가 없으면 AI 를 부르지 않고 설치 방법을 알리며, 예전 결과를 지키고 실행은 성공한다(SDK 미설치 환경)",
+      k1.code === 0 && hits === 0 && qk.generated_at === beforeK && k1.log.includes("@anthropic-ai/sdk") && !k1.log.includes(claudeEnv.AI_API_KEY), k1.log.trim());
+  }
+  fs.writeFileSync(prof, "# 자료\n\n## 블로그\n\n거절 시험용 자료입니다.\n");
+  const kept = readQa(outK).generated_at;
+  mode = "refusal";
+  const k2 = await run(outK, ["--profile", prof], claudeEnv);
+  check("C8", "Claude 가 답을 거절하거나(refusal) 부를 수 없으면 예전 챗봇 답을 지키고 실행은 성공한다",
+    k2.code === 0 && readQa(outK).generated_at === kept && k2.log.includes("챗봇 실패") && (!hasSdk || k2.log.includes("refusal")), k2.log.trim());
   mode = "ok";
 
   server.close();

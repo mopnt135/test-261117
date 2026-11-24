@@ -12,7 +12,8 @@
  *
  * 실행: node scripts/ai-assist.js [--out 폴더] [--posts-json 파일] [--max 5] [--mock]
  *  - AI_API_KEY 환경 변수가 없거나 --mock 이면 "시연용 가짜 AI" 로 만든다. 결과에 mode: "mock" 이 적힌다.
- *  - AI_PROVIDER: gemini(기본). AI_MODEL: 모델 이름. AI_BASE_URL: 테스트용 가짜 서버 주소.
+ *  - AI_PROVIDER: anthropic(기본, Claude) 또는 gemini. AI_MODEL: 모델 이름(기본 claude-opus-5-5). AI_BASE_URL: 테스트용 가짜 서버 주소.
+ *  - Claude 는 공식 SDK(@anthropic-ai/sdk)로 부른다. 자동 실행이 실행 전에 설치한다(package.json 없이 --no-save).
  *  - 글 내용(제목+본문)이 바뀌지 않았으면 AI 를 다시 부르지 않는다. 무료 한도를 아끼기 위해서다.
  *  - 한 번 실행에 최대 --max 개 글만 AI 를 부른다. 나머지는 다음 실행 때 한다.
  *  - 한도 초과(429)를 받으면 그 실행에서는 더 부르지 않는다. 실패해도 예전 결과는 지우지 않는다.
@@ -37,9 +38,9 @@ const PROFILE = path.resolve(arg("--profile") || path.join(ROOT, "portfolio", "p
 const MAX = Math.max(0, parseInt(arg("--max") || "5", 10) || 0);
 const KEY = (process.env.AI_API_KEY || "").trim();
 const MOCK = args.includes("--mock") || !KEY;
-const PROVIDER = (process.env.AI_PROVIDER || "gemini").toLowerCase();
-const MODEL = process.env.AI_MODEL || "gemini-2.5-flash"; // 모델 이름은 바뀔 수 있다. 무료 등급에서 되는 이름을 확인해 AI_MODEL 로 바꾼다
-const BASE_URL = (process.env.AI_BASE_URL || "https://generativelanguage.googleapis.com").replace(/\/$/, "");
+const PROVIDER = (process.env.AI_PROVIDER || "anthropic").toLowerCase(); // 11-24: 사용자가 받은 키가 Claude 키라 기본을 anthropic 으로
+const MODEL = process.env.AI_MODEL || (PROVIDER === "gemini" ? "gemini-2.5-flash" : "claude-opus-5-5");
+const BASE_URL = (process.env.AI_BASE_URL || (PROVIDER === "gemini" ? "https://generativelanguage.googleapis.com" : "")).replace(/\/$/, "");
 const TIMEOUT_MS = 30000;
 
 const esc = s => String(s ?? "").replace(/[&<>"']/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
@@ -111,9 +112,18 @@ function prompt(p) {
 
 class RateLimited extends Error {}
 
-async function callAi(p) { return clean(await callModel(prompt(p))); }
+// AI 가 지켜야 할 답 모양(JSON 스키마). Claude 는 이 모양 밖으로 답하지 못하게 묶는다
+const str = { type: "string" }, strs = { type: "array", items: str };
+const POST_SCHEMA = { type: "object", additionalProperties: false, required: ["summary", "titles", "tags", "sns"],
+  properties: { summary: strs, titles: strs, tags: strs, sns: str } };
+const CHAT_SCHEMA = { type: "object", additionalProperties: false, required: ["greeting", "items"],
+  properties: { greeting: str, items: { type: "array", items: { type: "object", additionalProperties: false, required: ["q", "a", "keywords"],
+    properties: { q: str, a: str, keywords: strs } } } } };
 
-async function callModel(text) {
+async function callAi(p) { return clean(await callModel(prompt(p), POST_SCHEMA)); }
+
+async function callModel(text, schema) {
+  if (PROVIDER === "anthropic") return callClaude(text, schema);
   if (PROVIDER !== "gemini") throw new Error(`아직 지원하지 않는 AI_PROVIDER 입니다: ${PROVIDER}`);
   const ctrl = new AbortController();
   const timer = setTimeout(() => ctrl.abort(), TIMEOUT_MS);
@@ -181,7 +191,7 @@ async function buildChatbot(dir) {
   try { old = JSON.parse(fs.readFileSync(file, "utf8")); } catch (e) { old = null; }
   if (old && old.hash === hash && (old.mode !== "mock" || MOCK)) return { note: "챗봇 그대로" };
   try {
-    const out = MOCK ? mockChat(md) : cleanChat(await callModel(chatPrompt(md)));
+    const out = MOCK ? mockChat(md) : cleanChat(await callModel(chatPrompt(md), CHAT_SCHEMA));
     const data = { hash, mode: MOCK ? "mock" : PROVIDER, model: MOCK ? "mock" : MODEL, generated_at: kstNow(), ready: !md.includes(NOT_READY), ...out };
     fs.writeFileSync(file, JSON.stringify(data, null, 2) + "\n");
     // 화면은 파일 주소(file://)에서도 읽을 수 있게 스크립트 모양으로도 저장한다. 데이터뿐이고 다른 코드는 없다
@@ -191,6 +201,34 @@ async function buildChatbot(dir) {
     console.error(`챗봇 답을 만들지 못했습니다: ${e.message}`); // 예전 결과는 그대로 둔다
     return { note: "챗봇 실패", limited: e instanceof RateLimited };
   }
+}
+
+/* ---------- Claude(Anthropic) 부르기: 공식 SDK ---------- */
+function sdk() {
+  try { const m = require("@anthropic-ai/sdk"); return m.default || m; }
+  catch (e) { throw new Error("@anthropic-ai/sdk 가 설치되어 있지 않습니다. npm install --no-save --no-package-lock @anthropic-ai/sdk 로 설치하세요"); }
+}
+async function callClaude(text, schema) {
+  const Anthropic = sdk();
+  const client = new Anthropic({ apiKey: KEY, ...(BASE_URL ? { baseURL: BASE_URL } : {}), timeout: 120000, maxRetries: 1 });
+  let res;
+  try {
+    res = await client.beta.messages.create({
+      model: MODEL, max_tokens: 16000,
+      // 안전 분류기가 거절하면 서버가 다른 모델로 한 번 더 시도한다(기본 설정)
+      betas: ["server-side-fallback-2026-07-01"], fallbacks: "default",
+      output_config: { effort: "medium", format: { type: "json_schema", schema } },
+      messages: [{ role: "user", content: text }]
+    });
+  } catch (e) {
+    if (e instanceof Anthropic.RateLimitError) throw new RateLimited("AI 한도를 다 썼습니다(429)");
+    if (e instanceof Anthropic.AuthenticationError) throw new Error("AI 키가 맞지 않거나 끝났습니다(401)");
+    if (e instanceof Anthropic.APIError) throw new Error(`AI 가 오류를 돌려줬습니다: ${e.status ?? "연결 실패"}`); // 키는 기록에 남기지 않는다
+    throw e;
+  }
+  if (res.stop_reason === "refusal") throw new Error("AI 가 이 요청에 답하지 않았습니다(refusal)");
+  if (res.stop_reason === "max_tokens") throw new Error("AI 답이 너무 길어 잘렸습니다");
+  return res.content.filter(b => b.type === "text").map(b => b.text).join("");
 }
 
 /* ---------- 관리자 보고서 ---------- */
