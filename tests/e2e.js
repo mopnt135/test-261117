@@ -18,6 +18,7 @@ if (!GA_ID_RE.test(SOURCE)) throw new Error("index.html 에서 GA_MEASUREMENT_ID
 const withGaId = id => SOURCE.replace(GA_ID_RE, `const GA_MEASUREMENT_ID = "${id}";`);
 const TMP = fs.mkdtempSync(path.join(require("os").tmpdir(), "samsaekpen-e2e-"));
 fs.writeFileSync(path.join(TMP, "index.html"), withGaId(""));
+fs.cpSync(path.join(ROOT, "assets"), path.join(TMP, "assets"), { recursive: true }); // 메인 사진 등 그림 파일
 const URL = "file://" + path.join(TMP, "index.html");
 const FIX = path.join(__dirname, "fixtures");
 const OUT = process.argv[2] || path.join(__dirname, "e2e-result.json");
@@ -406,6 +407,13 @@ const tests = [
     const mob = await page.evaluate(() => document.querySelector(".fun").getBoundingClientRect().top > document.querySelector(".main-col").getBoundingClientRect().bottom - 1);
     await page.setViewportSize({ width: 1280, height: 900 });
     return expect(desk.left && desk.under && mob, `컴퓨터 왼쪽 ${desk.left}, 계정 카드 아래 ${desk.under}, 휴대폰 최근 글 아래 ${mob}`);
+  }],
+  ["J", "T100", "첫 화면 맨 위에 메인 사진과 사이트 이름이 보이고, 사진 파일은 300KB 이하다", async () => {
+    await goto();
+    const r = await page.evaluate(() => { const img = document.querySelector(".banner img"), t = document.querySelector(".banner-title");
+      return { ok: !!img && img.complete && img.naturalWidth > 0, alt: img && img.getAttribute("alt"), title: t && t.textContent.trim() }; });
+    const big = ["hero-1408.jpg", "hero-800.jpg"].map(f => fs.statSync(path.join(ROOT, "assets", f)).size).filter(n => n > 300 * 1024);
+    return expect(r.ok && r.alt === "" && r.title === "삼색펜" && big.length === 0, `사진 ${r.ok ? "보임" : "안 보임"}, alt "${r.alt}", 이름 "${r.title}", 300KB 넘는 파일 ${big.length}개`);
   }],
   ["J", "T99", "쉬어가기는 고양이와 포켓몬 두 카드뿐이고, 날씨 API 는 코드에 없다", async () => {
     await goto();

@@ -115,6 +115,11 @@ nav.main a:hover{color:var(--orange)}
 .demo-strip b{color:var(--mint)}
 
 /* 첫 화면 */
+/* 메인 사진 띠: 사진은 꾸밈이라 alt 를 비운다. 위에 사이트 이름. 어두운 막을 깔아 흰 글자가 읽히게 한다 */
+.banner{position:relative;height:clamp(180px,30vw,380px);overflow:hidden;background:var(--soft)}
+.banner img{width:100%;height:100%;object-fit:cover;object-position:50% 45%;display:block}
+.banner::after{content:"";position:absolute;inset:0;background:linear-gradient(rgba(0,0,0,.18),rgba(0,0,0,.38))}
+.banner-title{position:absolute;inset:0;z-index:1;display:flex;align-items:flex-start;justify-content:center;padding-top:clamp(36px,8vw,110px);margin:0;color:#FFFFFF;font-family:var(--f-display);font-weight:900;font-size:clamp(30px,5vw,56px);letter-spacing:.35em;padding-left:.35em;text-shadow:0 2px 12px rgba(0,0,0,.45)}
 .hero{padding-block:52px 40px;border-bottom:1px solid var(--line)}
 .hero-grid{display:grid;grid-template-columns:1.35fr 1fr;gap:48px;align-items:end}
 .hero h1{font-family:var(--f-display);font-weight:900;font-size:clamp(34px,5.4vw,60px);line-height:1.15;letter-spacing:-.03em;margin:14px 0 0;text-wrap:balance}
@@ -955,6 +960,7 @@ const views = {
         ? `<a class="tile primary" href="#list"><b>댓글 달기</b><span>글을 읽고 댓글을 남겨 보세요</span></a>`
         : `<a class="tile primary" href="#login"><b>회원가입</b><span>가입하면 바로 댓글을 달 수 있어요</span></a>`;
     return `
+    <section class="banner" aria-label="삼색펜"><img src="assets/hero-1408.jpg" srcset="assets/hero-800.jpg 800w, assets/hero-1408.jpg 1408w" sizes="100vw" width="1408" height="768" alt="" fetchpriority="high"><p class="banner-title">삼색펜</p></section>
     <section class="hero"><div class="wrap hero-grid">
       <div><div class="label">공지</div><h1 tabindex="-1">삼색펜 <mark>운영 기준</mark></h1></div>
       <div>
