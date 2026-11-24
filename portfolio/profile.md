@@ -27,9 +27,21 @@ HTML 파일 하나와 Supabase 로 만들었고, GitHub Pages 에 올려 비용 
 
 HTML, CSS, JavaScript, Supabase, GitHub Pages, GitHub Actions, Google Analytics 4, Claude API, Playwright 를 썼습니다.
 
-## 다른 프로젝트
+## 다른 프로젝트 (예시 작품, 실제 포트폴리오 아님)
 
-[작성 필요] 다른 프로젝트가 있으면 이름, 한 줄 설명, 맡은 역할, 결과를 적어 주세요. 없으면 이 부분을 통째로 지워 주세요.
+아래 세 작품은 챗봇 시연을 위해 올린 예시입니다. 실제 포트폴리오가 아닙니다.
+
+예시 1. 웹툰풍 배너 "나만 빼고 다 행복해?! 평범한 수강생의 일상 탈출기"입니다.
+로봇이 붙잡는데도 헬멧 쓴 고양이가 앞서가는 무리를 따라가려는 장면으로, 수강생이 레벨업을 기다리는 마음을 그렸습니다.
+파일은 assets/portfolio/example-1-banner.jpg 입니다.
+
+예시 2. 판타지 일러스트입니다.
+고양이 귀를 단 인물이 수정 날개가 달린 망치로 딸기 젤리 괴물을 내려치는 장면입니다.
+파일은 assets/portfolio/example-2-illust.jpg 입니다.
+
+예시 3. AI 영상 생성 도구 Kling AI 로 만든 5초 애니메이션 영상입니다.
+밤에 커피잔을 든 사람이 벽에 붙은 프로젝트 일정표를 보며 고민하는 장면입니다.
+파일은 assets/portfolio/example-3-video.mp4 입니다.
 
 ## 연락 방법
 

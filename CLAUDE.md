@@ -28,7 +28,7 @@ AI 코딩 에이전트가 이 저장소에서 일할 때 가장 먼저 읽는 �
 | 파일 | 역할 |
 | --- | --- |
 | `index.html` | 블로그 전체. CSS, 화면, 로직이 한 파일에 있음 |
-| `assets/` | 그림 파일(사용자 제공, 줄여 넣음). `hero-1408.jpg`, `hero-800.jpg` 는 첫 화면 맨 위 메인 사진, `notice-card.jpg` 는 공지 글 카드의 사진, `logo.png` 는 로고(전구와 톱니, 배경 투명), `logo-footer.png` 는 푸터용(전구 흰색, 톱니 금색), `favicon*`, `apple-touch-icon.png` 은 로고로 만든 파비콘 |
+| `assets/` | 그림 파일(사용자 제공, 줄여 넣음). `hero-1408.jpg`, `hero-800.jpg` 는 첫 화면 맨 위 메인 사진, `notice-card.jpg` 는 공지 글 카드의 사진, `logo.png` 는 로고(전구와 톱니, 배경 투명), `logo-footer.png` 는 푸터용(전구 흰색, 톱니 금색), `favicon*`, `apple-touch-icon.png` 은 로고로 만든 파비콘, `portfolio/` 는 챗봇 자료에 적은 예시 작품 3개(실제 포트폴리오 아님) |
 | `scripts/build-pages.js` | 글마다 검색·공유용 정적 페이지 `p/<글번호>/` 와 썸네일, 사이트맵을 만드는 생성기 |
 | `p/`, `og/`, `sitemap.xml`, `robots.txt` | 생성기 결과물. **손으로 고치지 않는다** |
 | `.github/workflows/seo-pages.yml` | 생성기를 하루 2번 돌려 커밋하는 GitHub Actions |
