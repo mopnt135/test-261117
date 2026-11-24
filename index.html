@@ -137,6 +137,10 @@ nav.main a:hover{color:var(--orange)}
 .chat-media-tag{position:absolute;left:8px;top:8px;padding:2px 8px;border-radius:999px;background:var(--orange);color:var(--bg);font-size:12px;font-weight:700}
 .chat-media .is-video img{filter:brightness(.92)}
 .bubble.user{align-self:flex-end;background:var(--mint-fill);color:var(--fg);border-radius:12px 12px 4px 12px}
+.chat-chips[hidden]{display:none}
+.chat-chips-toggle{display:flex;align-items:center;gap:8px;width:100%;min-height:44px;padding:0 14px;border:0;border-top:1px solid var(--line);background:transparent;color:var(--orange);font:inherit;font-size:14px;font-weight:700;text-align:left;cursor:pointer}
+.chat-chips-toggle::after{content:"";width:8px;height:8px;margin-left:auto;border-right:2px solid currentColor;border-bottom:2px solid currentColor;transform:rotate(45deg) translate(-2px,-2px)}
+.chat-chips-toggle[aria-expanded="false"]::after{transform:rotate(-135deg) translate(-2px,-2px)}
 .chat-chips{display:flex;flex-wrap:wrap;gap:6px;padding:0 14px 10px;max-height:140px;overflow:auto}
 .chat-chips button{min-height:44px;padding:0 12px;border:1.5px solid var(--orange);background:transparent;color:var(--orange);border-radius:999px;font:inherit;font-size:14px;cursor:pointer}
 .chat-form{display:flex;gap:6px;padding:10px 14px;border-top:1px solid var(--line)}
@@ -435,6 +439,7 @@ nav.main a[hidden]{display:none}
 <section class="chat-panel" id="chatPanel" role="dialog" aria-labelledby="chatTitle" hidden>
   <div class="chat-head"><h2 id="chatTitle">포트폴리오 안내</h2><button type="button" class="chat-close" id="chatClose" aria-label="안내 닫기">×</button></div>
   <div class="chat-log" id="chatLog" aria-live="polite"></div>
+  <button type="button" class="chat-chips-toggle" id="chatChipsToggle" aria-controls="chatChips" aria-expanded="true">준비된 질문 접기</button>
   <div class="chat-chips" id="chatChips" role="group" aria-label="준비된 질문"></div>
   <form class="chat-form" id="chatForm"><label class="sr" for="chatQ">질문 적기</label><input id="chatQ" maxlength="100" autocomplete="off" placeholder="궁금한 것을 적어 보세요"><button class="btn" type="submit">묻기</button></form>
   <p class="chat-note">AI 가 포트폴리오 자료로 미리 만든 답이에요. 틀릴 수 있어요.</p>
@@ -1308,7 +1313,12 @@ window.addEventListener("hashchange", () => { if (parseRoute().name !== "login")
    방문 통계에는 질문 번호와 맞았는지만 보낸다. 방문자가 적은 글자는 보내지 않는다. */
 const chatbot = (() => {
   let qa = null, started = false;
-  const fab = $("chatFab"), panel = $("chatPanel"), log = $("chatLog"), chips = $("chatChips"), input = $("chatQ");
+  const fab = $("chatFab"), panel = $("chatPanel"), log = $("chatLog"), chips = $("chatChips"), input = $("chatQ"), fold = $("chatChipsToggle");
+  // 준비된 질문 영역 접기: 답을 보면 접어서 답과 그림 자리를 넓힌다. 누르면 다시 펼친다
+  function setChips(openIt) {
+    chips.hidden = !openIt; fold.setAttribute("aria-expanded", String(openIt));
+    fold.textContent = openIt ? "준비된 질문 접기" : `준비된 질문 보기 (${qa ? qa.items.length : 0}개)`;
+  }
   const say = (who, text) => { const el = document.createElement("div"); el.className = `bubble ${who}`; el.textContent = text; log.appendChild(el); log.scrollTop = log.scrollHeight; };
   const words = t => (String(t).toLowerCase().match(/[가-힣a-z0-9]{2,}/g) || []);
   // 답 아래 그림: 저장소 안 assets/portfolio/ 의 그림만. 영상은 한 장면 그림(썸네일)만 보이고 재생하지 않는다
@@ -1354,7 +1364,7 @@ const chatbot = (() => {
     $("chatClose").focus();
   }
   function close() { panel.hidden = true; fab.setAttribute("aria-expanded", "false"); fab.focus(); }
-  function answer(i, source) { const x = qa.items[i]; say("user", x.q); say("bot", x.a); showMedia(x.media); analytics.track("chatbot_question", { q_index: i + 1, source, matched: true }); }
+  function answer(i, source) { const x = qa.items[i]; setChips(false); say("user", x.q); say("bot", x.a); showMedia(x.media); analytics.track("chatbot_question", { q_index: i + 1, source, matched: true }); }
   function typed(text) {
     const t = text.trim(); if (!t) return;
     const ws = words(t), low = t.toLowerCase();
@@ -1364,12 +1374,13 @@ const chatbot = (() => {
       const sc = 2 * x.keys.filter(k => k.length >= 2 && low.includes(k)).length + x.qws.filter(q => ws.some(w => !ASK.has(w) && (q.includes(w) || w.includes(q)))).length;
       if (sc > score) { score = sc; best = i; }
     });
-    say("user", t);
+    setChips(false); say("user", t);
     if (best >= 0) { say("bot", qa.items[best].a); showMedia(qa.items[best].media); analytics.track("chatbot_question", { q_index: best + 1, source: "typed", matched: true }); }
     else { say("bot", "그 질문에는 아직 준비된 답이 없어요. 아래 준비된 질문 중에서 골라 주세요."); analytics.track("chatbot_question", { source: "typed", matched: false }); }
   }
   fab.addEventListener("click", () => panel.hidden ? open() : close());
   $("chatClose").addEventListener("click", close);
+  fold.addEventListener("click", () => { setChips(chips.hidden); if (!chips.hidden) chips.scrollTop = 0; });
   chips.addEventListener("click", e => { const b = e.target.closest("button[data-i]"); if (b) answer(Number(b.dataset.i), "chip"); });
   $("chatForm").addEventListener("submit", e => { e.preventDefault(); typed(input.value); input.value = ""; input.focus(); });
   panel.addEventListener("keydown", e => { if (e.key === "Escape") close(); });

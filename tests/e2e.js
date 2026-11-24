@@ -454,6 +454,23 @@ const tests = [
     return expect(r.n === 2 && r.ok && r.srcs.every(x => x.startsWith("assets/portfolio/")) && r.cap[0] === "예시 1 <b>배너</b>" && r.bold === 0
       && r.tag[0] === "" && r.tag[1].includes("재생 안 됨") && r.video === 0 && r.wide, JSON.stringify(r));
   }],
+  ["K", "T116", "질문을 고르면 준비된 질문 영역이 접혀 답 자리가 넓어지고, '준비된 질문 보기'를 누르면 다시 펼쳐진다(휴대폰 너비)", async () => {
+    await page.setViewportSize({ width: 390, height: 844 }); await goto(); await wait(300);
+    await page.click("#chatFab"); await wait(200);
+    const st = () => page.evaluate(() => ({ hidden: $("chatChips").hidden, exp: $("chatChipsToggle").getAttribute("aria-expanded"), text: $("chatChipsToggle").textContent,
+      h: $("chatChipsToggle").getBoundingClientRect().height, log: $("chatLog").getBoundingClientRect().height }));
+    const a = await st();
+    await page.click("#chatChips button >> nth=0"); await wait(200);
+    const b = await st();
+    await shot("chatbot-folded");
+    await page.click("#chatChipsToggle"); await wait(150);
+    const c = await st();
+    await page.click("#chatChipsToggle"); await page.fill("#chatQ", "블로그"); await page.press("#chatQ", "Enter"); await page.click("#chatChipsToggle"); await wait(150);
+    const d = await st();
+    await page.click("#chatClose"); await page.setViewportSize({ width: 1280, height: 900 });
+    return expect(!a.hidden && a.exp === "true" && b.hidden && b.exp === "false" && b.text.includes("보기 (2개)") && b.h >= 44 && b.log > a.log
+      && !c.hidden && c.exp === "true" && c.text.includes("접기") && !d.hidden, `처음 ${JSON.stringify(a)} / 고른 뒤 ${JSON.stringify(b)} / 다시 ${c.exp}`);
+  }],
   ["J", "T101", "로그인하면 헤더의 '내 계정'을 눌러 계정 상자를 연다", async () => {
     await logout(); await login("boss@test.kr", true); await goto();
     const closed = await page.$eval(".acct-menu", d => d.open);

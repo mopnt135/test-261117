@@ -199,7 +199,7 @@ function mockChat(md) {
     greeting: "안녕하세요. 포트폴리오 안내 챗봇입니다. 아래 질문을 눌러 보세요.",
     items: sections(md).map(x => ({
       q: `${x.title} 알려 주세요`, topic: x.title,
-      a: x.text.split(/(?<=[.!?])\s+|\n+/).map(t => t.trim()).filter(t => t.length > 4).slice(0, 3).join(" "), // "예시 1." 같은 토막은 버린다
+      a: x.text.split(/(?<=[.!?])\s+|\n+/).map(t => t.trim()).filter(t => t.length >= 6).slice(0, 3).join(" "), // "예시 1." 같은 토막은 버린다
       keywords: x.title.split(/\s+/)
     }))
   });
