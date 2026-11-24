@@ -1,5 +1,5 @@
 /*
- * 삼색펜 검색, 공유용 정적 페이지 만들기
+ * 생각하는 공방 검색, 공유용 정적 페이지 만들기
  *
  * 왜 필요한가: 블로그는 index.html 한 장에서 #post-12 같은 # 주소로 화면을 바꾼다.
  * 검색엔진과 카카오톡, 페이스북 같은 공유 미리보기는 # 뒤를 다른 페이지로 보지 않고,
@@ -29,7 +29,7 @@ const NO_IMAGES = args.includes("--no-images");
 const ATT_DIR = arg("--attachments-dir"); // 테스트용. Supabase 보관함 대신 이 폴더에서 첨부 사진을 읽는다
 
 const SITE_URL = "https://mopnt135.github.io/test-261117/";
-const SITE_NAME = "삼색펜";
+const SITE_NAME = "생각하는 공방";
 const SITE_DESC = "AIPM 수업을 복습하는 블로그. 중요한 내용은 빨강, 함께 볼 내용은 주황, 참고는 민트로 표시한 복습 노트를 올립니다.";
 const DESC_MAX = 120;
 
@@ -207,7 +207,7 @@ a:focus-visible{outline:3px solid var(--orange);outline-offset:3px}
  * 글마다 다르게: 제목 + 본문 앞 세 줄(빨강, 주황, 민트 표시) + 날짜.
  * 글에 사진(JPG, PNG, GIF)이 첨부돼 있으면 첫 사진을 오른쪽에 넣는다.
  */
-const CARD_DESIGN = "c4"; // 카드 디자인을 바꾸면 이 값을 바꾼다. 썸네일 주소의 ?v= 가 바뀌어 카카오톡이 새로 가져간다
+const CARD_DESIGN = "c5"; // 카드 디자인을 바꾸면 이 값을 바꾼다. 썸네일 주소의 ?v= 가 바뀌어 카카오톡이 새로 가져간다
 const LINE_MAX = 60;
 // 사진이 있으면 세 줄(두 줄까지 줄바꿈), 없으면 네 줄
 async function cardContent(p) { const image = await thumbImage(p); return { image, lines: excerptLines(p, image ? 3 : 4) }; }

@@ -1,5 +1,5 @@
 /*
- * 삼색펜 AI 도우미: 공개글마다 AI 결과를 미리 만들어 파일로 저장한다.
+ * 생각하는 공방 AI 도우미: 공개글마다 AI 결과를 미리 만들어 파일로 저장한다.
  *
  * 왜 미리 만드나: 독자가 글을 열 때마다 AI 를 부르면 비용이 생기고, AI 키를 화면 코드에 넣어야 한다.
  * 그래서 GitHub Actions 가 글을 올린 뒤에 한 번만 AI 를 부르고, 결과를 ai/<글번호>.json 에 저장한다.
@@ -139,7 +139,7 @@ function reportHtml(items) {
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <meta name="robots" content="noindex, nofollow">
-<title>AI 추천 보고서 · 삼색펜</title>
+<title>AI 추천 보고서 · 생각하는 공방</title>
 <style>
 :root{--bg:#FFFFF0;--fg:#2B2622;--muted:#6B6760;--line:#C1C5C6;--orange:#2F3E63;--mint-fill:#E6E8DF}
 @media (prefers-color-scheme: dark){:root{--bg:#353839;--fg:#FFFFFF;--muted:#C2C3C4;--line:#5D6468;--orange:#D5E8F5;--mint-fill:#4D5255;color-scheme:dark}}

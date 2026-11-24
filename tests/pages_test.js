@@ -50,7 +50,7 @@ check("G1", "공개글과 공지마다 페이지가 생기고 나만보기 글�
 });
 check("G2", "글마다 제목과 설명이 다르다", () => {
   const a = read("p/12/index.html"), b = read("p/14/index.html");
-  const ok = a.includes("<title>PRD 쓰는 법 · 삼색펜</title>") && meta(a, "property", "og:title") === "PRD 쓰는 법"
+  const ok = a.includes("<title>PRD 쓰는 법 · 생각하는 공방</title>") && meta(a, "property", "og:title") === "PRD 쓰는 법"
     && meta(a, "name", "description") === "PRD 를 한 장으로 쓰는 순서를 정리했습니다." && meta(b, "property", "og:title") === "긴 본문";
   return [ok, `12번 설명: ${meta(a, "name", "description")}`];
 });

@@ -1,5 +1,5 @@
 /*
- * 삼색펜 화면 테스트 (체험 모드)
+ * 생각하는 공방 화면 테스트 (체험 모드)
  * 실행: node tests/e2e.js [결과 JSON 경로] [스크린샷 폴더]
  * 필요: playwright (require('playwright')), index.html 과 tests/fixtures 폴더
  * Supabase 를 연결하지 않은 체험 모드에서 화면 동작을 확인합니다.
