@@ -9,7 +9,7 @@
 
 ## 자기소개
 
-[작성 필요] 어떤 사람인지 2~3문장으로 적어 주세요. 예: 하는 일, 관심 분야, 지금 배우는 것.
+안녕하세요! PM을 꿈꾸는 생각하는 공방입니다!
 
 ## 생각하는 공방 블로그
 
@@ -46,4 +46,4 @@ HTML, CSS, JavaScript, Supabase, GitHub Pages, GitHub Actions, Google Analytics 
 
 ## 연락 방법
 
-[작성 필요] 공개해도 되는 연락 방법만 적어 주세요. 예: 블로그 댓글, 공개 이메일, 깃허브 주소.
+이메일 mopnt135@gmail.com 으로 연락 주세요!

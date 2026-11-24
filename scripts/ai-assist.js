@@ -227,7 +227,7 @@ async function buildChatbot(dir) {
   if (old && old.hash === hash && (old.mode !== "mock" || MOCK)) return { note: "챗봇 그대로" };
   try {
     const out = attachMedia(MOCK ? mockChat(md) : cleanChat(await callModel(chatPrompt(md), CHAT_SCHEMA)), md);
-    const data = { hash, mode: MOCK ? "mock" : PROVIDER, model: MOCK ? "mock" : MODEL, generated_at: kstNow(), ready: !md.includes(NOT_READY), ...out };
+    const data = { hash, mode: MOCK ? "mock" : PROVIDER, model: MOCK ? "mock" : MODEL, generated_at: kstNow(), ready: !md.replace(/<!--[\s\S]*?-->/g, "").includes(NOT_READY) /* 설명 주석 속 낱말은 세지 않는다 */, ...out };
     fs.writeFileSync(file, JSON.stringify(data, null, 2) + "\n");
     // 화면은 파일 주소(file://)에서도 읽을 수 있게 스크립트 모양으로도 저장한다. 데이터뿐이고 다른 코드는 없다
     fs.writeFileSync(path.join(cdir, "qa.js"), `window.CHATBOT_QA = ${JSON.stringify(data)};\n`);
