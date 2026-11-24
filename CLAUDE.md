@@ -39,6 +39,7 @@ AI 코딩 에이전트가 이 저장소에서 일할 때 가장 먼저 읽는 �
 | `ai/` | AI 도우미 결과물과 관리자 보고서. **손으로 고치지 않는다** |
 | `demo/posts.json` | Supabase 미연결 때 쓰는 시연용 글 |
 | `tests/ai_test.js` | AI 도우미 테스트 19건 (가짜 AI 서버, 돈 들지 않음) |
+| `tests/docs_test.js` | `CLAUDE.md` 와 `AGENTS.md` 가 같은 규칙인지 확인하는 테스트 6건 |
 | `tests/stub_supabase.sql` | 로컬에서 Supabase 를 흉내 내는 준비 파일 |
 | `tests/fixtures/` | 첨부 테스트용 파일 |
 | `docs/reports/` | 테스트 보고서 PDF |
@@ -94,9 +95,13 @@ node tests/pages_test.js
 ```bash
 node tests/ai_test.js
 ```
+```bash
+node tests/docs_test.js
+```
 - `e2e.js` 는 `require('playwright')` 가 되는 환경이 필요하다. Supabase 연결 없이 체험 모드로 돌아간다.
 - `rls_test.py` 는 로컬 PostgreSQL 16 과 `psql` 이 필요하다. 임시 데이터베이스를 만들고 끝나면 지운다.
 - 세 테스트 모두 통과해야 배포한다.
+- `CLAUDE.md` 나 `AGENTS.md` 를 고쳤으면 `docs_test.js` 를 돌린다. 한쪽만 고치면 실패한다.
 - 공지를 고쳤으면 `node scripts/build-pages.js` 를 돌려 `p/notice*` 를 다시 만든다. 썸네일에 한글 글꼴이 필요하다.
 
 ## 체험 모드
