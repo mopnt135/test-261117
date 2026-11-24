@@ -41,7 +41,7 @@ AI 코딩 에이전트가 이 저장소에서 일할 때 가장 먼저 읽는 �
 | `ai/` | AI 도우미 결과물과 관리자 보고서, 챗봇 답(`ai/chatbot/qa.json`, 화면이 읽는 `qa.js`). **손으로 고치지 않는다** |
 | `portfolio/profile.md` | 포트폴리오 안내 챗봇의 자료(사람이 쓴다). `[작성 필요]` 가 남아 있으면 챗봇이 화면에 안 나온다. 공개해도 되는 정보만 쓴다 |
 | `demo/posts.json` | Supabase 미연결 때 쓰는 시연용 글 |
-| `tests/ai_test.js` | AI 도우미와 챗봇 테스트 25건 (가짜 AI 서버, 돈 들지 않음) |
+| `tests/ai_test.js` | AI 도우미와 챗봇 테스트 27건 (가짜 AI 서버, 돈 들지 않음) |
 | `tests/docs_test.js` | `CLAUDE.md` 와 `AGENTS.md` 가 같은 규칙인지 확인하는 테스트 6건 |
 | `tests/stub_supabase.sql` | 로컬에서 Supabase 를 흉내 내는 준비 파일 |
 | `tests/fixtures/` | 첨부 테스트용 파일 |

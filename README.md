@@ -32,7 +32,9 @@ AIPM 수업 복습 노트를 올리는 블로그입니다.
 
 - 관리자 보고서: https://mopnt135.github.io/thinkandmake/ai/
 - AI 키가 없으면 시연용 가짜 AI 로 만듭니다. 결과에 "시연용"이라고 표시됩니다.
-- 진짜 AI 를 쓰려면 저장소 Settings > Secrets and variables > Actions 에서 `AI_API_KEY` 를 등록합니다. 모델 이름은 Variables 의 `AI_MODEL` 로 바꿀 수 있습니다.
+- 진짜 AI 를 쓰려면 저장소 Settings > Secrets and variables > Actions 에서 `AI_API_KEY` 를 등록합니다. 기본은 Claude 키이며, 공식 SDK `@anthropic-ai/sdk` 는 자동 실행이 설치합니다.
+- 모델 이름은 Variables 의 `AI_MODEL` 로 바꿀 수 있습니다(기본 `claude-opus-5-5`). Gemini 키를 쓰려면 Variables 에 `AI_PROVIDER` 를 `gemini` 로 둡니다.
+- 자동 실행은 진짜 AI 를 부르기 전에 `tests/ai_test.js` 를 먼저 돌리고, 실패하면 멈춥니다.
 - Supabase 를 연결하기 전에는 `demo/posts.json` 의 시연용 글로 돕니다.
 
 ## 자동 실행 (GitHub Actions)

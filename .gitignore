@@ -1,2 +1,3 @@
 tests/e2e-result.json
 tests/rls-result.json
+node_modules/

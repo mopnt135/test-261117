@@ -25,7 +25,7 @@ HTML 파일 하나와 Supabase 로 만들었고, GitHub Pages 에 올려 비용 
 
 ## 쓴 도구
 
-HTML, CSS, JavaScript, Supabase, GitHub Pages, GitHub Actions, Google Analytics 4, Gemini API, Playwright 를 썼습니다.
+HTML, CSS, JavaScript, Supabase, GitHub Pages, GitHub Actions, Google Analytics 4, Claude API, Playwright 를 썼습니다.
 
 ## 다른 프로젝트
 

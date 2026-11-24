@@ -179,7 +179,7 @@ flowchart LR
 | 파일 | 내용 |
 | --- | --- |
 | `scripts/ai-assist.js` | AI 도우미. 의존 패키지 없음. 공개글만 다룬다. 키가 없으면 시연용 가짜 AI(규칙으로 뽑기)로 돈다 |
-| `ai/<글번호>.json` | `summary`(독자용 3줄), `titles`(제목 후보 3), `tags`(태그 5), `sns`(홍보 문구), `hash`(글 내용 지문), `mode`(`mock` 또는 `gemini`), `model`, `generated_at`(KST) |
+| `ai/<글번호>.json` | `summary`(독자용 3줄), `titles`(제목 후보 3), `tags`(태그 5), `sns`(홍보 문구), `hash`(글 내용 지문), `mode`(`mock`, `anthropic` 또는 `gemini`), `model`, `generated_at`(KST) |
 | `ai/index.html` | 관리자용 보고서. 검색엔진 제외(noindex). **공개 저장소라 주소를 알면 누구나 볼 수 있다** |
 | `demo/posts.json` | Supabase 미연결 때 쓰는 시연용 글 3개. `demo: true` 라 정적 페이지에 댓글 버튼 대신 안내가 나온다 |
 

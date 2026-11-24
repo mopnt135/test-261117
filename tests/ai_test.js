@@ -43,7 +43,7 @@ const server = http.createServer((req, res) => {
   let body = "";
   req.on("data", c => body += c);
   req.on("end", () => {
-    hits++; lastKey = req.headers["x-goog-api-key"] || req.headers["x-api-key"]; lastBody = body;
+    hits++; lastKey = req.headers["x-goog-api-key"] || req.headers["x-api-key"] || (req.headers.authorization || "").replace(/^Bearer /, "") || null; lastBody = body;
     // Claude(Anthropic) 모양 답: /v1/messages
     const claude = req.url.startsWith("/v1/messages");
     const send = text => {
@@ -209,8 +209,8 @@ const server = http.createServer((req, res) => {
   const k1 = await run(outK, ["--profile", prof], claudeEnv);
   const qk = readQa(outK);
   if (hasSdk) {
-    check("C7", "AI_PROVIDER 가 없으면 Claude 로 부른다: 공식 SDK, 키는 x-api-key, JSON 스키마와 서버 대체 모델 설정",
-      k1.code === 0 && qk.mode === "anthropic" && lastKey === claudeEnv.AI_API_KEY && lastBody.includes('"json_schema"') && lastBody.includes('"fallbacks":"default"') && !k1.log.includes(claudeEnv.AI_API_KEY), k1.log.trim());
+    check("C7", "AI_PROVIDER 가 없으면 Claude 로 부른다: 공식 SDK, 키는 헤더로만(주소·본문에 없음), JSON 스키마와 서버 대체 모델 설정",
+      k1.code === 0 && qk.mode === "anthropic" && lastKey === claudeEnv.AI_API_KEY && !lastBody.includes(claudeEnv.AI_API_KEY) && lastBody.includes('"json_schema"') && lastBody.includes('"fallbacks":"default"') && !k1.log.includes(claudeEnv.AI_API_KEY), k1.log.trim());
   } else {
     check("C7", "공식 SDK 가 없으면 AI 를 부르지 않고 설치 방법을 알리며, 예전 결과를 지키고 실행은 성공한다(SDK 미설치 환경)",
       k1.code === 0 && hits === 0 && qk.generated_at === beforeK && k1.log.includes("@anthropic-ai/sdk") && !k1.log.includes(claudeEnv.AI_API_KEY), k1.log.trim());
