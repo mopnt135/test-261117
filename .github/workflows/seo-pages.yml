@@ -61,4 +61,5 @@ jobs:
           git add p og sitemap.xml robots.txt ai
           if git diff --cached --quiet; then echo "바뀐 페이지 없음"; exit 0; fi
           git commit -m "검색·공유 페이지와 AI 결과 자동 갱신"
+          git pull --rebase origin main   # 도는 사이 누가 먼저 올렸으면 그 위에 얹는다
           git push
