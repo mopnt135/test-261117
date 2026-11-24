@@ -23,18 +23,14 @@ concurrency:
 jobs:
   build:
     runs-on: ubuntu-24.04
-    timeout-minutes: 15
+    timeout-minutes: 40   # 11-24: 글꼴 내려받기가 13분 넘게 걸려 15분에 두 번 잘렸다
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
         with:
           node-version: 22
-      - name: 한글 글꼴과 Playwright 설치
-        run: |
-          sudo apt-get update -q
-          sudo apt-get install -y -q fonts-noto-cjk
-          npm install --no-save --no-package-lock playwright@1.63.0 @anthropic-ai/sdk@1.13.0
-          npx playwright install --with-deps chromium
+      - name: Claude SDK 와 Playwright 패키지 설치 (빠름)
+        run: npm install --no-save --no-package-lock playwright@1.63.0 @anthropic-ai/sdk@1.13.0
       - name: 글 가져올 곳 정하기 (Supabase 가 비어 있으면 시연용 글)
         id: src
         run: |
@@ -51,16 +47,29 @@ jobs:
           AI_MODEL: ${{ vars.AI_MODEL }}
           AI_PROVIDER: ${{ vars.AI_PROVIDER }}
         run: node scripts/ai-assist.js ${{ steps.src.outputs.posts }}
+      # AI 결과는 바로 올린다. 뒤의 글꼴 설치가 느려 실행이 잘려도 AI 결과(키 기한 안에 만든 것)는 남는다
+      - name: AI 결과 먼저 올리기
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add ai
+          if git diff --cached --quiet; then echo "바뀐 AI 결과 없음"; exit 0; fi
+          git commit -m "AI 결과 자동 갱신"
+          git pull --rebase origin main
+          git push
+      - name: 한글 글꼴과 브라우저 설치 (썸네일용, 느릴 수 있음)
+        run: |
+          sudo apt-get update -q
+          sudo apt-get install -y -q fonts-noto-cjk
+          npx playwright install --with-deps chromium
       - name: 페이지 만들기
         run: node scripts/build-pages.js ${{ steps.src.outputs.posts }}
       - name: 생성기 테스트
         run: node tests/pages_test.js
       - name: 바뀐 것이 있으면 올리기
         run: |
-          git config user.name "github-actions[bot]"
-          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
           git add p og sitemap.xml robots.txt ai
           if git diff --cached --quiet; then echo "바뀐 페이지 없음"; exit 0; fi
-          git commit -m "검색·공유 페이지와 AI 결과 자동 갱신"
+          git commit -m "검색·공유 페이지 자동 갱신"
           git pull --rebase origin main   # 도는 사이 누가 먼저 올렸으면 그 위에 얹는다
           git push
