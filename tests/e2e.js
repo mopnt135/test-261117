@@ -327,7 +327,7 @@ const tests = [
     await page.fill("#wBody", "본문입니다."); await page.click("#writeSubmit"); await wait(900);
     const onPost = await page.$eval('meta[name="description"]', m => m.content);
     await goto(); const onHome = await page.$eval('meta[name="description"]', m => m.content);
-    return expect(onPost === "검색 결과에 나올 한 줄 설명" && onHome.startsWith("AIPM 수업을 복습하는"), `글: ${onPost} / 첫 화면: ${onHome.slice(0, 15)}…`);
+    return expect(onPost === "검색 결과에 나올 한 줄 설명" && onHome.startsWith("생각하는 공방은 AIPM 수업을"), `글: ${onPost} / 첫 화면: ${onHome.slice(0, 15)}…`);
   }],
   ["I", "T81", "검색 설명은 160자까지만 입력되고, 고칠 때 저장된 값이 채워진다", async () => {
     await goto("#list"); await page.click(".post h3 a >> text=검색 설명 테스트"); await wait(400);

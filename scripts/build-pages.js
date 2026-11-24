@@ -32,7 +32,7 @@ const SITE_URL = "https://mopnt135.github.io/test-261117/";
 const SITE_NAME = "생각하는 공방";
 // 로고(전구와 톱니). 썸네일 카드는 파일 주소 대신 데이터로 넣어야 그림 그리기 브라우저가 바로 읽는다
 const LOGO_URI = "data:image/png;base64," + fs.readFileSync(path.join(__dirname, "..", "assets", "logo.png")).toString("base64");
-const SITE_DESC = "AIPM 수업을 복습하는 블로그. 중요한 내용은 빨강, 함께 볼 내용은 주황, 참고는 민트로 표시한 복습 노트를 올립니다.";
+const SITE_DESC = "생각하는 공방은 AIPM 수업을 들으며 생각하고 만든 것을 기록하는 복습 노트 블로그입니다. THINK & MAKE";
 const DESC_MAX = 120;
 
 const esc = s => String(s ?? "").replace(/[&<>"']/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
@@ -208,7 +208,7 @@ a:focus-visible{outline:3px solid var(--orange);outline-offset:3px}
 }
 
 /* ---------- 썸네일 카드 (1200×630) ----------
- * 글마다 다르게: 제목 + 본문 앞 세 줄(빨강, 주황, 민트 표시) + 날짜.
+ * 글마다 다르게: 제목 + 본문 앞 세 줄(점 색: 강조, 문양, 선) + 날짜.
  * 글에 사진(JPG, PNG, GIF)이 첨부돼 있으면 첫 사진을 오른쪽에 넣는다.
  */
 const CARD_DESIGN = "c6"; // 카드 디자인을 바꾸면 이 값을 바꾼다. 썸네일 주소의 ?v= 가 바뀌어 카카오톡이 새로 가져간다
@@ -340,7 +340,7 @@ async function main() {
   }
   fs.mkdirSync(path.join(OUT, "og"), { recursive: true });
   cards.push({ file: path.join(OUT, "og", "site.png"), title: "AIPM 수업 복습 노트", label: "블로그", isNotice: false,
-    lines: ["가장 중요한 내용은 빨강으로", "함께 알아 둘 내용은 주황으로", "참고할 내용은 민트로 표시합니다"] });
+    lines: ["AIPM 수업을 들으며 생각한 것과 만든 것을 기록합니다", "수업 복습 노트를 한곳에 모았습니다", "THINK & MAKE"] });
   await drawCards(cards);
 
   fs.writeFileSync(path.join(OUT, "sitemap.xml"), sitemap(all.map(p => ({ loc: `${SITE_URL}p/${safeId(p.id)}/`, lastmod: p.updated_at || p.created_at }))));
