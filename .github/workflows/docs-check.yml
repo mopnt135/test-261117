@@ -1,0 +1,27 @@
+# CLAUDE.md 와 AGENTS.md 가 같은 규칙인지 확인한다 (tests/docs_test.js).
+# 두 문서나 테스트 파일이 바뀔 때만 돈다. 실패해도 블로그나 검색 페이지 만들기에는 영향이 없다.
+# 실패하면 Actions 화면에 빨간 표시가 뜨고, 실행 기록에 몇 번째 줄이 다른지 나온다.
+name: 규칙 문서 확인
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [main]
+    paths: ["CLAUDE.md", "AGENTS.md", "tests/docs_test.js", ".github/workflows/docs-check.yml"]
+  pull_request:
+    paths: ["CLAUDE.md", "AGENTS.md", "tests/docs_test.js", ".github/workflows/docs-check.yml"]
+
+permissions:
+  contents: read
+
+jobs:
+  check:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - name: CLAUDE.md 와 AGENTS.md 비교
+        run: node tests/docs_test.js
