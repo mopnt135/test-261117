@@ -3,6 +3,8 @@
 AI 코딩 에이전트가 이 저장소에서 일할 때 가장 먼저 읽는 규칙 문서입니다.
 기준일: 2026-11-17 (KST)
 
+> `CLAUDE.md` 와 `AGENTS.md` 는 같은 규칙이다. Claude Code 는 `CLAUDE.md` 를, 다른 AI 코딩 도구(Codex, Cursor 등)는 `AGENTS.md` 를 읽는다. **한쪽을 고치면 다른 쪽도 똑같이 고친다.**
+
 ## 이 프로젝트
 
 **삼색펜**: AIPM 수업 복습 노트를 올리는 블로그입니다.
@@ -17,6 +19,7 @@ AI 코딩 에이전트가 이 저장소에서 일할 때 가장 먼저 읽는 �
 | `docs/ARCHITECTURE.md` | 파일 구조, 데이터 표, 권한 규칙, 화면 흐름 |
 | `docs/TASKS.md` | 끝낸 일, 남은 일, 알려진 문제 |
 | `docs/ANALYTICS.md` | GA4 방문 통계, 이벤트 택소노미, ASIS → TOBE |
+| `AGENTS.md` | 이 문서와 같은 규칙. Claude 가 아닌 AI 코딩 도구용 |
 | `README.md` | 사람을 위한 짧은 소개와 실행 방법 |
 | `docs/HANDOFF-ai-assist.md` | claude.ai 채팅에서 넘어온 AI 자동화 과제 인수인계. 대화 규칙, 결정, 남은 일 |
 
