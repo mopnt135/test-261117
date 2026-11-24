@@ -114,28 +114,25 @@ nav.main a:hover{color:var(--orange)}
 .demo-strip .wrap{padding-block:8px;display:flex;gap:8px;align-items:center}
 .demo-strip b{color:var(--mint)}
 
+/* 첫 화면: 메인 사진 띠 + 가운데 한 줄 글 카드 + 전체 글 보기 + 쉬어가기 (참고 레이아웃, 11-24) */
+.feed{max-width:860px;padding-block:40px 72px}
+.feed .sec-head h1{font-family:var(--f-display);font-weight:900;font-size:20px;margin:0}
+.all-posts{display:flex;justify-content:center;margin:36px 0 56px}
+.all-posts .btn{min-width:220px}
+.feed .fun > section{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:24px}
+.feed .fun h2{grid-column:1 / -1;font-family:var(--f-display);font-weight:900;font-size:20px;margin:0;padding-bottom:10px;border-bottom:2px solid var(--fg)}
+.feed .fun .fun-card + .fun-card{margin-top:0}
+/* 헤더 '내 계정' 메뉴 */
+.acct-menu{position:relative;order:-1}
+.acct-menu > summary{list-style:none}
+.acct-menu > summary::-webkit-details-marker{display:none}
+.acct-menu > summary::after{content:"▾";margin-left:6px;font-size:12px}
+.acct-pop{position:absolute;right:0;top:calc(100% + 8px);width:300px;z-index:40;box-shadow:0 12px 32px rgba(0,0,0,.18)}
 /* 첫 화면 */
-/* 메인 사진 띠: 사진은 꾸밈이라 alt 를 비운다. 위에 사이트 이름. 어두운 막을 깔아 흰 글자가 읽히게 한다 */
+/* 메인 사진 띠: 꾸밈 사진이라 alt 를 비우고 띠 전체를 aria-hidden 으로. 사이트 이름은 사진과 겹쳐 뺐다(사용자 결정) */
 .banner{position:relative;height:clamp(180px,30vw,380px);overflow:hidden;background:var(--soft)}
 .banner img{width:100%;height:100%;object-fit:cover;object-position:50% 45%;display:block}
-.banner::after{content:"";position:absolute;inset:0;background:linear-gradient(rgba(0,0,0,.18),rgba(0,0,0,.38))}
-.banner-title{position:absolute;inset:0;z-index:1;display:flex;align-items:flex-start;justify-content:center;padding-top:clamp(36px,8vw,110px);margin:0;color:#FFFFFF;font-family:var(--f-display);font-weight:900;font-size:clamp(30px,5vw,56px);letter-spacing:.35em;padding-left:.35em;text-shadow:0 2px 12px rgba(0,0,0,.45)}
-.hero{padding-block:52px 40px;border-bottom:1px solid var(--line)}
-.hero-grid{display:grid;grid-template-columns:1.35fr 1fr;gap:48px;align-items:end}
-.hero h1{font-family:var(--f-display);font-weight:900;font-size:clamp(34px,5.4vw,60px);line-height:1.15;letter-spacing:-.03em;margin:14px 0 0;text-wrap:balance}
-.hero h1 mark{background:linear-gradient(transparent 62%,var(--red) 62%,var(--red) 90%,transparent 90%);color:inherit;padding:0 2px}
-.hero p.lead{font-size:19px;color:var(--muted);margin:0 0 20px;max-width:38ch}
 .meta{display:flex;flex-wrap:wrap;gap:6px 14px;font-size:14px;color:var(--muted);font-family:var(--f-mono);font-variant-numeric:tabular-nums;align-items:center}
-.hero-actions{display:flex;gap:20px;align-items:center;flex-wrap:wrap;margin-top:24px}
-.tiles{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:0;border-bottom:1px solid var(--line)}
-.tile{display:flex;flex-direction:column;gap:4px;padding:24px 24px 24px 0;text-decoration:none;border-right:1px solid var(--line);min-height:120px}
-.tile + .tile{padding-left:24px}
-.tile:last-child{border-right:0}
-.tile b{font-family:var(--f-display);font-size:21px;display:flex;align-items:center;gap:10px}
-.tile b::after{content:"→";color:var(--orange);transition:transform .2s}
-.tile:hover b::after{transform:translateX(4px)}
-.tile span{color:var(--muted);font-size:15px}
-.tile.primary b::after{color:var(--orange)}
 
 /* 공통 화면 머리 */
 .page{padding-block:40px 72px}
@@ -152,13 +149,17 @@ nav.main a:hover{color:var(--orange)}
 .chip .n{font-family:var(--f-mono);font-size:12px;margin-left:6px;opacity:.7}
 
 /* 글 목록 */
-.body-grid{display:grid;grid-template-columns:minmax(0,1fr) 320px;gap:56px;padding-block:32px 72px}
-.body-grid.side-left{grid-template-columns:320px minmax(0,1fr)}
 .sec-head{display:flex;justify-content:space-between;align-items:baseline;gap:12px;border-bottom:2px solid var(--fg);padding-bottom:10px}
 .sec-head h2{font-family:var(--f-display);font-weight:900;font-size:20px;margin:0}
 .posts{list-style:none;margin:0;padding:0}
-.post{display:grid;grid-template-columns:120px minmax(0,1fr);gap:24px;padding-block:26px;border-bottom:1px solid var(--line)}
-.post .side{display:flex;flex-direction:column;gap:6px;align-items:flex-start}
+.post{display:grid;grid-template-columns:minmax(0,2fr) minmax(0,3fr);gap:0;margin-bottom:20px;border:1px solid var(--line);background:var(--bg);transition:box-shadow .2s,transform .2s}
+.post:hover{box-shadow:0 10px 28px rgba(0,0,0,.10);transform:translateY(-2px)}
+.post .thumb{position:relative;display:block;aspect-ratio:1200/630;background:var(--mint-fill);overflow:hidden}
+.post .thumb img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;display:block}
+.post .thumb .ch{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;font-family:var(--f-display);font-weight:900;font-size:56px;color:var(--orange)}
+.post .body{padding:22px 24px;display:flex;flex-direction:column;min-width:0}
+.post .body .read{display:block;margin-top:auto;padding-top:10px;border-top:1px solid var(--line)}
+.post .side{display:flex;flex-wrap:wrap;gap:6px 12px;align-items:center;margin-bottom:8px}
 .post .cat{font-size:14px;font-weight:700;color:var(--orange)}
 .post time{font-family:var(--f-mono);font-size:13px;color:var(--muted);font-variant-numeric:tabular-nums}
 .badge{font-size:12px;font-weight:700;padding:1px 8px;white-space:nowrap;font-family:var(--f-body)}
@@ -191,9 +192,6 @@ aside h2{font-family:var(--f-display);font-weight:900;font-size:18px;margin:0 0 
 .account .btn.sub{background:var(--on-orange);color:var(--orange-fill)}
 .account .btn.sub:hover{background:var(--red);color:var(--on-red)}
 .account .row{display:flex;gap:8px;flex-wrap:wrap}
-.rules{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:14px;font-size:15px}
-.rules li{display:grid;grid-template-columns:76px 1fr;gap:10px;align-items:start}
-.rules .badge{justify-self:start;margin-top:3px}
 
 /* 글 상세 */
 .article{max-width:760px}
@@ -202,10 +200,6 @@ aside h2{font-family:var(--f-display);font-weight:900;font-size:18px;margin:0 0 
 .article-body{white-space:pre-wrap;margin:28px 0 0;font-size:18px;line-height:1.9;max-width:65ch}
 .share{display:flex;gap:10px;flex-wrap:wrap;align-items:center;margin-top:28px}.share .msg{margin:0}
 /* 쉬어가기: 왼쪽 칸 아래. 휴대폰에서는 최근 글 다음 */
-.body-grid.side-left{grid-template-rows:auto 1fr}
-.body-grid.side-left > aside:first-child{grid-column:1;grid-row:1}
-.body-grid.side-left > .main-col{grid-column:2;grid-row:1 / span 2}
-.body-grid.side-left > .fun{grid-column:1;grid-row:2;align-self:start}
 .fun-card + .fun-card{margin-top:28px}
 .fun-card h3{font-family:var(--f-display);font-size:17px;margin:0 0 4px}
 .fun-card .hint{color:var(--muted);font-size:14px;margin:0 0 10px}
@@ -266,15 +260,13 @@ fieldset.field{border:0;padding:0;margin:0}
 
 /* 푸터: 문양색 #2F3E63 바탕(다크 모드도 같음). 위에 강조색 띠. 강조색 테두리는 푸터 안에서 안 보여서 글자색으로 */
 footer{background:var(--footer-bg);color:var(--on-footer);border-top:4px solid var(--red)}
-.foot{display:flex;flex-wrap:wrap;justify-content:space-between;gap:12px;padding-block:28px;font-size:14px;color:var(--on-footer)}
+.foot{display:flex;flex-direction:column;align-items:center;text-align:center;gap:10px;padding-block:36px;font-size:14px;color:var(--on-footer)}
+.foot-name{margin:0 0 4px;font-family:var(--f-display);font-weight:900;font-size:20px;letter-spacing:.35em;padding-left:.35em}
 .foot a,footer .link-btn{color:var(--on-footer)}
 .foot a:hover,footer .link-btn:hover{color:var(--footer-hover)}
 footer :focus-visible{outline-color:var(--on-footer)}
 
 @media (max-width:980px){
-  .hero-grid,.body-grid,.body-grid.side-left{grid-template-columns:1fr;gap:32px}
-  .body-grid.side-left{grid-template-rows:none}
-  .body-grid.side-left > aside:first-child,.body-grid.side-left > .main-col,.body-grid.side-left > .fun{grid-column:auto;grid-row:auto}
   .search{width:auto;flex:1}
   nav.main{display:none}
   nav.main.open{display:flex;position:absolute;left:0;right:0;top:100%;flex-direction:column;background:var(--bg);border-bottom:2px solid var(--fg);padding:8px max(16px,env(safe-area-inset-left,0px))}
@@ -283,13 +275,11 @@ footer :focus-visible{outline-color:var(--on-footer)}
 }
 @media (max-width:640px){
   body{font-size:16px}
-  .tiles{grid-template-columns:1fr}
-  .tile,.tile + .tile{padding:18px 0;border-right:0;border-bottom:1px solid var(--line);min-height:0}
-  .tile:last-child{border-bottom:0}
-  .post{grid-template-columns:1fr;gap:6px}
-  .post .side{flex-direction:row;gap:12px;align-items:center;flex-wrap:wrap}
+  .post{grid-template-columns:1fr}
+  .post .body{padding:16px 18px}
+  .feed .fun > section{grid-template-columns:1fr}
+  .acct-pop{position:fixed;left:16px;right:16px;top:72px;width:auto}
   .logo .name{display:none}
-  .hero{padding-block:36px 32px}
   .auth .btn{padding:0 12px}
   .auth .out{display:none}
   .vis{grid-template-columns:1fr}
@@ -409,6 +399,7 @@ nav.main a[hidden]{display:none}
 
 <footer>
   <div class="wrap foot">
+    <p class="foot-name">삼색펜</p>
     <span>© 2026 삼색펜 · 모든 시간은 한국 시간(KST) 기준입니다</span>
     <span class="foot-links"><button type="button" class="link-btn" id="gaToggle" hidden></button><a href="#admin">관리자 로그인</a></span>
   </div>
@@ -815,7 +806,12 @@ function funAside(){
 
 /* ===== 조각 ===== */
 function postItem(p){
+  /* 카드 사진: 생성기가 만든 공유 썸네일 p/<글번호>/og.png. 없으면(새 글, 나만보기) 제목 첫 글자를 보여 준다 */
+  const ch = esc((p.title || "?").trim().charAt(0) || "?");
+  const img = p.visibility === "private" ? "" : `<img src="p/${encodeURIComponent(p.id)}/og.png" alt="" loading="lazy" decoding="async">`;
   return `<li class="post">
+    <a class="thumb" href="#post-${esc(p.id)}" tabindex="-1" aria-hidden="true"><span class="ch">${ch}</span>${img}</a>
+    <div class="body">
     <div class="side">
       ${p.notice ? '<span class="badge notice">공지</span>' : `<span class="cat">${esc(p.category)}</span>`}
       <time datetime="${esc(p.created_at)}">${fmt(p.created_at)}</time>
@@ -825,6 +821,7 @@ function postItem(p){
       <h3><a href="#post-${esc(p.id)}">${esc(p.title)}</a></h3>
       <p>${esc(p.body.replace(/\s+/g," ").slice(0,90))}${p.body.length>90?"…":""}</p>
       <span class="read">읽는 시간 ${mins(p.body)}분${p.updated_at ? " · 수정됨" : ""}${(p.attachments || []).length ? ` · 첨부 ${p.attachments.length}개` : ""}</span>
+    </div>
     </div>
   </li>`;
 }
@@ -844,10 +841,6 @@ function accountCard(){
     </div></section>`;
 }
 
-const rulesCard = `<section><h2>이용 방법</h2><ul class="rules">
-  <li><span class="badge public">읽기</span><span>누구나 공개된 글을 읽을 수 있습니다.</span></li>
-  <li><span class="badge role-member">댓글</span><span>로그인한 회원이 달 수 있습니다. 내 댓글은 고치거나 지울 수 있어요.</span></li>
-  <li><span class="badge role-admin">글쓰기</span><span>관리자만 할 수 있습니다.</span></li></ul></section>`;
 
 function loginForm(adminMode){
   const signup = signupMode && !adminMode;
@@ -954,33 +947,16 @@ function adminCommentsView(tabs){
 const views = {
   home(){
     const recent = allPosts().slice(0, 5);
-    const tile2 = isAdmin()
-      ? `<a class="tile primary" href="#write"><b>글쓰기</b><span>새 글을 바로 올릴 수 있어요</span></a>`
-      : user
-        ? `<a class="tile primary" href="#list"><b>댓글 달기</b><span>글을 읽고 댓글을 남겨 보세요</span></a>`
-        : `<a class="tile primary" href="#login"><b>회원가입</b><span>가입하면 바로 댓글을 달 수 있어요</span></a>`;
     return `
-    <section class="banner" aria-label="삼색펜"><img src="assets/hero-1408.jpg" srcset="assets/hero-800.jpg 800w, assets/hero-1408.jpg 1408w" sizes="100vw" width="1408" height="768" alt="" fetchpriority="high"><p class="banner-title">삼색펜</p></section>
-    <section class="hero"><div class="wrap hero-grid">
-      <div><div class="label">공지</div><h1 tabindex="-1">삼색펜 <mark>운영 기준</mark></h1></div>
-      <div>
-        <div class="meta"><span>공지사항</span><span>2026.11.17 (KST)</span></div>
-        <div class="hero-actions"><a class="btn sub" href="#post-notice-rules">공지 읽기</a>${user ? "" : `<a class="link2" href="#login">로그인하기</a>`}</div>
-      </div>
-    </div></section>
-    <div class="wrap"><nav class="tiles" aria-label="바로가기">
-      <a class="tile" href="#list"><b>글 목록</b><span>${loading ? "불러오는 중" : `지금 볼 수 있는 글 ${allPosts().length}편`}</span></a>
-      ${tile2}
-      <a class="tile" href="#admin"><b>관리자 로그인</b><span>${isAdmin() ? "회원 경고와 추방" : "관리자 전용 화면"}</span></a>
-    </nav></div>
-    <div class="wrap body-grid side-left">
-      <aside>${accountCard()}${rulesCard}</aside>
-      <section class="main-col" aria-label="최근 글">
-        <div class="sec-head"><h2>최근 글</h2><a class="link2" href="#list">전체 보기</a></div>
+    <div class="banner" aria-hidden="true"><img src="assets/hero-1408.jpg" srcset="assets/hero-800.jpg 800w, assets/hero-1408.jpg 1408w" sizes="100vw" width="1408" height="768" alt="" fetchpriority="high"></div>
+    <div class="wrap feed">
+      <section class="main-col" aria-labelledby="recentTitle">
+        <div class="sec-head"><h1 id="recentTitle" tabindex="-1">최근 글</h1></div>
         ${loading ? `<p class="empty">글을 불러오는 중입니다.</p>`
           : loadError ? `<p class="empty"><strong>글을 불러오지 못했습니다.</strong>잠시 뒤 새로고침해 주세요.</p>`
           : `<ul class="posts">${recent.map(postItem).join("")}</ul>${posts.length ? "" : `<p class="empty">${isAdmin() ? "<strong>아직 올라온 글이 없습니다.</strong>글쓰기에서 첫 글을 올려 보세요." : "<strong>아직 올라온 글이 없습니다.</strong>지금은 공지만 있어요."}</p>`}`}
       </section>
+      <div class="all-posts"><a class="btn" href="#list">전체 글 보기</a></div>
       ${funAside()}
     </div>`;
   },
@@ -1121,7 +1097,8 @@ const views = {
 function renderHeader(r){
   $("authArea").innerHTML = !user
     ? `<a class="btn line" href="#login">로그인</a>`
-    : (isAdmin() ? `<a class="btn" href="#write">글쓰기</a>` : "") + `<button class="btn line ${isAdmin() ? "out" : ""}" data-act="logout">로그아웃</button>`;
+    : `<button class="btn line out" data-act="logout">로그아웃</button>`  /* 화면에서는 '내 계정' 오른쪽. 휴대폰에서는 숨기고 '내 계정' 안의 로그아웃을 쓴다 */
+      + `<details class="acct-menu"><summary class="btn line">내 계정</summary><div class="acct-pop">${accountCard()}</div></details>`;
   const w = document.querySelector('[data-nav="write"]'); if (w) w.hidden = !isAdmin();
   const navName = r.name === "post" ? "list" : r.name === "edit" ? "write" : r.name === "login" ? "" : r.name;
   document.querySelectorAll("[data-nav]").forEach(a => a.dataset.nav === navName ? a.setAttribute("aria-current","page") : a.removeAttribute("aria-current"));

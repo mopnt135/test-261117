@@ -48,8 +48,9 @@ let pokeCalls = 0, pokeReply = null;
 
 const tests = [
   // A. 공통 화면
-  ["A", "T01", "첫 화면이 오류 없이 열린다", async () => { await goto(); await shot("home-desktop"); return expect(errors.length === 0 && (await count(".tile")) === 3, "바로가기 3개, 스크립트 오류 0건"); }],
-  ["A", "T02", "첫 화면 공지 제목이 운영 기준이다", async () => expect((await text("#view h1")).includes("운영 기준"), "제목: " + (await text("#view h1")))],
+  // 11-24 레이아웃 변경: 바로가기 3칸과 공지 큰 제목을 없애고, 가운데 한 줄 글 카드로 바꿨다
+  ["A", "T01", "첫 화면이 오류 없이 열리고 글 카드가 사진 칸과 함께 보인다", async () => { await goto(); await shot("home-desktop"); const n = await count(".post .thumb"); return expect(errors.length === 0 && n >= 2, `글 카드 ${n}개, 스크립트 오류 ${errors.length}건`); }],
+  ["A", "T02", "첫 화면 제목은 '최근 글'이고 첫 카드는 공지 '운영 기준'이다", async () => { const h = await text("#view h1"), t = await text(".post h3"); return expect(h === "최근 글" && t.includes("운영 기준"), `제목: ${h}, 첫 카드: ${t}`); }],
   ["A", "T03", "글 목록 맨 위에 공지 2개가 있다", async () => { await goto("#list"); const t = await page.$$eval(".post h3", a => a.slice(0, 2).map(x => x.textContent)); return expect(t.length === 2 && t[0].includes("운영 기준") && t[1].includes("이용 안내"), t.join(", ")); }],
   ["A", "T04", "공지 상세와 다른 글 이동이 된다", async () => { await goto("#post-notice-rules"); const pager = await page.$$eval(".pager a span", a => a.map(x => x.textContent)); return expect((await text("#view h1")).includes("운영 기준") && pager.includes("삼색펜 이용 안내"), "다른 글: " + pager.join(", ")); }],
   ["A", "T05", "검색 결과가 없으면 안내가 나온다", async () => { await goto("#list"); await page.fill("#q", "없는검색어"); await wait(); const e = await text(".empty"); await page.fill("#q", ""); await wait(); return expect(e.includes("검색 결과가 없습니다"), e.trim()); }],
@@ -400,20 +401,32 @@ const tests = [
     const m = await text("#pokeMsg"); pokeReply = null;
     return expect(m.includes("불러오지 못했어요"), m.trim());
   }],
-  ["J", "T98", "쉬어가기는 컴퓨터에서 왼쪽 칸, 휴대폰에서는 최근 글 아래에 있다", async () => {
+  // 11-24 레이아웃 변경: 옆 칸을 없애고 쉬어가기를 '전체 글 보기' 아래 갤러리 자리로 옮겼다
+  ["J", "T98", "쉬어가기는 '전체 글 보기' 버튼 아래에 있고, 컴퓨터에서는 두 카드가 나란히 있다", async () => {
     await goto();
-    const desk = await page.evaluate(() => { const f = document.querySelector(".fun").getBoundingClientRect(), m = document.querySelector(".main-col").getBoundingClientRect(), a = document.querySelector(".body-grid > aside").getBoundingClientRect(); return { left: f.left < m.left, under: f.top >= a.bottom - 1 }; });
+    const pos = () => page.evaluate(() => { const f = document.querySelector(".fun"), b = document.querySelector(".all-posts"), c = [...document.querySelectorAll(".fun-card")].map(x => x.getBoundingClientRect());
+      return { under: f.getBoundingClientRect().top >= b.getBoundingClientRect().bottom - 1, side: c.length === 2 && Math.abs(c[0].top - c[1].top) < 2 }; });
+    const desk = await pos();
     await page.setViewportSize({ width: 390, height: 844 }); await wait(200);
-    const mob = await page.evaluate(() => document.querySelector(".fun").getBoundingClientRect().top > document.querySelector(".main-col").getBoundingClientRect().bottom - 1);
+    const mob = await pos();
     await page.setViewportSize({ width: 1280, height: 900 });
-    return expect(desk.left && desk.under && mob, `컴퓨터 왼쪽 ${desk.left}, 계정 카드 아래 ${desk.under}, 휴대폰 최근 글 아래 ${mob}`);
+    return expect(desk.under && desk.side && mob.under && !mob.side, `컴퓨터: 버튼 아래 ${desk.under}, 나란히 ${desk.side} / 휴대폰: 버튼 아래 ${mob.under}, 위아래로 ${!mob.side}`);
   }],
-  ["J", "T100", "첫 화면 맨 위에 메인 사진과 사이트 이름이 보이고, 사진 파일은 300KB 이하다", async () => {
+  ["J", "T101", "로그인하면 헤더의 '내 계정'을 눌러 계정 상자를 연다", async () => {
+    await logout(); await login("boss@test.kr", true); await goto();
+    const closed = await page.$eval(".acct-menu", d => d.open);
+    await page.click(".acct-menu > summary"); await wait(150);
+    const r = await page.evaluate(() => { const box = document.querySelector(".acct-pop .account"); return { open: document.querySelector(".acct-menu").open, seen: !!box && box.getBoundingClientRect().height > 0, text: box ? box.textContent : "" }; });
+    await page.click(".acct-menu > summary"); await logout();
+    return expect(!closed && r.open && r.seen && r.text.includes("boss@test.kr"), `처음 닫힘 ${!closed}, 눌러서 열림 ${r.open}, 상자 보임 ${r.seen}`);
+  }],
+  // 11-24 사용자 결정: 사이트 이름이 사진과 겹쳐 빼고 사진만 둔다. 꾸밈 사진이라 화면 읽기 프로그램에는 숨긴다
+  ["J", "T100", "첫 화면 맨 위에 메인 사진만 보이고(이름 없음), 사진 파일은 300KB 이하다", async () => {
     await goto();
-    const r = await page.evaluate(() => { const img = document.querySelector(".banner img"), t = document.querySelector(".banner-title");
-      return { ok: !!img && img.complete && img.naturalWidth > 0, alt: img && img.getAttribute("alt"), title: t && t.textContent.trim() }; });
+    const r = await page.evaluate(() => { const b = document.querySelector(".banner"), img = b && b.querySelector("img");
+      return { ok: !!img && img.complete && img.naturalWidth > 0, alt: img && img.getAttribute("alt"), hidden: b && b.getAttribute("aria-hidden"), text: b ? b.textContent.trim() : "x" }; });
     const big = ["hero-1408.jpg", "hero-800.jpg"].map(f => fs.statSync(path.join(ROOT, "assets", f)).size).filter(n => n > 300 * 1024);
-    return expect(r.ok && r.alt === "" && r.title === "삼색펜" && big.length === 0, `사진 ${r.ok ? "보임" : "안 보임"}, alt "${r.alt}", 이름 "${r.title}", 300KB 넘는 파일 ${big.length}개`);
+    return expect(r.ok && r.alt === "" && r.hidden === "true" && r.text === "" && big.length === 0, `사진 ${r.ok ? "보임" : "안 보임"}, alt "${r.alt}", 숨김 ${r.hidden}, 글자 "${r.text}", 300KB 넘는 파일 ${big.length}개`);
   }],
   ["J", "T99", "쉬어가기는 고양이와 포켓몬 두 카드뿐이고, 날씨 API 는 코드에 없다", async () => {
     await goto();
