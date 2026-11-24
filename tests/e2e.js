@@ -383,6 +383,13 @@ const tests = [
     const gold = r.tg.length === 2 && r.tg.every(([t, c]) => t === "THINK & MAKE" && c === "rgb(184, 134, 43)");
     return expect(gold && r.name === "rgb(255, 255, 255)" && r.img === "assets/logo-footer.png" && r.ok && r.left, `글자 ${r.tg.length}곳 금색 ${gold}, 이름 ${r.name}, 그림 ${r.img}, 왼쪽 ${r.left}`);
   }],
+  ["J", "T106", "파비콘이 새 로고 그림으로 연결되어 있고 파일이 열린다", async () => {
+    await goto();
+    const links = await page.$$eval('link[rel="icon"], link[rel="apple-touch-icon"]', a => a.map(l => l.getAttribute("href")));
+    const missing = links.filter(h => !fs.existsSync(path.join(ROOT, h)));
+    const loaded = await page.evaluate(async () => { const i = new Image(); i.src = "assets/favicon-32.png"; await i.decode().catch(() => {}); return i.naturalWidth; });
+    return expect(links.length >= 3 && links.every(h => h.startsWith("assets/")) && missing.length === 0 && loaded === 32, `연결 ${links.length}개, 없는 파일 ${missing.length}개, 32px 그림 너비 ${loaded}`);
+  }],
   ["J", "T101", "로그인하면 헤더의 '내 계정'을 눌러 계정 상자를 연다", async () => {
     await logout(); await login("boss@test.kr", true); await goto();
     const closed = await page.$eval(".acct-menu", d => d.open);

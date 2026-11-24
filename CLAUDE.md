@@ -28,13 +28,13 @@ AI 코딩 에이전트가 이 저장소에서 일할 때 가장 먼저 읽는 �
 | 파일 | 역할 |
 | --- | --- |
 | `index.html` | 블로그 전체. CSS, 화면, 로직이 한 파일에 있음 |
-| `assets/` | 그림 파일(사용자 제공, 줄여 넣음). `hero-1408.jpg`, `hero-800.jpg` 는 첫 화면 맨 위 메인 사진, `notice-card.jpg` 는 공지 글 카드의 사진, `logo.png` 는 로고(전구와 톱니, 배경 투명), `logo-footer.png` 는 푸터용(전구 흰색, 톱니 금색) |
+| `assets/` | 그림 파일(사용자 제공, 줄여 넣음). `hero-1408.jpg`, `hero-800.jpg` 는 첫 화면 맨 위 메인 사진, `notice-card.jpg` 는 공지 글 카드의 사진, `logo.png` 는 로고(전구와 톱니, 배경 투명), `logo-footer.png` 는 푸터용(전구 흰색, 톱니 금색), `favicon*`, `apple-touch-icon.png` 은 로고로 만든 파비콘 |
 | `scripts/build-pages.js` | 글마다 검색·공유용 정적 페이지 `p/<글번호>/` 와 썸네일, 사이트맵을 만드는 생성기 |
 | `p/`, `og/`, `sitemap.xml`, `robots.txt` | 생성기 결과물. **손으로 고치지 않는다** |
 | `.github/workflows/seo-pages.yml` | 생성기를 하루 2번 돌려 커밋하는 GitHub Actions |
 | `.github/workflows/docs-check.yml` | `CLAUDE.md`, `AGENTS.md` 가 바뀔 때만 `docs_test.js` 를 돌리는 GitHub Actions |
 | `supabase-setup.sql` | 서버 표, 권한 규칙(RLS), 파일 보관함 설정. 여러 번 실행해도 안전해야 함 |
-| `tests/e2e.js` | 화면 테스트 71건 (Playwright, 체험 모드, 측정 ID 를 비운 복사본으로 실행) |
+| `tests/e2e.js` | 화면 테스트 72건 (Playwright, 체험 모드, 측정 ID 를 비운 복사본으로 실행) |
 | `tests/rls_test.py` | 서버 권한 테스트 25건 (로컬 PostgreSQL) |
 | `tests/pages_test.js` | 검색·공유 페이지 생성기 테스트 19건 |
 | `scripts/ai-assist.js` | 공개글마다 AI 결과(요약, 제목 후보, 태그, 홍보 문구)를 `ai/<글번호>.json` 에 미리 만드는 AI 도우미 |
