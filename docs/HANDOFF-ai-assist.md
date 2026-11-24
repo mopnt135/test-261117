@@ -47,7 +47,7 @@
    - 사용자가 원하면 커밋 기록에서도 지운다: 새로 clone → `git filter-repo --replace-text`(키 → `OPENWEATHER_KEY_REMOVED`) → 기록 전체에 키가 없는지 확인 → **사용자 확인을 받은 뒤** `git push --force origin main`.
    - 키 값은 화면, 대화, 커밋 메시지에 절대 출력하지 않는다.
    - 부작용: `1fbbd3b` 이후 커밋 번호가 바뀌어 docs/TASKS.md 표의 번호가 틀어진다. 다시 맞춘다. GitHub Actions 가 도는 06:17, 18:17 KST 근처는 피한다.
-2. **[진행 2026-11-24]** 업로드에 `.github/workflows/seo-pages.yml` 변경이 빠져 있어 새로 넣었다(시연용 글, AI 단계, ai/ 커밋, AI 테스트). 쓰기 권한은 이미 켜져 있다(봇 커밋 성공). Actions 탭에서 수동 실행, 배포 확인:
+2. **[끝남 2026-11-24, 화면 확인만 사용자]** 업로드에 `.github/workflows/seo-pages.yml` 변경이 빠져 있어 새로 넣었다(`c18dd5f`). 실행 성공: 시연용 글 3개, 가짜 AI 결과 3개, 생성기 19/19, AI 19/19. 봇 커밋 `4f388db`, GitHub Pages 배포 09:48 KST. 확인할 곳:
    `p/demo-1/` 에 요약 상자, `ai/` 에 보고서.
 3. 사용자가 무료 키를 구하면 Secrets `AI_API_KEY` 등록 → 진짜 AI 결과 1건 이상 만들기. 무료 등급의 학습 데이터 사용 조건 [확인 필요].
 4. GA4 맞춤 정의에 `has_ai_summary` 등록.
