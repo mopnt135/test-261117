@@ -31,7 +31,7 @@ AIPM 수업에서 생각하고 만든 것을 기록하는 복습 노트 블로�
 | [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) | 구조, 데이터 표, 권한 규칙, 화면 흐름 |
 | [docs/ANALYTICS.md](docs/ANALYTICS.md) | GA4 방문 통계와 이벤트 |
 | [docs/TASKS.md](docs/TASKS.md) | 끝낸 일과 남은 일 |
-| [docs/reports/2026-11-25-test-report.pdf](docs/reports/2026-11-25-test-report.pdf) | 최신 테스트 보고서 (2쪽, 176건 통과). [지난 보고서](docs/reports/) |
+| [docs/reports/2026-11-25-test-report.pdf](docs/reports/2026-11-25-test-report.pdf) | 최신 테스트 보고서 (2쪽, 177건 통과). [지난 보고서](docs/reports/) |
 
 ## 체험 모드
 
