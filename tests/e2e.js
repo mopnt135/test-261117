@@ -513,6 +513,20 @@ const tests = [
     await page.click("#chatClose"); writeChat(CHAT_QA); await page.reload(); await wait(400);
     return expect(r.pf.includes("예시 작품") && r.dark.includes("다크 모드") && r.out.includes("관한 질문에만"), JSON.stringify(r));
   }],
+  ["K", "T120", "비슷한 말(돈→비용)로도 찾고, 영어 낱말은 통째로만 맞추며(ai≠aipm), 찾을 낱말과 똑같은 답을 먼저 고른다", async () => {
+    writeChat({ ready: true, greeting: "안녕", items: [
+      { q: "어떤 블로그예요?", a: "AIPM 수업 복습 블로그입니다.", keywords: ["AIPM", "블로그"], chip: true },
+      { q: "운영 비용은요?", a: "비용 없이 운영합니다.", keywords: ["비용"], chip: true },
+      { q: "어떤 도구를 썼어요?", a: "Claude API 를 썼습니다.", keywords: ["도구", "ClaudeAPI"], alts: ["어떤 AI 써요?"] },
+      { q: "회원은 뭘 하나요?", a: "회원은 글을 읽습니다.", keywords: ["회원"], alts: ["회원은 뭘 할 수 있어요?"] },
+      { q: "댓글은 어떻게 다나요?", a: "회원가입하면 댓글을 답니다.", keywords: ["회원가입", "댓글"], alts: ["회원가입 어떻게 해요?"] }] });
+    await page.reload(); await wait(400); await page.click("#chatFab"); await wait(200);
+    const ask = async q => { await page.fill("#chatQ", q); await page.press("#chatQ", "Enter"); await wait(100);
+      return page.evaluate(() => [...document.querySelectorAll("#chatLog .bubble.bot")].pop().textContent); };
+    const r = { money: await ask("돈 얼마 들었어?"), model: await ask("AI 모델 뭐 써?"), join: await ask("회원가입 어떻게 해?") };
+    await page.click("#chatClose"); writeChat(CHAT_QA); await page.reload(); await wait(400);
+    return expect(r.money.includes("비용 없이") && r.model.includes("Claude") && r.join.includes("회원가입하면"), JSON.stringify(r));
+  }],
   ["J", "T101", "로그인하면 헤더의 '내 계정'을 눌러 계정 상자를 연다", async () => {
     await logout(); await login("boss@test.kr", true); await goto();
     const closed = await page.$eval(".acct-menu", d => d.open);
