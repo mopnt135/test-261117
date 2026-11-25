@@ -487,6 +487,19 @@ const tests = [
     return expect(chips === 2 && hit.text.includes("문제를 먼저") && hit.link === "#post-demo-1" && bad.length === 1 && miss.text.includes("블로그와 포트폴리오에 관한 질문에만") && miss.open,
       `버튼 ${chips}, 맞춤 ${hit.text} ${hit.link}, 링크 ${JSON.stringify(bad)}, 무관 ${miss.open}`);
   }],
+  ["K", "T118", "적은 말은 끝의 조사와 어미를 떼고 맞추며, 적은 낱말의 절반도 맞지 않는 답이나 흔한 말로만 걸친 답은 내지 않는다", async () => {
+    writeChat({ ready: true, greeting: "안녕", items: [
+      { q: "연락은 어떻게 하나요?", a: "이메일로 연락 주세요.", keywords: ["연락", "이메일"], alts: ["이메일 뭐예요?"], chip: true },
+      { q: "관리자 AI 기능은요?", a: "제목 추천과 태그를 만듭니다.", keywords: ["제목", "태그"], alts: ["제목 추천도 해 줘요?"], chip: true },
+      { q: "보안은요?", a: "키를 숨겼습니다.", keywords: ["보안"], alts: ["보안은 어때요?"] }] });
+    await page.reload(); await wait(400); await page.click("#chatFab"); await wait(200);
+    const ask = async q => { await page.fill("#chatQ", q); await page.press("#chatQ", "Enter"); await wait(100);
+      return page.evaluate(() => [...document.querySelectorAll("#chatLog .bubble.bot")].pop().textContent); };
+    const r = { mail: await ask("이메일 주소 알려주세요"), lunch: await ask("맛있는 점심 메뉴 추천해 줘"), weather: await ask("오늘 서울 날씨 어때"), tag: await ask("태그는 어떻게 만들어요?") };
+    await page.click("#chatClose"); writeChat(CHAT_QA); await page.reload(); await wait(400);
+    const out = t => t.includes("관한 질문에만");
+    return expect(r.mail.includes("이메일로") && out(r.lunch) && out(r.weather) && r.tag.includes("태그"), JSON.stringify(r));
+  }],
   ["J", "T101", "로그인하면 헤더의 '내 계정'을 눌러 계정 상자를 연다", async () => {
     await logout(); await login("boss@test.kr", true); await goto();
     const closed = await page.$eval(".acct-menu", d => d.open);
