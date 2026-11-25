@@ -495,11 +495,12 @@ const tests = [
     return expect(pos.right < 40 && pos.bottom < 40 && pos.h >= 44 && r.open && r.hello.includes("포트폴리오 안내") && r.chips === 2 && fab.text === "질문해주세요" && fab.logo === "assets/logo.png" && fab.ok,
       `오른쪽 ${pos.right}px, 아래 ${pos.bottom}px, 높이 ${pos.h}px, 질문 ${r.chips}개, 버튼 ${JSON.stringify(fab)}`);
   }],
-  ["K", "T111", "준비된 질문을 누르면 그 답이 나오고, 답 속 HTML 기호는 글자로만 보인다", async () => {
+  ["K", "T111", "준비된 질문을 누르면 그 답이 나오고, 답 속 HTML 기호는 글자로만 보이며, 챗봇 말풍선 옆에는 블로그 로고 얼굴이 있다", async () => {
     await page.click("#chatChips button >> nth=1"); await wait(150);
-    const r = await page.evaluate(() => ({ text: $("chatLog").textContent, tags: $("chatLog").querySelectorAll("img, b").length }));
+    const faces = await page.$$eval("#chatLog .bot-row", rows => rows.map(r => { const i = r.querySelector(".bot-face img"); return !!i && i.getAttribute("src") === "assets/logo.png" && i.naturalWidth > 0 && !!r.querySelector(".bubble.bot"); }));
+    const r = await page.evaluate(() => ({ text: $("chatLog").textContent, tags: $("chatLog").querySelectorAll("img:not(.bot-face img), b").length /* 로고 얼굴 그림(11-25)은 빼고 센다 */ }));
     const ev = await page.evaluate(() => window.samsaekpenEvents.filter(e => e.name === "chatbot_question").pop());
-    return expect(r.text.includes("<b>Supabase</b>") && r.tags === 0 && ev && ev.params.q_index === 2 && ev.params.source === "chip", `태그 ${r.tags}개, 기록 ${JSON.stringify(ev && ev.params)}`);
+    return expect(r.text.includes("<b>Supabase</b>") && r.tags === 0 && ev && ev.params.q_index === 2 && ev.params.source === "chip" && faces.length >= 2 && faces.every(Boolean), `태그 ${r.tags}개, 로고 얼굴 ${faces.length}개 ${faces.every(Boolean)}, 기록 ${JSON.stringify(ev && ev.params)}`);
   }],
   ["K", "T112", "직접 적은 질문은 낱말로 맞는 답을 찾고, 없으면 준비된 질문을 고르라고 안내한다. 적은 글자는 기록에 보내지 않는다", async () => {
     await page.fill("#chatQ", "어떤 기술을 썼나요"); await page.press("#chatQ", "Enter"); await wait(150);

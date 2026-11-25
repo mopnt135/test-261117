@@ -140,7 +140,11 @@ nav.main a:hover{color:var(--orange)}
 .chat-log{flex:1;min-height:120px;overflow:auto;padding:14px;display:flex;flex-direction:column;gap:10px}
 .bubble{max-width:85%;padding:10px 12px;font-size:15px;line-height:1.6;white-space:pre-wrap;overflow-wrap:anywhere}
 .bubble.bot{align-self:flex-start;background:var(--soft);border:1px solid var(--line);border-radius:12px 12px 12px 4px}
-.chat-media{align-self:flex-start;width:85%;display:grid;gap:10px}
+.bot-row{align-self:flex-start;display:flex;align-items:flex-end;gap:8px;max-width:92%}
+.bot-row .bubble{max-width:none;min-width:0}
+.bot-face{flex:none;display:flex;align-items:center;justify-content:center;width:32px;height:32px;border-radius:50%;background:var(--bg);box-shadow:inset 0 0 0 1.5px var(--line)}
+.bot-face img{height:22px;width:auto;display:block}
+.chat-media{align-self:flex-start;width:calc(85% - 40px);margin-left:40px;display:grid;gap:10px} /* 로고 얼굴 폭만큼 들여 말풍선과 줄을 맞춘다 */
 .chat-media figure{position:relative;margin:0;border:1px solid var(--line);border-radius:12px;overflow:hidden;background:var(--soft)}
 .chat-media img{display:block;width:100%;height:auto;max-height:260px;object-fit:cover}
 .chat-media figcaption{padding:6px 10px;font-size:13px;line-height:1.5;color:var(--muted)}
@@ -148,7 +152,7 @@ nav.main a:hover{color:var(--orange)}
 .chat-media .is-video img{filter:brightness(.92)}
 .bubble.user{align-self:flex-end;background:var(--mint-fill);color:var(--fg);border-radius:12px 12px 4px 12px}
 .chat-chips[hidden]{display:none}
-.chat-post{align-self:flex-start;display:inline-flex;align-items:center;min-height:44px;padding:0 14px;border:1.5px solid var(--orange);border-radius:999px;color:var(--orange);font-weight:700;font-size:14px;text-decoration:none}
+.chat-post{align-self:flex-start;margin-left:40px;display:inline-flex;align-items:center;min-height:44px;padding:0 14px;border:1.5px solid var(--orange);border-radius:999px;color:var(--orange);font-weight:700;font-size:14px;text-decoration:none}
 .chat-chips-toggle{display:flex;align-items:center;gap:8px;width:100%;min-height:44px;padding:0 14px;border:0;border-top:1px solid var(--line);background:transparent;color:var(--orange);font:inherit;font-size:14px;font-weight:700;text-align:left;cursor:pointer}
 .chat-chips-toggle::after{content:"";width:8px;height:8px;margin-left:auto;border-right:2px solid currentColor;border-bottom:2px solid currentColor;transform:rotate(45deg) translate(-2px,-2px)}
 .chat-chips-toggle[aria-expanded="false"]::after{transform:rotate(-135deg) translate(-2px,-2px)}
@@ -1537,7 +1541,17 @@ const chatbot = (() => {
     fold.textContent = openIt ? "준비된 질문 접기" : `준비된 질문 보기 (${qa ? qa.items.filter(x => x.chip).length : 0}개)`;
     log.scrollTop = log.scrollHeight; // 영역이 열리고 닫히며 대화 칸 높이가 바뀌어도 마지막 말이 보이게
   }
-  const say = (who, text) => { const el = document.createElement("div"); el.className = `bubble ${who}`; el.textContent = text; log.appendChild(el); log.scrollTop = log.scrollHeight; };
+  // 챗봇 말은 왼쪽에 블로그 로고 얼굴을 붙인다(11-25). 글자는 textContent 로만 넣는다
+  const say = (who, text) => {
+    const el = document.createElement("div"); el.className = `bubble ${who}`; el.textContent = text;
+    if (who === "bot") {
+      const row = document.createElement("div"); row.className = "bot-row";
+      const face = document.createElement("span"); face.className = "bot-face"; face.setAttribute("aria-hidden", "true");
+      const img = document.createElement("img"); img.src = "assets/logo.png"; img.alt = ""; face.appendChild(img);
+      row.append(face, el); log.appendChild(row);
+    } else log.appendChild(el);
+    log.scrollTop = log.scrollHeight;
+  };
   // 낱말 줄기: 끝의 조사와 어미(요, 는, 를, 했어 …)를 떼어 "얼마예요"와 "얼마"가 같게 한다
   const TAILS = ["했나요", "인가요", "이에요", "입니다", "했어요", "였어요", "했어", "예요", "에요", "어요", "아요", "나요", "까요", "해요", "해줘", "줘요", "이야", "으로", "에서", "한테", "은", "는", "이", "가", "을", "를", "에", "의", "도", "로", "와", "과", "요", "야", "줘", "죠", "지"];
   const stem = w => { for (const t of TAILS) if (w.length - t.length >= 2 && w.endsWith(t)) return w.slice(0, -t.length); return w; };
