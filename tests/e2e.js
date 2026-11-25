@@ -369,12 +369,21 @@ const tests = [
     const n = await count(".fun, .fun-card"), apis = /thecatapi|pokeapi|openweathermap/i.test(SOURCE);
     return expect(n === 0 && !apis, `쉬어가기 요소 ${n}개, 외부 API 코드 ${apis ? "남아 있음" : "없음"}`);
   }],
-  ["J", "T103", "공지 글 카드의 사진은 공지 그림이고, 일반 글은 공유 썸네일을 쓴다", async () => {
+  ["J", "T103", "공지 글 카드의 사진은 공지 그림이고, 고정 소개 글은 자기 그림, 일반 글은 공유 썸네일을 쓴다", async () => {
     await goto("#list");
-    const r = await page.$$eval(".post", a => a.map(li => ({ notice: !!li.querySelector(".badge.notice"), src: (li.querySelector(".thumb img") || {}).getAttribute?.("src") || "" })));
-    const n = r.filter(x => x.notice), o = r.filter(x => !x.notice && x.src);
-    const ok = n.length >= 2 && n.every(x => x.src === "assets/notice-card.jpg") && o.every(x => /^p\/.+\/og\.png$/.test(x.src));
-    return expect(ok, `공지 ${n.length}개: ${[...new Set(n.map(x => x.src))].join(", ")} / 일반 ${o.length}개`);
+    const r = await page.$$eval(".post", a => a.map(li => ({ notice: !!li.querySelector(".badge.notice"), href: li.querySelector("h3 a").getAttribute("href"), src: (li.querySelector(".thumb img") || {}).getAttribute?.("src") || "" })));
+    const n = r.filter(x => x.notice), about = r.find(x => x.href === "#post-about"), o = r.filter(x => !x.notice && x.src && x !== about);
+    const ok = n.length >= 2 && n.every(x => x.src === "assets/notice-card.jpg") && about && about.src === "assets/about-cat.png" && o.every(x => /^p\/.+\/og\.png$/.test(x.src));
+    return expect(ok, `공지 ${n.length}개: ${[...new Set(n.map(x => x.src))].join(", ")} / 소개 ${about && about.src} / 일반 ${o.length}개`);
+  }],
+  ["J", "T121", "고정 소개 글: 로그인 안 해도 목록에 보이고, 글에 PM 이 되고 싶은 이유와 이름의 뜻, 고양이 그림이 나오며, 관리자에게도 수정·삭제 버튼이 없다", async () => {
+    await logout(); await goto("#post-about"); await wait(200);
+    const r = await page.evaluate(() => { const i = document.querySelector(".post-figure img"); const t = document.querySelector(".article-body").textContent;
+      return { h1: document.querySelector(".article h1").textContent, img: i && i.getAttribute("src"), alt: i && i.alt, ok: i && i.complete && i.naturalWidth > 0, why: t.includes("PM이 되고 싶은 이유"), name: t.includes("생각(기획)과 공방(직접 만들기)") }; });
+    await login("boss@test.kr", true); await goto("#post-about"); await wait(200);
+    const edit = await page.$$eval(".article-actions", a => a.length);
+    await logout();
+    return expect(r.h1 === "생각하는 공방을 소개합니다" && r.img === "assets/about-cat.png" && r.alt && r.ok && r.why && r.name && edit === 0, `${JSON.stringify(r)}, 관리 버튼 ${edit}`);
   }],
   ["J", "T104", "헤더 로고는 전구와 톱니 그림(assets/logo.png)이고 제대로 보인다", async () => {
     await goto();

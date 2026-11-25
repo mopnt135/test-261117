@@ -266,6 +266,8 @@ fieldset.field{border:0;padding:0;margin:0}
 .btn[data-armed="1"]{background:var(--danger);color:var(--on-danger);border-color:var(--danger)}
 .switch{font-size:14px;color:var(--muted);margin:0}
 .switch button{background:none;border:0;color:var(--orange);font-weight:700;cursor:pointer;text-decoration:underline;padding:4px}
+.post-figure{margin:20px 0 0;max-width:360px}
+.post-figure img{display:block;width:100%;height:auto;border:1px solid var(--line);border-radius:12px}
 .notice-box{max-width:560px;padding:24px;border:2px solid var(--fg);margin-top:28px;display:flex;flex-direction:column;gap:14px}
 .notice-box p{margin:0}
 
@@ -698,7 +700,25 @@ const isAdmin = () => !!user && role === "admin";
 const canWrite = isAdmin;
 const canComment = () => !!user && (role === "member" || role === "admin");
 const isBanned = () => !!user && role === "banned";
-const allPosts = () => [NOTICE_RULES, NOTICE, ...posts];
+/* 고정 소개 글(11-25, 사용자 요청): Supabase 연결 전에도 모든 방문자에게 보이도록 파일에 둔다.
+   그림은 저장소 안 assets/about-cat.png(사용자 제공). 내용을 바꾸면 scripts/build-pages.js 를 돌려 p/about/ 도 다시 만든다 */
+const ABOUT = {
+  id:"about", fixed:true, category:"자기소개", visibility:"public",
+  created_at:"2026-11-25T11:00:00+09:00",
+  image:"assets/about-cat.png", imageAlt:"헬멧을 쓴 고양이 그림",
+  title:"생각하는 공방을 소개합니다",
+  body:`안녕하세요! PM을 꿈꾸는 생각하는 공방입니다.
+
+PM이 되고 싶은 이유
+저는 아이디어를 떠올리는 순간도 즐겁지만, 그 아이디어가 실제로 누군가에게 쓰이는 모습을 볼 때 가장 큰 보람을 느낍니다.
+그래서 생각에서 멈추지 않고 기획부터 출시, 운영까지 전 과정을 이어가는 PM을 목표로 하고 있습니다.
+이 블로그에는 그 과정에서 직접 만들고, 부딪히고, 배운 것들을 기록합니다.
+
+블로그 이름에 담긴 뜻
+"생각하는 공방"은 생각(기획)과 공방(직접 만들기)을 한 이름에 담아 지었습니다.`
+};
+const FIXED_IDS = new Set(["notice", "notice-rules", "about"]); // 파일에 있는 글. 서버를 기다리지 않고 바로 보여 준다
+const allPosts = () => [NOTICE_RULES, NOTICE, ABOUT, ...posts];
 const findPost = id => allPosts().find(p => String(p.id) === String(id));
 
 /* ===== 주소 → 화면 ===== */
@@ -765,7 +785,7 @@ function postItem(p){
   /* 카드 사진: 공지는 공지 그림(assets/notice-card.jpg, 사용자 제공). 나머지는 생성기가 만든 공유 썸네일 p/<글번호>/og.png.
      없으면(새 글, 나만보기) 제목 첫 글자를 보여 준다 */
   const ch = esc((p.title || "?").trim().charAt(0) || "?");
-  const src = p.notice ? "assets/notice-card.jpg" : p.visibility === "private" ? "" : `p/${encodeURIComponent(p.id)}/og.png`;
+  const src = p.image || (p.notice ? "assets/notice-card.jpg" : p.visibility === "private" ? "" : `p/${encodeURIComponent(p.id)}/og.png`);
   const img = src ? `<img src="${src}" alt="" loading="lazy" decoding="async">` : "";
   return `<li class="post">
     <a class="thumb" href="#post-${esc(p.id)}" tabindex="-1" aria-hidden="true"><span class="ch">${ch}</span>${img}</a>
@@ -944,7 +964,7 @@ const views = {
   },
 
   post(r){
-    if (loading && !String(r.id).startsWith("notice")) return `<div class="wrap page"><p class="empty">글을 불러오는 중입니다.</p></div>`;
+    if (loading && !FIXED_IDS.has(String(r.id))) return `<div class="wrap page"><p class="empty">글을 불러오는 중입니다.</p></div>`;
     const p = findPost(r.id);
     if (!p) return `<div class="wrap page">${head("글을 찾을 수 없습니다", "글 상세")}
       <div class="notice-box"><p>지워진 글이거나 아직 공개되지 않은 글일 수 있어요.</p>
@@ -960,11 +980,12 @@ const views = {
         ${p.visibility==="private" ? '<span class="badge private">나만보기</span>' : '<span class="badge public">공개</span>'}
         <span>읽는 시간 ${mins(p.body)}분</span>
       </div>
+      ${p.image ? `<figure class="post-figure"><img src="${esc(p.image)}" alt="${esc(p.imageAlt || "")}"></figure>` : ""}
       <p class="article-body">${esc(p.body)}</p>
       ${attachmentsBlock(p)}
       ${p.visibility !== "private" ? `<div class="share"><button type="button" class="btn line" data-act="copyShare" data-id="${esc(p.id)}">공유 링크 복사</button>
         <p class="msg" id="shareMsg" role="status"></p></div>` : ""}
-      ${isAdmin() && !p.notice ? `<div class="article-actions">
+      ${isAdmin() && !p.notice && !p.fixed ? `<div class="article-actions">
         <a class="btn sub" href="#edit-${esc(p.id)}">수정</a>
         <button class="btn line" data-act="delete" data-id="${esc(p.id)}">삭제</button>
         <p class="msg" id="postMsg" role="status"></p></div>` : ""}

@@ -181,6 +181,7 @@ h1{font-family:"Gothic A1",sans-serif;font-weight:900;font-size:clamp(28px,5vw,4
 .btn.main{background:var(--orange-fill);color:var(--on-orange);border-color:var(--orange-fill)}
 .demo-note{flex-basis:100%;margin:0;font-size:14px;color:var(--muted)}
 a:focus-visible{outline:3px solid var(--orange);outline-offset:3px}
+.fig{display:block;max-width:360px;width:100%;height:auto;margin:20px 0 0;border:1px solid #C1C5C6;border-radius:12px}
 .ai{margin:24px 0 0;padding:16px 18px;background:var(--mint-fill);border-left:6px solid var(--orange-fill)}
 .ai-h{font-family:"Gothic A1",sans-serif;font-weight:900;font-size:15px}
 .ai ol{margin:8px 0 0;padding-left:22px}
@@ -195,6 +196,7 @@ a:focus-visible{outline:3px solid var(--orange);outline-offset:3px}
   <h1>${esc(p.title)}</h1>
   <div class="meta">${esc(kstDate(p.created_at))} (KST)${p.updated_at ? ` · 수정 ${esc(kstDate(p.updated_at))}` : ""}</div>
   ${aiBox(ai)}
+  ${typeof p.image === "string" && LOCAL_IMG.test(p.image) ? `<img class="fig" src="../../${esc(p.image)}" alt="${esc(p.imageAlt || "")}">` : ""}
   <div class="body">${esc(p.body)}</div>
   <div class="cta">
     ${p.demo ? `<p class="demo-note">시연용 글이라 댓글은 달 수 없어요. 블로그 첫 화면에서 다른 글을 볼 수 있어요.</p>` : `<a class="btn main" href="../../#post-${esc(id)}">블로그에서 보고 댓글 달기</a>`}
@@ -259,7 +261,14 @@ const IMG_MAX = 8 * 1024 * 1024;
 const sniff = b => b[0] === 0x89 && b[1] === 0x50 && b[2] === 0x4E && b[3] === 0x47 ? "image/png"
   : b[0] === 0xFF && b[1] === 0xD8 && b[2] === 0xFF ? "image/jpeg"
   : b.slice(0, 4).toString("latin1") === "GIF8" ? "image/gif" : null;
+// 고정 글의 그림은 저장소 안 assets/ 의 파일만 읽는다
+const LOCAL_IMG = /^assets\/[A-Za-z0-9._-]+\.(png|jpe?g|gif)$/i;
 async function thumbImage(p) {
+  if (typeof p.image === "string" && LOCAL_IMG.test(p.image)) {
+    try { const buf = fs.readFileSync(path.join(__dirname, "..", p.image)); const type = sniff(buf);
+      return type && buf.length <= IMG_MAX ? `data:${type};base64,${buf.toString("base64")}` : null; }
+    catch (e) { console.error(`${p.id} 글 그림을 읽지 못해 그림 없이 그립니다: ${e.message}`); return null; }
+  }
   const a = (Array.isArray(p.attachments) ? p.attachments : []).find(x => x && /^image\/(png|jpeg|gif)$/.test(x.type) && typeof x.path === "string");
   if (!a) return null;
   let buf = null;
@@ -316,7 +325,8 @@ function sitemap(entries) {
 const robots = () => `User-agent: *\nAllow: /\nSitemap: ${SITE_URL}sitemap.xml\n`;
 
 async function main() {
-  const notices = [readNotice("NOTICE_RULES"), readNotice("NOTICE")];
+  // 파일에 있는 글: 공지 둘과 고정 소개 글(11-25)
+  const notices = [readNotice("NOTICE_RULES"), readNotice("NOTICE"), readNotice("ABOUT")];
   const fetched = (await loadPosts()).filter(p => p.visibility === undefined || p.visibility === "public");
   const all = [...notices, ...fetched].filter(p => safeId(p.id) && p.title && p.body && p.created_at);
 
@@ -344,7 +354,7 @@ async function main() {
   fs.writeFileSync(path.join(OUT, "sitemap.xml"), sitemap(all.map(p => ({ loc: `${SITE_URL}p/${safeId(p.id)}/`, lastmod: p.updated_at || p.created_at }))));
   fs.writeFileSync(path.join(OUT, "robots.txt"), robots());
 
-  console.log(`글 페이지 ${all.length}개 (공지 ${notices.length}, 공개글 ${all.length - notices.length})${NO_IMAGES ? ", 썸네일 생략" : `, 썸네일 ${cards.length}장`}${removed.length ? `, 지운 페이지 ${removed.join(", ")}` : ""}`);
+  console.log(`글 페이지 ${all.length}개 (파일 글 ${notices.length}, 공개글 ${all.length - notices.length})${NO_IMAGES ? ", 썸네일 생략" : `, 썸네일 ${cards.length}장`}${removed.length ? `, 지운 페이지 ${removed.join(", ")}` : ""}`);
 }
 
 if (require.main === module) main().catch(e => { console.error(e.message); process.exit(1); });

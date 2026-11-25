@@ -193,3 +193,9 @@ flowchart LR
 - 화면에 넣을 때는 모두 `esc()` 를 거친다.
 - 한계: 공개글만 다루므로 나만보기 초안 단계에서는 AI 추천을 받을 수 없다. 블로그 화면(index.html)의 관리자 화면에는 아직 AI 탭이 없다.
 - 테스트: `tests/ai_test.js` 19건. 가짜 AI 서버를 내 컴퓨터 안에 띄워 돈 없이 확인한다.
+
+## 고정 소개 글 (11-25)
+
+- `index.html` 의 `ABOUT`(id `about`, 분류 자기소개). 공지처럼 파일에 있어 Supabase 연결 전에도 모든 방문자에게 보인다. 목록 순서는 공지 둘 다음.
+- 그림은 `assets/about-cat.png`(사용자 제공). 글 카드 사진과 글 안 그림, 검색·공유 페이지 `p/about/` 와 썸네일에 쓴다. 생성기는 `assets/` 안의 png, jpg, gif 만 읽는다.
+- 수정·삭제 버튼은 없다. 내용을 바꾸면 사람의 확인을 받고(규칙 8), `node scripts/build-pages.js` 로 `p/about/` 를 다시 만든다.

@@ -120,6 +120,14 @@ check("G19", "시연용 글은 누를 수 없는 가짜 버튼 대신 안내 문
   const ok = h.includes('class="demo-note"') && !h.includes('aria-disabled') && !h.includes('href="../../#post-demo-9"');
   return [ok, ok ? "안내 문구, 댓글 링크 없음" : "가짜 버튼이나 댓글 링크가 남아 있음"];
 });
+check("G21", "고정 소개 글(about)의 그림이 검색 페이지에 들어가고, assets/ 밖 주소나 다른 형식은 넣지 않는다", () => {
+  const ok = gen.postPage({ id: "about", title: "소개", body: "본문", category: "자기소개", created_at: "2026-11-25T02:00:00Z", image: "assets/about-cat.png", imageAlt: "<고양이>" })
+    .includes('<img class="fig" src="../../assets/about-cat.png" alt="&lt;고양이&gt;">');
+  const bad = ["../secret.png", "https://x.test/a.png", "assets/a.svg", "assets/../x.png"].every(image =>
+    !gen.postPage({ id: "x", title: "t", body: "b", category: "c", created_at: "2026-11-25T02:00:00Z", image }).includes('class="fig"'));
+  const inIndex = /const ABOUT = \{[\s\S]*?id:"about"[\s\S]*?image:"assets\/about-cat\.png"/.test(fs.readFileSync(path.join(ROOT, "index.html"), "utf8")) && fs.existsSync(path.join(ROOT, "assets/about-cat.png"));
+  return [ok && bad && inIndex, `그림 ${ok}, 이상한 주소 막음 ${bad}, index.html 의 ABOUT 과 파일 ${inIndex}`];
+});
 check("G20", "썸네일 카드에 예전 세 줄 색 띠가 없고, 로고가 들어가며, 목록 점은 강조색 하나다", () => {
   const h = gen.cardHtml({ title: "띠 확인", label: "실습 기록", lines: ["한 줄"] });
   const ok = !h.includes('class="bars"') && h.includes("data:image/png;base64,") && !/li:nth-child/.test(h) && h.includes("li i{background:#E5584B}");
@@ -159,6 +167,8 @@ check("G15", "검색 설명이 있으면 카드 첫 줄로, 긴 줄은 60자에�
       return [!a.equals(b) && size(a) === "1200×630" && size(b) === "1200×630", `12번 ${a.length}B, 14번 ${b.length}B, ${size(a)}`];
     });
   }
+  const ti = await gen.thumbImage({ id: "about", image: "assets/about-cat.png" }), tb = await gen.thumbImage({ id: "x", image: "../index.html" });
+  check("G22", "고정 소개 글의 썸네일 카드에는 저장소 안 그림을 넣는다(밖의 파일은 읽지 않는다)", () => [String(ti).startsWith("data:image/png;base64,") && tb === null, `그림 ${String(ti).slice(0, 22)}, 밖 파일 ${tb}`]);
   finish();
 })();
 
