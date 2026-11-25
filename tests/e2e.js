@@ -386,10 +386,13 @@ const tests = [
     await logout();
     return expect(r.h1 === "생각하는 공방을 소개합니다" && r.img === "assets/about-cat.png" && r.alt && r.ok && r.why && r.name && edit === 0, `${JSON.stringify(r)}, 관리 버튼 ${edit}`);
   }],
-  ["J", "T122", "글 메뉴 셋(기획, 이미지, 오늘의 프롬프트): 헤더와 첫 화면 그림 카드에 있고, 누르면 그 분류 글만 보이며, 이미지에는 그림 글 3편, 기획은 '아직 글이 없다' 고 안내한다", async () => {
+  ["J", "T122", "글 메뉴 셋(기획, 이미지, 오늘의 프롬프트): 헤더 '글 목록' 의 소메뉴와 첫 화면 글씨 카드(그림 없음)에 있고, 누르면 그 분류 글만 보이며, 이미지에는 그림 글 3편, 기획은 '아직 글이 없다' 고 안내한다", async () => {
     await goto(); await wait(200);
     const nav = await page.$$eval("nav.main a", a => a.map(x => x.textContent.trim()));
     const cards = await page.$$eval(".menu-card", a => a.map(x => ({ href: x.getAttribute("href"), name: x.querySelector(".mc-name").textContent, img: !!x.querySelector("img"), h: x.getBoundingClientRect().height })));
+    const sub = await page.evaluate(() => { const g = document.querySelector(".nav-group"); return { first: g.querySelector(":scope > a").textContent, items: [...g.querySelectorAll(".sub a")].map(a => a.textContent), hidden: getComputedStyle(g.querySelector(".sub")).display === "none" }; });
+    await page.hover('.nav-group > a[data-nav="list"]'); await wait(100);
+    const shown = await page.$eval(".nav-group .sub", el => getComputedStyle(el).display !== "none" && el.getBoundingClientRect().height > 100);
     await page.click('.menu-card[href="#m-image"]'); await wait(200);
     const img = await page.evaluate(() => ({ h1: document.querySelector(".page h1, .page h2").textContent, n: document.querySelectorAll(".posts .post").length, cur: (document.querySelector('nav.main a[aria-current="page"]') || {}).textContent, chips: [...document.querySelectorAll(".chip")].map(c => c.dataset.c) }));
     await goto("#m-plan"); await wait(200);
@@ -399,11 +402,15 @@ const tests = [
     await page.setViewportSize({ width: 390, height: 844 }); await goto(); await wait(200);
     const over = await page.evaluate(() => document.documentElement.scrollWidth > innerWidth);
     const mobileH = await page.$$eval(".menu-card", a => Math.min(...a.map(x => x.getBoundingClientRect().height)));
+    await page.click("#menuBtn"); await wait(150);
+    const mobSub = await page.$$eval(".nav-group .sub a", a => a.filter(x => x.getBoundingClientRect().height >= 44).length);
+    await page.click("#menuBtn");
     await page.setViewportSize({ width: 1280, height: 900 });
-    const ok = ["기획", "이미지", "오늘의 프롬프트"].every(t => nav.includes(t)) && cards.length === 3 && cards[1].img && !cards[0].img && cards.every(c => c.h >= 44)
+    const ok = ["기획", "이미지", "오늘의 프롬프트"].every(t => nav.includes(t)) && sub.first === "글 목록" && sub.items.join() === "기획,이미지,오늘의 프롬프트" && sub.hidden && shown && mobSub === 3
+      && cards.length === 3 && cards.every(c => !c.img && c.h >= 44 && c.h <= 80)
       && img.n === 3 && img.cur === "이미지" && ["기획", "이미지", "오늘의 프롬프트", "자기소개"].every(c => img.chips.includes(c))
       && plan.n === 0 && plan.empty.includes("아직 글이 없습니다") && back.hash === "#list" && back.n > 3 && !over && mobileH >= 44;
-    return expect(ok, JSON.stringify({ nav, cards: cards.map(c => [c.name, c.img]), img, plan: plan.n, back, over, mobileH }));
+    return expect(ok, JSON.stringify({ nav, sub, shown, mobSub, cards: cards.map(c => [c.name, c.img, Math.round(c.h)]), img, plan: plan.n, back, over, mobileH }));
   }],
   ["J", "T104", "헤더 로고는 전구와 톱니 그림(assets/logo.png)이고 제대로 보인다", async () => {
     await goto();
