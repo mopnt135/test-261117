@@ -79,11 +79,11 @@ AIPM 수업에서 생각하고 만든 것을 기록하는 복습 노트 블로�
 
 ## 테스트
 
-다섯 테스트 모두 통과해야 배포합니다. 11-25 기준 176건이 모두 통과했습니다.
+다섯 테스트 모두 통과해야 배포합니다. 11-25 기준 177건이 모두 통과했습니다.
 
 | 테스트 | 건수 | 필요한 것 |
 | --- | --- | --- |
-| `node tests/e2e.js` | 화면 89 | Playwright (체험 모드로 돔) |
+| `node tests/e2e.js` | 화면 90 | Playwright (체험 모드로 돔) |
 | `python3 tests/rls_test.py` | 서버 권한 25 | 로컬 PostgreSQL 16 서버 켜기(`service postgresql start`) |
 | `node tests/pages_test.js` | 검색·공유 생성기 24 | Node |
 | `node tests/ai_test.js` | AI 도우미·챗봇 32 | Node (가짜 AI 서버, 돈 들지 않음) |

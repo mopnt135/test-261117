@@ -621,6 +621,16 @@ const tests = [
     await page.click("#chatClose"); writeChat(CHAT_QA); await page.reload(); await wait(400);
     return expect(r.money.includes("비용 없이") && r.model.includes("Claude") && r.join.includes("회원가입하면") && r.mean.includes("기획"), JSON.stringify(r));
   }],
+  ["K", "T127", "대화창을 연 채로 다른 화면으로 가면 대화창이 닫혀, 휴대폰에서 새 화면의 버튼(관리자 로그인)을 누를 수 있다", async () => {
+    await logout(); await page.setViewportSize({ width: 390, height: 844 }); await goto(); await wait(300);
+    await page.click("#chatFab"); await wait(200);
+    const opened = await page.evaluate(() => !$("chatPanel").hidden);
+    await page.evaluate(() => { location.hash = "#admin"; }); await wait(400);
+    const r = await page.evaluate(() => { const b = $("loginSubmit"), rc = b.getBoundingClientRect(); const top = document.elementFromPoint(rc.x + rc.width / 2, rc.y + rc.height / 2);
+      return { closed: $("chatPanel").hidden, exp: $("chatFab").getAttribute("aria-expanded"), btnOnTop: !!top && (top === b || b.contains(top)) }; });
+    await page.setViewportSize({ width: 1280, height: 900 });
+    return expect(opened && r.closed && r.exp === "false" && r.btnOnTop, JSON.stringify({ opened, ...r }));
+  }],
   ["J", "T101", "로그인하면 헤더의 '내 계정'을 눌러 계정 상자를 연다", async () => {
     await logout(); await login("boss@test.kr", true); await goto();
     const closed = await page.$eval(".acct-menu", d => d.open);

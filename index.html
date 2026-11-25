@@ -1651,6 +1651,9 @@ const chatbot = (() => {
   }
   fab.addEventListener("click", () => panel.hidden ? open() : close());
   $("chatClose").addEventListener("click", close);
+  // 11-25: 다른 화면으로 가면 대화창을 닫는다. 휴대폰에서 열린 대화창이 새 화면의 버튼(예: 관리자 로그인)을 가리지 않게.
+  // 포커스는 옮기지 않는다(새 화면 제목으로 가야 하므로)
+  window.addEventListener("hashchange", () => { if (!panel.hidden) { panel.hidden = true; fab.setAttribute("aria-expanded", "false"); } });
   fold.addEventListener("click", () => { setChips(chips.hidden); if (!chips.hidden) chips.scrollTop = 0; });
   chips.addEventListener("click", e => { const b = e.target.closest("button[data-i]"); if (b) answer(Number(b.dataset.i), "chip"); });
   $("chatForm").addEventListener("submit", e => { e.preventDefault(); typed(input.value); input.value = ""; input.focus(); });
