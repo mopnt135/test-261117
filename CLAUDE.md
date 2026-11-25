@@ -34,7 +34,7 @@ AI 코딩 에이전트가 이 저장소에서 일할 때 가장 먼저 읽는 �
 | `.github/workflows/seo-pages.yml` | 생성기를 하루 2번 돌려 커밋하는 GitHub Actions |
 | `.github/workflows/docs-check.yml` | `CLAUDE.md`, `AGENTS.md` 가 바뀔 때만 `docs_test.js` 를 돌리는 GitHub Actions |
 | `supabase-setup.sql` | 서버 표, 권한 규칙(RLS), 파일 보관함 설정. 여러 번 실행해도 안전해야 함 |
-| `tests/e2e.js` | 화면 테스트 85건 (Playwright, 체험 모드, 측정 ID 를 비운 복사본으로 실행) |
+| `tests/e2e.js` | 화면 테스트 86건 (Playwright, 체험 모드, 측정 ID 를 비운 복사본으로 실행) |
 | `tests/rls_test.py` | 서버 권한 테스트 25건 (로컬 PostgreSQL) |
 | `tests/pages_test.js` | 검색·공유 페이지 생성기 테스트 22건 |
 | `scripts/ai-assist.js` | 공개글마다 AI 결과(요약, 제목 후보, 태그, 홍보 문구)를 `ai/<글번호>.json` 에 미리 만드는 AI 도우미 |
@@ -122,7 +122,8 @@ node tests/docs_test.js
 
 `index.html` 의 `SUPABASE_URL`, `SUPABASE_ANON_KEY` 가 비어 있으면 체험 모드다.
 - 로그인, 글, 댓글, 첨부가 브라우저(localStorage)에만 저장된다.
-- 처음 로그인한 이메일이 관리자가 된다.
+- 관리자는 관리자 로그인(`#admin`)에서 비밀번호만 넣어 들어온다(11-25, 사용자 요청). 코드에는 비밀번호 글자 대신 SHA-256 값(`DEMO_ADMIN_PW_SHA256`)만 둔다. 이메일 로그인은 모두 회원이다.
+- 이 비밀번호는 체험 모드에서만 쓴다. Supabase 를 연결하면 관리자도 이메일과 비밀번호로 로그인하고 서버가 확인한다(규칙 1).
 - 첨부 파일은 1MB 까지만 된다. 브라우저 저장 공간이 작기 때문이다.
 
 ## 하지 말 것

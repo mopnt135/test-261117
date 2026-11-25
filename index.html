@@ -446,7 +446,7 @@ nav.main a[hidden]{display:none}
 </header>
 
 <div class="demo-strip" id="demoStrip" hidden>
-  <div class="wrap"><b>체험 모드</b>로그인, 글, 댓글이 이 브라우저에만 저장됩니다. 처음 로그인한 이메일이 관리자가 됩니다.</div>
+  <div class="wrap"><b>체험 모드</b>로그인, 글, 댓글이 이 브라우저에만 저장됩니다. 관리자는 관리자 로그인에서 비밀번호로 들어옵니다.</div>
 </div>
 
 <main id="view" tabindex="-1"></main>
@@ -613,6 +613,11 @@ const maskName = email => { const a = String(email || "").split("@")[0]; return 
 
 /* ===== 저장소: Supabase(실제) 또는 브라우저(체험) ===== */
 const REMOTE = !!(SUPABASE_URL && SUPABASE_ANON_KEY && window.supabase);
+/* 체험 모드 관리자 비밀번호(11-25, 사용자 요청: 비밀번호만 입력). 글자 대신 SHA-256 값만 둔다.
+   체험 모드는 모든 것이 그 브라우저 안에만 저장되므로 이 비밀번호가 지키는 서버 데이터는 없다.
+   Supabase 연결 뒤에는 쓰지 않고, 관리자 로그인은 이메일과 비밀번호를 서버가 확인한다(규칙 1) */
+const DEMO_ADMIN_PW_SHA256 = "1a803641cc000d4040e663a446ccd4457c4d7a93fd1608e0b85c4896a76ba6a9";
+const sha256Hex = async t => [...new Uint8Array(await crypto.subtle.digest("SHA-256", new TextEncoder().encode(t)))].map(b => b.toString(16).padStart(2, "0")).join("");
 const sb = REMOTE ? window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY) : null;
 const must = res => { if (res.error) throw res.error; if (Array.isArray(res.data) && !res.data.length) throw new Error("권한이 없거나 대상이 없습니다"); return res.data; };
 
@@ -667,8 +672,17 @@ const store = REMOTE ? {
   onChange(){},
   async signIn(email){
     const d = local.load(), key = email.toLowerCase();
-    if (!d.users[key]) d.users[key] = {id:"demo:"+key, email, role: Object.keys(d.users).length ? "member" : "admin", warns:0, created_at:new Date().toISOString()};
+    // 11-25: 이메일 로그인은 모두 회원. 관리자는 관리자 로그인에서 비밀번호로만 된다(예전: 처음 로그인한 이메일이 관리자)
+    if (!d.users[key]) d.users[key] = {id:"demo:"+key, email, role:"member", warns:0, created_at:new Date().toISOString()};
     d.user = {id:d.users[key].id, email}; local.save(d); return d.user;
+  },
+  async adminSignIn(pw){
+    if (!window.crypto || !crypto.subtle) throw new Error("no_crypto");
+    if (await sha256Hex(pw) !== DEMO_ADMIN_PW_SHA256) throw new Error("admin_pw");
+    const d = local.load(), key = "#admin"; // 이메일 모양이 아니라 일반 로그인으로는 이 계정이 될 수 없다
+    if (!d.users[key]) d.users[key] = {id:"demo:admin", email:"관리자 (체험 모드)", role:"admin", warns:0, created_at:new Date().toISOString()};
+    d.users[key].role = "admin";
+    d.user = {id:d.users[key].id, email:d.users[key].email}; local.save(d); return d.user;
   },
   async signUp(email, pw){ return this.signIn(email, pw); },
   async signOut(){ const d = local.load(); d.user = null; local.save(d); },
@@ -877,6 +891,13 @@ function accountCard(){
 
 function loginForm(adminMode){
   const signup = signupMode && !adminMode;
+  // 체험 모드의 관리자 로그인은 비밀번호 칸 하나
+  if (adminMode && !REMOTE) return `<form class="form narrow" id="loginForm" novalidate>
+    <div class="field"><label for="lPw">관리자 비밀번호</label><input id="lPw" type="password" autocomplete="current-password" required></div>
+    <p class="msg" id="loginMsg" role="status"></p>
+    <div class="actions"><button class="btn" type="submit" id="loginSubmit">관리자 로그인</button></div>
+    <p class="switch">회원 로그인은 <a class="link2" href="#login">여기</a>에서 하세요.</p>
+  </form>`;
   return `<form class="form narrow" id="loginForm" novalidate>
     <div class="field"><label for="lEmail">이메일</label><input id="lEmail" type="email" autocomplete="email" required></div>
     <div class="field"><label for="lPw">비밀번호</label><input id="lPw" type="password" autocomplete="${signup ? "new-password" : "current-password"}" minlength="6" required><span class="hint">6자 이상</span></div>
@@ -1268,6 +1289,20 @@ document.addEventListener("click", async e => {
 
 document.addEventListener("submit", async e => {
   const f = e.target; e.preventDefault();
+  if (f.id === "loginForm" && !$("lEmail")) { // 체험 모드 관리자: 비밀번호만
+    const pw = $("lPw").value;
+    if (!pw) return msg("loginMsg", "관리자 비밀번호를 입력해 주세요.", true);
+    const b = $("loginSubmit"); b.disabled = true;
+    try {
+      user = await store.adminSignIn(pw); signupMode = false; afterLogin = "#";
+      analytics.track("login", { method: "password", login_screen: "admin" });
+      await refresh(); go("#admin");
+    } catch (err) {
+      b.disabled = false;
+      msg("loginMsg", err && err.message === "admin_pw" ? "비밀번호가 맞지 않습니다. 다시 확인해 주세요." : "이 브라우저에서는 관리자 로그인을 할 수 없습니다. 다른 브라우저로 열어 주세요.", true);
+    }
+    return;
+  }
   if (f.id === "loginForm") {
     const email = $("lEmail").value.trim(), pw = $("lPw").value;
     if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) return msg("loginMsg", "이메일 형식을 확인해 주세요. 예: name@example.com", true);

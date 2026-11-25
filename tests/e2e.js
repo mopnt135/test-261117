@@ -39,9 +39,12 @@ const wait = (ms = 350) => page.waitForTimeout(ms);
 const text = sel => page.textContent(sel);
 const count = sel => page.$$eval(sel, a => a.length);
 const goto = async hash => { await page.goto(URL + (hash || "")); await wait(450); };
+// 11-25: 체험 모드 관리자는 비밀번호만 넣는다(이메일 없음). 회원은 이메일과 비밀번호
+const ADMIN_PW = "test1125";
 const login = async (email, admin) => {
   await goto(admin ? "#admin" : "#login");
-  await page.fill("#lEmail", email); await page.fill("#lPw", "123456");
+  if (admin) await page.fill("#lPw", ADMIN_PW);
+  else { await page.fill("#lEmail", email); await page.fill("#lPw", "123456"); }
   await page.click("#loginSubmit"); await wait(500);
 };
 const logout = async () => { const b = await page.$("#authArea [data-act=logout]"); if (b) { await b.click(); await wait(450); } };
@@ -412,6 +415,20 @@ const tests = [
       && plan.n === 0 && plan.empty.includes("아직 글이 없습니다") && back.hash === "#list" && back.n > 3 && !over && mobileH >= 44;
     return expect(ok, JSON.stringify({ nav, sub, shown, mobSub, cards: cards.map(c => [c.name, c.img, Math.round(c.h)]), img, plan: plan.n, back, over, mobileH }));
   }],
+  ["J", "T123", "체험 모드 관리자 로그인은 비밀번호 칸 하나이고, 틀리면 안내하며, 이메일로 먼저 로그인해도 관리자가 되지 않고, 코드에 비밀번호 글자가 없다", async () => {
+    await logout(); await goto("#admin");
+    const form = await page.evaluate(() => ({ email: !!document.querySelector("#lEmail"), pw: !!document.querySelector("#lPw") }));
+    await page.fill("#lPw", "wrong-pass"); await page.click("#loginSubmit"); await wait(300);
+    const bad = await page.evaluate(() => ({ msg: $("loginMsg").textContent, still: location.hash === "#admin" && !!document.querySelector("#lPw") }));
+    await page.evaluate(() => localStorage.clear()); await login("first@test.kr"); await goto("#admin"); await wait(200);
+    const firstNotAdmin = await page.evaluate(() => document.body.textContent.includes("관리자 계정이 아닙니다"));
+    await logout(); await login("x", true); await wait(200);
+    const ok = await page.evaluate(() => location.hash === "#admin" && !!document.querySelector(".members, .stat"));
+    const src = fs.readFileSync(path.join(ROOT, "index.html"), "utf8");
+    await logout();
+    return expect(!form.email && form.pw && bad.msg.includes("비밀번호가 맞지 않습니다") && bad.still && firstNotAdmin && ok && !src.includes("test1125"),
+      `칸 ${JSON.stringify(form)}, 틀림 ${bad.msg}, 첫 이메일 관리자 아님 ${firstNotAdmin}, 비밀번호로 관리자 ${ok}, 코드에 글자 없음 ${!src.includes("test1125")}`);
+  }],
   ["J", "T104", "헤더 로고는 전구와 톱니 그림(assets/logo.png)이고 제대로 보인다", async () => {
     await goto();
     const r = await page.evaluate(() => { const i = document.querySelector("header .logo img"); return i ? { src: i.getAttribute("src"), ok: i.complete && i.naturalWidth > 0, h: Math.round(i.getBoundingClientRect().height) } : null; });
@@ -571,7 +588,7 @@ const tests = [
     await page.click(".acct-menu > summary"); await wait(150);
     const r = await page.evaluate(() => { const box = document.querySelector(".acct-pop .account"); return { open: document.querySelector(".acct-menu").open, seen: !!box && box.getBoundingClientRect().height > 0, text: box ? box.textContent : "" }; });
     await page.click(".acct-menu > summary"); await logout();
-    return expect(!closed && r.open && r.seen && r.text.includes("boss@test.kr"), `처음 닫힘 ${!closed}, 눌러서 열림 ${r.open}, 상자 보임 ${r.seen}`);
+    return expect(!closed && r.open && r.seen && r.text.includes("관리자 (체험 모드)"), `처음 닫힘 ${!closed}, 눌러서 열림 ${r.open}, 상자 보임 ${r.seen}`);
   }],
   // 11-24 사용자 결정: 사이트 이름이 사진과 겹쳐 빼고 사진만 둔다. 꾸밈 사진이라 화면 읽기 프로그램에는 숨긴다
   ["J", "T100", "첫 화면 맨 위에 메인 사진만 보이고(이름 없음), 사진 파일은 300KB 이하다", async () => {

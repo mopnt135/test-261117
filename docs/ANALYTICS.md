@@ -51,7 +51,7 @@
 | `search` | 검색어 입력이 1초 멈췄을 때 | search_term(이메일은 `[이메일]`, 6자리 넘는 숫자는 `[숫자]` 로 가림), result_count | 무엇을 찾는가, 못 찾는가 |
 | `category_filter` | 글 목록에서 카테고리를 누를 때 | category | 관심 주제 |
 | `sign_up` | 회원가입 요청 | method=`email`, needs_email_confirm | 가입 전환 |
-| `login` | 로그인 성공 | method=`email`, login_screen=`member`/`admin` | 재방문 회원 |
+| `login` | 로그인 성공 | method=`email`(체험 모드 관리자는 `password`), login_screen=`member`/`admin` | 재방문 회원 |
 | `logout` | 로그아웃 | user_role | |
 | `comment_submit` | 댓글 또는 답글 등록 | post_id, comment_type=`comment`/`reply`, comment_length | 참여도 |
 | `comment_edit` | 내 댓글 수정 | post_id | |
