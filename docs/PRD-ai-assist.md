@@ -1,8 +1,8 @@
 # 생각하는 공방 AI 도우미 PRD
 
-2026-11-24 (KST)
+2026-11-25 (KST)
 
-**문서 버전 v0.5** · 블로그 이름 "생각하는 공방" (THINK & MAKE) · 주소 mopnt135.github.io/thinkandmake
+**문서 버전 v1.0** · 블로그 이름 "생각하는 공방" (THINK & MAKE) · 주소 mopnt135.github.io/thinkandmake
 
 > 이 파일은 Claude Docs 에서 쓴 기획서를 옮긴 것이다. 원본 문서가 바뀌면 이 파일도 다시 옮긴다. PDF 는 `PRD-ai-assist.pdf`.
 
