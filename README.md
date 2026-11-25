@@ -27,7 +27,7 @@ AIPM 수업에서 생각하고 만든 것을 기록하는 복습 노트 블로�
 | [CLAUDE.md](CLAUDE.md) | AI 코딩 에이전트 작업 규칙 (Claude Code 용) |
 | [AGENTS.md](AGENTS.md) | 같은 규칙 (Codex, Cursor 등 다른 AI 코딩 도구용) |
 | [docs/PRD.md](docs/PRD.md) | 블로그 전체: 권한, 사용자 스토리, 결정 사항 (11-25 최신) |
-| [docs/PRD-thinkandmake.md](docs/PRD-thinkandmake.md) | AI 도우미 과제 기획서 v1.0 ([PDF](docs/PRD-thinkandmake.pdf), 약 2.5쪽) |
+| [docs/PRD-thinkandmake.md](docs/PRD-thinkandmake.md) | 블로그 과제 기획서 v1.0 ([PDF](docs/PRD-thinkandmake.pdf), 약 2.5쪽) |
 | [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) | 구조, 데이터 표, 권한 규칙, 화면 흐름 |
 | [docs/ANALYTICS.md](docs/ANALYTICS.md) | GA4 방문 통계와 이벤트 |
 | [docs/TASKS.md](docs/TASKS.md) | 끝낸 일과 남은 일 |
