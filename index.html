@@ -208,6 +208,7 @@ body.has-chat .foot{padding-bottom:88px} /* 말풍선 버튼이 푸터 링크를
 .post time{font-family:var(--f-mono);font-size:13px;color:var(--muted);font-variant-numeric:tabular-nums}
 .badge{font-size:12px;font-weight:700;padding:1px 8px;white-space:nowrap;font-family:var(--f-body)}
 .badge.notice{background:var(--red);color:var(--on-red)}
+.badge.seed{background:transparent;color:var(--muted);border:1px dashed var(--line)} /* 예시 데이터 표시 */
 .badge.private{background:var(--mint-fill);color:var(--on-mint)}
 .badge.public{border:1.5px solid var(--fg)}
 .badge.role-pending{background:var(--mint-fill);color:var(--on-mint)}
@@ -628,9 +629,47 @@ const sha256Hex = async t => [...new Uint8Array(await crypto.subtle.digest("SHA-
 const sb = REMOTE ? window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY) : null;
 const must = res => { if (res.error) throw res.error; if (Array.isArray(res.data) && !res.data.length) throw new Error("권한이 없거나 대상이 없습니다"); return res.data; };
 
+/* 예시 회원과 댓글(11-25, 사용자 요청: 관리자 화면에서 볼 정보). 체험 모드에서 브라우저마다 한 번 넣는다.
+   실제 블로그 글(소개, 공지, 기획, 오늘의 프롬프트, 이미지)에 달려 관리자 댓글 현황과 이어진다.
+   지어낸 데이터라 화면에 "예시" 표시를 붙인다. 이메일은 실제 주인이 없는 example.com 주소 */
+const DEMO_SEED = (() => {
+  const u = (key, at, extra = {}) => ({ id:`seed:${key}`, email:`${key}@example.com`, role:"member", warns:0, created_at:at, seed:true, ...extra });
+  const users = [
+    u("minji.kim", "2026-11-18T10:20:00+09:00"), u("junho.lee", "2026-11-19T21:05:00+09:00"),
+    u("seoyeon.park", "2026-11-20T09:40:00+09:00", { warns:1 }), u("dohyun.choi", "2026-11-21T18:30:00+09:00"),
+    u("hana.jung", "2026-11-22T13:15:00+09:00"), u("free.coupon", "2026-11-20T03:12:00+09:00", { role:"banned", warns:3 })
+  ];
+  const by = k => users.find(x => x.id === `seed:${k}`);
+  const c = (id, post, who, at, body, extra = {}) => ({ id, post_id:post, parent_id:null, deleted:false, author_id:by(who).id, author_name:maskName(by(who).email), body, created_at:at, updated_at:null, seed:true, ...extra });
+  const comments = [
+    c(9001, "notice", "junho.lee", "2026-11-19T21:20:00+09:00", "운영 기준 잘 읽었습니다. 댓글 규칙이 분명해서 좋네요."),
+    c(9002, "notice-rules", "seoyeon.park", "2026-11-20T15:00:00+09:00", "삭제된 댓글입니다", { deleted:true }),
+    c(9003, "about", "minji.kim", "2026-11-25T12:10:00+09:00", "PM 이 되고 싶은 이유가 와닿아요. 블로그 이름에 담긴 뜻도 좋네요."),
+    c(9004, "about", "dohyun.choi", "2026-11-25T12:40:00+09:00", "저도 같은 생각이에요. 앞으로 올라올 글 기대할게요.", { parent_id:9003 }),
+    c(9005, "plan-1", "junho.lee", "2026-11-25T13:30:00+09:00", "AI 도우미 PRD 잘 봤습니다. 독자가 글을 볼 때 AI 를 부르지 않는 구조가 인상적이에요."),
+    c(9006, "plan-1", "hana.jung", "2026-11-25T13:50:00+09:00", "가설을 '10분 안에 홍보' 로 잡은 이유가 궁금해요. 지금은 몇 분 걸리나요?"),
+    c(9007, "plan-2", "minji.kim", "2026-11-25T13:20:00+09:00", "MVP 범위를 넣는다, 뺀다로 나눈 게 명확하네요. 친구 테스트 결과도 올려 주세요."),
+    c(9008, "plan-2", "seoyeon.park", "2026-11-25T13:40:00+09:00", "250레벨까지 1만 시간이면 꽤 길어 보여요. 의도한 길이인가요?"),
+    c(9009, "prompt-1", "dohyun.choi", "2026-11-25T13:45:00+09:00", "이 프롬프트로 제 프로젝트를 정리해 봤는데 질문이 날카로워서 좋았어요."),
+    c(9010, "prompt-1", "junho.lee", "2026-11-25T14:00:00+09:00", "모호하게 답하면 다시 물어보는 부분이 핵심이네요.", { parent_id:9009 }),
+    c(9011, "image-2", "hana.jung", "2026-11-25T11:40:00+09:00", "헬멧 쓴 고양이가 꼭 저 같아서 웃었어요."),
+    c(9012, "image-1", "free.coupon", "2026-11-25T11:50:00+09:00", "지금 가입하면 무료 쿠폰 지급! 프로필 링크를 눌러 주세요")
+  ];
+  return { v:"s1", users, comments };
+})();
+
 const local = (() => {
   const KEY = "samsaekpen-demo-v3"; let mem = {user:null, posts:[], users:{}, comments:[]};
-  const load = () => { try { return {...mem, ...(JSON.parse(localStorage.getItem(KEY)) || {})}; } catch { return mem; } };
+  // 예시 데이터는 버전마다 한 번만 넣는다. 관리자가 지우거나 경고한 결과는 그대로 남는다
+  const withSeed = d => {
+    if (d.seeded === DEMO_SEED.v) return d;
+    d = {...d, users:{...d.users}, comments:[...d.comments], seeded:DEMO_SEED.v};
+    for (const x of DEMO_SEED.users) if (!Object.values(d.users).some(y => y.id === x.id)) d.users[x.email] = {...x};
+    for (const x of DEMO_SEED.comments) if (!d.comments.some(y => y.id === x.id)) d.comments.push({...x});
+    try { localStorage.setItem(KEY, JSON.stringify(d)); } catch {} mem = d;
+    return d;
+  };
+  const load = () => { try { return withSeed({...mem, ...(JSON.parse(localStorage.getItem(KEY)) || {})}); } catch { return withSeed(mem); } };
   const save = d => { try { localStorage.setItem(KEY, JSON.stringify(d)); } catch (e) { if (e && /quota/i.test(e.name + e.message)) throw new Error("STORAGE_FULL"); } mem = d; };
   return { load, save };
 })();
@@ -984,7 +1023,7 @@ function commentsBlock(p){
     if (c.deleted) return `<li class="comment deleted"><p class="c-body">${esc(c.body || "삭제된 댓글입니다")}</p>${replies.length ? `<ul class="c-replies">${replies.map(r => one(r, true)).join("")}</ul>` : ""}</li>`;
     const canDelete = mine ? (canComment() || !replies.length) : isAdmin();
     return `<li class="comment${isReply ? " reply" : ""}">
-      <div class="c-meta">${isReply ? '<span class="badge c-rbadge">답글</span>' : ""}<b>${esc(c.author_name || "회원")}</b>${mine ? '<span class="badge role-member">내 댓글</span>' : ""}<time>${fmtTime(c.created_at)}</time>${c.updated_at ? "<span>수정됨</span>" : ""}</div>
+      <div class="c-meta">${isReply ? '<span class="badge c-rbadge">답글</span>' : ""}<b>${esc(c.author_name || "회원")}</b>${c.seed ? '<span class="badge seed">예시</span>' : ""}${mine ? '<span class="badge role-member">내 댓글</span>' : ""}<time>${fmtTime(c.created_at)}</time>${c.updated_at ? "<span>수정됨</span>" : ""}</div>
       ${editing
         ? `<form class="c-form" data-edit-comment="${esc(c.id)}"><label class="sr" for="ce-${esc(c.id)}">댓글 고치기</label><textarea id="ce-${esc(c.id)}" maxlength="1000">${esc(c.body)}</textarea>
            <div class="actions"><button class="btn sub" type="submit">저장</button><button class="btn line" type="button" data-act="cancelEdit">취소</button></div></form>`
@@ -1030,7 +1069,7 @@ function adminCommentsView(tabs){
     const w = m && m.role === "member" ? (m.warns || 0) : 0;
     return `<li class="ac-item${hidden ? " hidden-c" : ""}">
       <div style="min-width:0">${p ? `<a class="ac-post" href="#post-${esc(p.id)}">${esc(p.title)}</a>` : `<span class="ac-post">지워진 글</span>`}
-        <div class="ac-meta">${c.parent_id ? '<span class="badge c-rbadge">답글</span>' : ""}${c.deleted ? '<span class="badge">삭제됨</span>' : ""}<b>${esc(c.author_name || "회원")}</b><span>${esc(m?.email || "")}</span><time>${fmtTime(c.created_at)}</time>${c.updated_at ? "<span>수정됨</span>" : ""}
+        <div class="ac-meta">${c.parent_id ? '<span class="badge c-rbadge">답글</span>' : ""}${c.deleted ? '<span class="badge">삭제됨</span>' : ""}<b>${esc(c.author_name || "회원")}</b>${c.seed ? '<span class="badge seed">예시</span>' : ""}<span>${esc(m?.email || "")}</span><time>${fmtTime(c.created_at)}</time>${c.updated_at ? "<span>수정됨</span>" : ""}
           ${hidden ? '<span class="badge role-banned">추방 회원 · 숨겨짐</span>' : w > 0 ? `<span class="badge role-warned">경고 ${w}/${MAX_WARNS}</span>` : ""}</div></div>
       <div class="ac-acts">${p ? `<a class="btn line" href="#post-${esc(p.id)}">글에서 보기</a>` : ""}${c.deleted ? "" : `<button class="btn line" data-act="adminDelComment" data-id="${esc(c.id)}" data-soft="${adminComments.some(x => String(x.parent_id) === String(c.id) && !x.deleted) ? 1 : 0}">삭제</button>`}</div>
       <p class="ac-body">${esc(c.body)}</p>
@@ -1194,7 +1233,7 @@ const views = {
         const w = m.warns || 0, last = m.role === "member" && w === MAX_WARNS - 1;
         const look = m.role === "banned" ? "banned" : w > 0 ? "warned" : "member";
         const name = m.role === "banned" ? "추방" : w > 0 ? "경고 받음" : "회원";
-        return `<li><div><span class="email">${esc(m.email || "(이메일 없음)")}</span><span class="since">가입 ${fmt(m.created_at)} · 경고 ${m.role === "banned" ? "-" : `${w}/${MAX_WARNS}`} · 댓글 ${byAuthor[m.id] || 0}개</span></div>
+        return `<li><div><span class="email">${esc(m.email || "(이메일 없음)")}${m.seed ? ' <span class="badge seed">예시</span>' : ""}</span><span class="since">가입 ${fmt(m.created_at)} · 경고 ${m.role === "banned" ? "-" : `${w}/${MAX_WARNS}`} · 댓글 ${byAuthor[m.id] || 0}개</span></div>
           <span class="badge role-${look}">${name}</span>
           ${m.role === "banned"
             ? `<button class="btn line" data-member="unban" data-uid="${esc(m.id)}">추방 되돌림</button>`

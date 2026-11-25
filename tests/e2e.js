@@ -449,6 +449,22 @@ const tests = [
     const ok = r.text && r.text.startsWith("너는 10년 차 PM 면접관이야.") && r.text.endsWith("프로젝트 이름: [여기에 프로젝트 이름]") && r.lines === 7 && r.btn && (m.includes("복사했어요") || m.includes("직접 복사"));
     return expect(ok, `줄 ${r.lines}, 버튼 ${r.btn}, 안내 ${m}`);
   }],
+  ["J", "T126", "예시 회원과 댓글: 실제 글에 '예시' 표시와 함께 달리고, 관리자 댓글 현황과 회원 목록에 같은 데이터가 보이며, 추방 회원의 댓글은 방문자에게 숨는다", async () => {
+    await logout(); await page.evaluate(() => { localStorage.clear(); sessionStorage.setItem("seed-test", "1"); });
+    await page.reload(); await wait(300); // 저장소를 비운 뒤 화면 메모리에 남은 예전 데이터도 비운다
+    await goto("#post-about"); await wait(400);
+    const about = await page.$$eval(".comments .c-meta", a => a.map(m => ({ seed: !!m.querySelector(".badge.seed"), reply: !!m.querySelector(".c-rbadge") })));
+    await goto("#post-image-1"); await wait(400);
+    const spamSeen = await page.evaluate(() => (document.querySelector(".comments") || {}).innerText.includes("무료 쿠폰")); // 본문 글자만(스크립트 글자 제외)
+    await login("x", true); await goto("#admin"); await wait(400);
+    const mem = await page.evaluate(() => ({ n: document.querySelectorAll(".members li").length, seed: document.querySelectorAll(".members .badge.seed").length, banned: !!document.querySelector(".members .badge.role-banned"), warned: !!document.querySelector(".members .badge.role-warned") }));
+    await goto("#admin-comments"); await wait(500);
+    const ac = await page.evaluate(() => ({ text: document.querySelector("#view").innerText, seed: document.querySelectorAll(".badge.seed").length }));
+    await logout(); await page.evaluate(() => { sessionStorage.removeItem("seed-test"); localStorage.clear(); }); await page.reload(); await goto(); await wait(300);
+    const ok = about.length === 2 && about.every(x => x.seed) && about[1].reply && !spamSeen && mem.n === 6 && mem.seed === 6 && mem.banned && mem.warned
+      && ac.seed >= 12 && ac.text.includes("무료 쿠폰") && ac.text.includes("PM 이 되고 싶은 이유가 와닿아요") && ac.text.includes("생각하는 공방을 소개합니다");
+    return expect(ok, JSON.stringify({ about, spamSeen, mem, acSeed: ac.seed }));
+  }],
   ["J", "T104", "헤더 로고는 전구와 톱니 그림(assets/logo.png)이고 제대로 보인다", async () => {
     await goto();
     const r = await page.evaluate(() => { const i = document.querySelector("header .logo img"); return i ? { src: i.getAttribute("src"), ok: i.complete && i.naturalWidth > 0, h: Math.round(i.getBoundingClientRect().height) } : null; });
@@ -647,6 +663,9 @@ const tests = [
 (async () => {
   browser = await chromium.launch();
   page = await browser.newPage({ viewport: { width: 1280, height: 900 } });
+  // 11-25: 체험 모드는 예시 회원과 댓글(DEMO_SEED)을 처음 한 번 넣는다. 다른 시험은 빈 상태에서 세므로 기본으로 건너뛰고,
+  // 예시 데이터는 T126 이 sessionStorage "seed-test" 를 켜고 따로 확인한다
+  await page.addInitScript(() => { const k = "samsaekpen-demo-v3"; if (!sessionStorage.getItem("seed-test") && !localStorage.getItem(k)) localStorage.setItem(k, JSON.stringify({ seeded: "s1" })); });
   page.on("pageerror", e => errors.push(e.message));
   await page.route(/googletagmanager\.com|google-analytics\.com/, r => r.abort());
   if (SHOTS) fs.mkdirSync(SHOTS, { recursive: true });
