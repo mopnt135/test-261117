@@ -136,6 +136,11 @@ check("G23", "기획 글(PDF)의 검색 페이지에 내려받기 링크가 들�
   const real = ["PLAN_1", "PLAN_2"].every(n => idx.includes(`const ${n} = {`)) && ["assets/files/ai-assist-prd-v1.0.pdf", "assets/files/hero-plan.pdf"].every(f => fs.existsSync(path.join(ROOT, f)));
   return [ok && bad && real, `링크 ${ok}, 이상한 경로 막음 ${bad}, PLAN 글과 파일 ${real}`];
 });
+check("G24", "오늘의 프롬프트 글의 검색 페이지에 프롬프트가 줄바꿈 그대로 들어가고, HTML 기호는 글자로 바뀐다", () => {
+  const h = gen.postPage({ id: "prompt-x", title: "프롬프트", body: "본문", category: "오늘의 프롬프트", created_at: "2026-11-25T04:30:00Z", prompt: "첫 줄 <b>굵게</b>\n둘째 줄" });
+  const ok = h.includes('<pre class="prompt">첫 줄 &lt;b&gt;굵게&lt;/b&gt;\n둘째 줄</pre>') && fs.readFileSync(path.join(ROOT, "index.html"), "utf8").includes("const PROMPT_1 = {");
+  return [ok, ok ? "프롬프트 상자, 기호 바뀜, PROMPT_1 있음" : "프롬프트 상자가 없거나 기호가 그대로"];
+});
 check("G20", "썸네일 카드에 예전 세 줄 색 띠가 없고, 로고가 들어가며, 목록 점은 강조색 하나다", () => {
   const h = gen.cardHtml({ title: "띠 확인", label: "실습 기록", lines: ["한 줄"] });
   const ok = !h.includes('class="bars"') && h.includes("data:image/png;base64,") && !/li:nth-child/.test(h) && h.includes("li i{background:#E5584B}");

@@ -389,7 +389,7 @@ const tests = [
     await logout();
     return expect(r.h1 === "생각하는 공방을 소개합니다" && r.img === "assets/about-cat.png" && r.alt && r.ok && r.why && r.name && edit === 0, `${JSON.stringify(r)}, 관리 버튼 ${edit}`);
   }],
-  ["J", "T122", "글 메뉴 셋(기획, 이미지, 오늘의 프롬프트): 헤더 '글 목록' 의 소메뉴와 첫 화면 글씨 카드(그림 없음)에 있고, 누르면 그 분류 글만 보이며, 이미지에는 그림 글 3편, 글 없는 오늘의 프롬프트는 '아직 글이 없다' 고 안내한다", async () => {
+  ["J", "T122", "글 메뉴 셋(기획, 이미지, 오늘의 프롬프트): 헤더 '글 목록' 의 소메뉴와 첫 화면 글씨 카드(그림 없음)에 있고, 누르면 그 분류 글만 보이며, 이미지에는 그림 글 3편, 오늘의 프롬프트에는 프롬프트 글 1편이 있다", async () => {
     await goto(); await wait(200);
     const nav = await page.$$eval("nav.main a", a => a.map(x => x.textContent.trim()));
     const cards = await page.$$eval(".menu-card", a => a.map(x => ({ href: x.getAttribute("href"), name: x.querySelector(".mc-name").textContent, img: !!x.querySelector("img"), h: x.getBoundingClientRect().height })));
@@ -399,7 +399,7 @@ const tests = [
     await page.click('.menu-card[href="#m-image"]'); await wait(200);
     const img = await page.evaluate(() => ({ h1: document.querySelector(".page h1, .page h2").textContent, n: document.querySelectorAll(".posts .post").length, cur: (document.querySelector('nav.main a[aria-current="page"]') || {}).textContent, chips: [...document.querySelectorAll(".chip")].map(c => c.dataset.c) }));
     await goto("#m-prompt"); await wait(200);
-    const plan = await page.evaluate(() => ({ n: document.querySelectorAll(".posts .post").length, empty: (document.querySelector(".empty") || {}).textContent || "" }));
+    const plan = await page.evaluate(() => ({ n: document.querySelectorAll(".posts .post").length, first: (document.querySelector(".posts .post h3 a") || {}).getAttribute?.("href") }));
     await page.click('.chip[data-c="전체"]'); await wait(200);
     const back = await page.evaluate(() => ({ hash: location.hash, n: document.querySelectorAll(".posts .post").length }));
     await page.setViewportSize({ width: 390, height: 844 }); await goto(); await wait(200);
@@ -412,7 +412,7 @@ const tests = [
     const ok = ["기획", "이미지", "오늘의 프롬프트"].every(t => nav.includes(t)) && sub.first === "글 목록" && sub.items.join() === "기획,이미지,오늘의 프롬프트" && sub.hidden && shown && mobSub === 3
       && cards.length === 3 && cards.every(c => !c.img && c.h >= 44 && c.h <= 80)
       && img.n === 3 && img.cur === "이미지" && ["기획", "이미지", "오늘의 프롬프트", "자기소개"].every(c => img.chips.includes(c))
-      && plan.n === 0 && plan.empty.includes("아직 글이 없습니다") && back.hash === "#list" && back.n > 3 && !over && mobileH >= 44;
+      && plan.n === 1 && plan.first === "#post-prompt-1" && back.hash === "#list" && back.n > 3 && !over && mobileH >= 44;
     return expect(ok, JSON.stringify({ nav, sub, shown, mobSub, cards: cards.map(c => [c.name, c.img, Math.round(c.h)]), img, plan: plan.n, back, over, mobileH }));
   }],
   ["J", "T123", "체험 모드 관리자 로그인은 비밀번호 칸 하나이고, 틀리면 안내하며, 이메일로 먼저 로그인해도 관리자가 되지 않고, 코드에 비밀번호 글자가 없다", async () => {
@@ -440,6 +440,14 @@ const tests = [
     const res = await page.evaluate(async h => (await fetch(h)).ok, dl && dl.href).catch(() => false);
     return expect(list.join() === "#post-plan-1,#post-plan-2" && dl && dl.href === "assets/files/hero-plan.pdf" && dl.name.endsWith(".pdf") && dl.info.includes("5쪽") && pdf && noName,
       `목록 ${list}, 버튼 ${JSON.stringify(dl)}, PDF ${pdf}, 실명 없음 ${noName}, 파일 열림 ${res}`);
+  }],
+  ["J", "T125", "오늘의 프롬프트 글: 사용자가 준 프롬프트를 줄바꿈 그대로 상자에 보여 주고, '프롬프트 복사' 를 누르면 복사 결과를 알린다", async () => {
+    await goto("#post-prompt-1"); await wait(200);
+    const r = await page.evaluate(() => { const pre = document.querySelector(".prompt-box pre"); return { text: pre && pre.textContent, lines: pre && pre.textContent.split("\n").length, btn: !!document.querySelector('[data-act="copyPrompt"]') }; });
+    await page.click('[data-act="copyPrompt"]'); await wait(200);
+    const m = await page.$eval("#promptMsg", el => el.textContent);
+    const ok = r.text && r.text.startsWith("너는 10년 차 PM 면접관이야.") && r.text.endsWith("프로젝트 이름: [여기에 프로젝트 이름]") && r.lines === 7 && r.btn && (m.includes("복사했어요") || m.includes("직접 복사"));
+    return expect(ok, `줄 ${r.lines}, 버튼 ${r.btn}, 안내 ${m}`);
   }],
   ["J", "T104", "헤더 로고는 전구와 톱니 그림(assets/logo.png)이고 제대로 보인다", async () => {
     await goto();

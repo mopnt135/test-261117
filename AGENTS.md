@@ -34,9 +34,9 @@ AI 코딩 에이전트가 이 저장소에서 일할 때 가장 먼저 읽는 �
 | `.github/workflows/seo-pages.yml` | 생성기를 하루 2번 돌려 커밋하는 GitHub Actions |
 | `.github/workflows/docs-check.yml` | `CLAUDE.md`, `AGENTS.md` 가 바뀔 때만 `docs_test.js` 를 돌리는 GitHub Actions |
 | `supabase-setup.sql` | 서버 표, 권한 규칙(RLS), 파일 보관함 설정. 여러 번 실행해도 안전해야 함 |
-| `tests/e2e.js` | 화면 테스트 87건 (Playwright, 체험 모드, 측정 ID 를 비운 복사본으로 실행) |
+| `tests/e2e.js` | 화면 테스트 88건 (Playwright, 체험 모드, 측정 ID 를 비운 복사본으로 실행) |
 | `tests/rls_test.py` | 서버 권한 테스트 25건 (로컬 PostgreSQL) |
-| `tests/pages_test.js` | 검색·공유 페이지 생성기 테스트 23건 |
+| `tests/pages_test.js` | 검색·공유 페이지 생성기 테스트 24건 |
 | `scripts/ai-assist.js` | 공개글마다 AI 결과(요약, 제목 후보, 태그, 홍보 문구)를 `ai/<글번호>.json` 에 미리 만드는 AI 도우미 |
 | `ai/` | AI 도우미 결과물과 관리자 보고서, 챗봇 답(`ai/chatbot/qa.json`, 화면이 읽는 `qa.js`). **손으로 고치지 않는다** |
 | `portfolio/profile.md` | 포트폴리오 안내 챗봇의 자료(사람이 쓴다). `[작성 필요]` 가 남아 있으면 챗봇이 화면에 안 나온다. 공개해도 되는 정보만 쓴다 |
@@ -56,7 +56,7 @@ AI 코딩 에이전트가 이 저장소에서 일할 때 가장 먼저 읽는 �
 5. **첨부 파일은 JPG, PNG, GIF, PDF 만.** 화면(확장자, 실제 내용, 크기)과 서버(보관함 형식, 10MB) 두 곳에서 모두 막는다.
 6. **시간은 한국 시간(KST)으로 보여준다.** `fmt()`, `fmtTime()` 을 쓴다.
 7. **화면 글자는 한국어, 쉬운 말로 쓴다.** 오류 문구는 무엇이 잘못됐고 어떻게 고치는지 말한다.
-8. **공지 내용은 마음대로 바꾸지 않는다.** `NOTICE`, `NOTICE_RULES` 는 운영 정책이다. 바꿀 때는 사람의 확인을 받는다. 고정 소개 글 `ABOUT` 과 기획 메뉴 글 `PLAN_1~2`, 이미지 메뉴 글 `IMAGE_1~3`(11-25)도 사용자가 준 글이라 같은 규칙을 따른다.
+8. **공지 내용은 마음대로 바꾸지 않는다.** `NOTICE`, `NOTICE_RULES` 는 운영 정책이다. 바꿀 때는 사람의 확인을 받는다. 고정 소개 글 `ABOUT` 과 기획 메뉴 글 `PLAN_1~2`, 오늘의 프롬프트 글 `PROMPT_1`, 이미지 메뉴 글 `IMAGE_1~3`(11-25)도 사용자가 준 글이라 같은 규칙을 따른다.
 9. **글별 검색 정보는 생성기로만 만든다.** 글 제목, 설명, 썸네일이 바뀌는 기능을 고치면 `scripts/build-pages.js` 와 `tests/pages_test.js` 도 같이 고친다. 생성 페이지에도 `esc()` 와 같은 처리를 한다.
 11. **AI 키는 GitHub Secrets(`AI_API_KEY`)에만 둔다.** 화면 코드, 커밋, 실행 기록에 남기지 않는다. 독자가 글을 열 때 AI 를 부르는 기능은 만들지 않는다. 포트폴리오 안내 챗봇(오른쪽 아래 말풍선)도 방문자가 물을 때 AI 를 부르지 않고, 자동 실행이 미리 만든 `ai/chatbot/qa.js` 만 읽는다. AI 결과는 `scripts/ai-assist.js` 로만 만들고, 고치면 `tests/ai_test.js` 도 같이 고친다.
 10. **방문 통계 이벤트는 `analytics.track()` 으로만 보낸다.** 예외는 생성기가 만드는 정적 페이지의 GA 코드 하나다(`scripts/build-pages.js`). 둘 다 이름과 값은 `docs/ANALYTICS.md` 를 따르고, 글 주소는 `p/<글번호>/` 로 맞춘다. 이메일, 댓글 본문, 비밀번호는 절대 보내지 않는다.

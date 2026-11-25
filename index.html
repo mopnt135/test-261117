@@ -281,6 +281,11 @@ fieldset.field{border:0;padding:0;margin:0}
 .mc-name{color:var(--orange);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .mc-n{flex:none;min-width:24px;padding:1px 8px;border-radius:999px;background:var(--mint-fill);color:var(--muted);font-family:var(--f-mono);font-size:12px;font-weight:500;text-align:center}
 @media (max-width:640px){.menu-cards{gap:6px;margin-top:16px}.menu-card{padding:6px 10px;font-size:13px;min-height:44px;border-radius:14px}.mc-name{white-space:normal;line-height:1.25}.mc-n{padding:1px 6px;font-size:11px}} /* 휴대폰: 긴 이름(오늘의 프롬프트)은 두 줄로 */
+.prompt-box{margin:20px 0 0;border:1px solid var(--line);border-left:4px solid var(--orange-fill);border-radius:10px;background:var(--soft);padding:12px 14px}
+.prompt-head{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:8px}
+.prompt-head b{color:var(--orange)}
+.prompt-box pre{margin:0;white-space:pre-wrap;overflow-wrap:anywhere;font-family:inherit;font-size:15px;line-height:1.75;color:var(--fg)} /* 숫자 글꼴(Plex Mono)엔 한글이 없어 본문 글꼴로 */
+.prompt-box .msg:empty{display:none}
 .post-file{display:flex;flex-wrap:wrap;align-items:center;gap:8px 14px;margin:20px 0 0}
 .post-file span{font-size:14px;color:var(--muted)}
 .post-figure{margin:20px 0 0}
@@ -806,7 +811,24 @@ const PLAN_2 = {
 지금까지 정한 게임 규칙과 진행 상황, 먼저 고쳐야 할 문제, 최소 기능 범위(MVP)를 A4 5쪽에 정리했습니다.
 아래 버튼으로 PDF 를 내려받을 수 있습니다.`
 };
-const FIXED_POSTS = [ABOUT, PLAN_1, PLAN_2, IMAGE_1, IMAGE_2, IMAGE_3];
+/* 오늘의 프롬프트 메뉴 글(11-25, 프롬프트는 사용자가 준 글 그대로) */
+const PROMPT_1 = {
+  id:"prompt-1", fixed:true, category:"오늘의 프롬프트", visibility:"public",
+  created_at:"2026-11-25T13:30:00+09:00",
+  title:"PM 면접관에게 질문받으며 포트폴리오 글 쓰기",
+  body:`AI 에게 포트폴리오 글을 바로 맡기지 않고, 10년 차 PM 면접관이 하나씩 묻는 질문에 답하면서 글감을 채우는 프롬프트입니다.
+질문은 문제, 방법을 고른 이유, 막힌 점과 푼 방법, 결과, 다시 한다면 바꿀 점 순서로 이어집니다.
+답이 모호하면 칭찬 대신 더 구체적으로 되묻고, 질문이 끝나면 블로그 글 초안으로 정리합니다.
+아래 프롬프트를 복사해 마지막 줄의 [여기에 프로젝트 이름] 만 바꿔 쓰면 됩니다.`,
+  prompt:`너는 10년 차 PM 면접관이야.
+내가 진행한 프로젝트 하나를 포트폴리오 블로그 글로 정리하고 싶어.
+바로 글을 쓰지 말고, 먼저 나에게 질문을 하나씩 해줘.
+질문은 "어떤 문제를 해결하려 했는지, 왜 그 방법을 골랐는지, 무엇이 막혔고 어떻게 풀었는지, 결과는 어땠는지, 다시 한다면 무엇을 바꿀지" 순서로 해줘.
+내 답이 모호하면 칭찬하지 말고 더 구체적으로 물어봐줘.
+질문이 끝나면 블로그 글 초안으로 정리해줘.
+프로젝트 이름: [여기에 프로젝트 이름]`
+};
+const FIXED_POSTS = [ABOUT, PROMPT_1, PLAN_1, PLAN_2, IMAGE_1, IMAGE_2, IMAGE_3];
 const FILE_PATH = /^assets\/files\/[A-Za-z0-9._-]+\.pdf$/; // 파일 글의 내려받기 파일은 저장소 안 PDF 만
 const FIXED_IDS = new Set(["notice", "notice-rules", ...FIXED_POSTS.map(p => p.id)]); // 파일에 있는 글. 서버를 기다리지 않고 바로 보여 준다
 const allPosts = () => [NOTICE_RULES, NOTICE, ...FIXED_POSTS, ...posts];
@@ -1091,6 +1113,7 @@ const views = {
       </div>
       ${p.image ? `<figure class="post-figure"><img src="${esc(p.image)}" alt="${esc(p.imageAlt || "")}"></figure>` : ""}
       <p class="article-body">${esc(p.body)}</p>
+      ${p.prompt ? `<section class="prompt-box" aria-label="프롬프트"><div class="prompt-head"><b>프롬프트</b><button type="button" class="btn line" data-act="copyPrompt" data-id="${esc(p.id)}">프롬프트 복사</button></div><pre>${esc(p.prompt)}</pre><p class="msg" id="promptMsg" role="status"></p></section>` : ""}
       ${p.file && FILE_PATH.test(p.file) ? `<div class="post-file"><a class="btn" href="${esc(p.file)}" download="${esc(p.fileName || "")}">PDF 내려받기</a><span>${esc(p.fileInfo || "")}</span></div>` : ""}
       ${attachmentsBlock(p)}
       ${p.visibility !== "private" ? `<div class="share"><button type="button" class="btn line" data-act="copyShare" data-id="${esc(p.id)}">공유 링크 복사</button>
@@ -1278,6 +1301,12 @@ document.addEventListener("click", async e => {
   if (act === "rmPending") { pendingFiles.splice(Number(t.dataset.i), 1); return renderPick(); }
   if (act === "rmKept") { removedAtts.push(t.dataset.path); keptAtts = keptAtts.filter(a => a.path !== t.dataset.path); return renderPick(); }
   if (act === "replyComment") { replyTo = replyTo === t.dataset.id ? null : t.dataset.id; editingComment = null; render(); const r = $("rBody"); if (r) r.focus(); return; }
+  if (act === "copyPrompt") {
+    const p = findPost(t.dataset.id); if (!p || !p.prompt) return;
+    try { await navigator.clipboard.writeText(p.prompt); msg("promptMsg", "프롬프트를 복사했어요. AI 채팅 창에 붙여 넣고 [여기에 프로젝트 이름] 을 바꿔 쓰세요."); }
+    catch { msg("promptMsg", "복사하지 못했어요. 위 상자의 글을 길게 눌러 직접 복사해 주세요.", true); }
+    return;
+  }
   if (act === "copyShare") {
     const url = shareUrl(t.dataset.id);
     analytics.track("share_link_copy", { post_id: String(t.dataset.id) });
