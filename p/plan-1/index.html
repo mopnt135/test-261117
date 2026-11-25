@@ -1,0 +1,95 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<link rel="icon" href="../../assets/favicon.ico" sizes="16x16 32x32 48x48">
+<link rel="icon" type="image/png" href="../../assets/favicon-32.png" sizes="32x32">
+<link rel="apple-touch-icon" href="../../assets/apple-touch-icon.png">
+<title>생각하는 공방 AI 도우미 PRD (v1.0) · 생각하는 공방</title>
+<meta name="description" content="AIPM 수업 AI 과제로 쓴 기획서입니다. 글을 올리면 AI 가 제목 후보, 태그, SNS 문구, 3줄 요약을 미리 만들어 두는 AI 도우미와 포트폴리오 안내 챗봇을 다룹니다. 문제 정의, 해결 방안, 가설과 지표…">
+<link rel="canonical" href="https://mopnt135.github.io/thinkandmake/p/plan-1/">
+<meta property="og:type" content="article">
+<meta property="og:site_name" content="생각하는 공방">
+<meta property="og:locale" content="ko_KR">
+<meta property="og:title" content="생각하는 공방 AI 도우미 PRD (v1.0)">
+<meta property="og:description" content="AIPM 수업 AI 과제로 쓴 기획서입니다. 글을 올리면 AI 가 제목 후보, 태그, SNS 문구, 3줄 요약을 미리 만들어 두는 AI 도우미와 포트폴리오 안내 챗봇을 다룹니다. 문제 정의, 해결 방안, 가설과 지표…">
+<meta property="og:url" content="https://mopnt135.github.io/thinkandmake/p/plan-1/">
+<meta property="og:image" content="https://mopnt135.github.io/thinkandmake/p/plan-1/og.png?v=mwvluoqoc9">
+<meta property="og:image:width" content="1200">
+<meta property="og:image:height" content="630">
+<meta property="og:image:alt" content="생각하는 공방 AI 도우미 PRD (v1.0)">
+<meta property="article:published_time" content="2026-11-25T13:10:00+09:00">
+<meta property="article:modified_time" content="2026-11-25T13:10:00+09:00">
+<meta property="article:section" content="기획">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:title" content="생각하는 공방 AI 도우미 PRD (v1.0)">
+<meta name="twitter:description" content="AIPM 수업 AI 과제로 쓴 기획서입니다. 글을 올리면 AI 가 제목 후보, 태그, SNS 문구, 3줄 요약을 미리 만들어 두는 AI 도우미와 포트폴리오 안내 챗봇을 다룹니다. 문제 정의, 해결 방안, 가설과 지표…">
+<meta name="twitter:image" content="https://mopnt135.github.io/thinkandmake/p/plan-1/og.png?v=mwvluoqoc9">
+<script type="application/ld+json">{"@context":"https://schema.org","@type":"BlogPosting","headline":"생각하는 공방 AI 도우미 PRD (v1.0)","description":"AIPM 수업 AI 과제로 쓴 기획서입니다. 글을 올리면 AI 가 제목 후보, 태그, SNS 문구, 3줄 요약을 미리 만들어 두는 AI 도우미와 포트폴리오 안내 챗봇을 다룹니다. 문제 정의, 해결 방안, 가설과 지표…","image":"https://mopnt135.github.io/thinkandmake/p/plan-1/og.png?v=mwvluoqoc9","url":"https://mopnt135.github.io/thinkandmake/p/plan-1/","mainEntityOfPage":"https://mopnt135.github.io/thinkandmake/p/plan-1/","datePublished":"2026-11-25T13:10:00+09:00","dateModified":"2026-11-25T13:10:00+09:00","articleSection":"기획","inLanguage":"ko-KR","author":{"@type":"Organization","name":"생각하는 공방"},"publisher":{"@type":"Organization","name":"생각하는 공방"}}</script>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Gothic+A1:wght@700;900&family=IBM+Plex+Sans+KR:wght@400;700&display=swap">
+<style>
+:root{--bg:#FFFFF0;--fg:#2B2622;--muted:#6B6760;--line:#C1C5C6;--red:#E5584B;--orange:#2F3E63;--orange-fill:#2F3E63;--mint-fill:#E6E8DF;--on-orange:#FFFFF0}
+@media (prefers-color-scheme: dark){:root{--bg:#353839;--fg:#FFFFFF;--muted:#C2C3C4;--line:#5D6468;--red:#C2185B;--orange:#D5E8F5;--orange-fill:#D5E8F5;--mint-fill:#4D5255;--on-orange:#353839;color-scheme:dark}}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--fg);font-family:"IBM Plex Sans KR","Apple SD Gothic Neo","Malgun Gothic",sans-serif;font-size:17px;line-height:1.85;word-break:keep-all;overflow-wrap:break-word}
+a{color:inherit}
+.wrap{max-width:760px;margin:0 auto;padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px))}
+header{border-bottom:2px solid var(--fg)}
+header .wrap{display:flex;align-items:center;min-height:64px}
+.logo{display:flex;align-items:center;gap:12px;text-decoration:none;font-family:"Gothic A1",sans-serif;font-weight:900;font-size:22px}
+.logo img{display:block;height:30px;width:auto}
+article{padding-block:40px 64px}
+.cat{font-size:14px;font-weight:700;color:var(--orange)}
+h1{font-family:"Gothic A1",sans-serif;font-weight:900;font-size:clamp(28px,5vw,42px);line-height:1.3;letter-spacing:-.02em;margin:8px 0 12px}
+.meta{font-size:14px;color:var(--muted);padding-bottom:18px;border-bottom:1px solid var(--line)}
+.body{white-space:pre-wrap;margin:24px 0 0}
+.cta{display:flex;flex-wrap:wrap;gap:10px;margin-top:40px;padding-top:24px;border-top:2px solid var(--fg)}
+.btn{display:inline-flex;align-items:center;min-height:44px;padding:0 18px;font-weight:700;text-decoration:none;border:2px solid var(--fg)}
+.btn.main{background:var(--orange-fill);color:var(--on-orange);border-color:var(--orange-fill)}
+.demo-note{flex-basis:100%;margin:0;font-size:14px;color:var(--muted)}
+a:focus-visible{outline:3px solid var(--orange);outline-offset:3px}
+.file{display:flex;flex-wrap:wrap;align-items:center;gap:8px 14px;margin:20px 0 0}.file span{font-size:14px;color:#6B6760}
+.fig{display:block;max-width:360px;width:100%;height:auto;margin:20px 0 0;border:1px solid #C1C5C6;border-radius:12px}
+.ai{margin:24px 0 0;padding:16px 18px;background:var(--mint-fill);border-left:6px solid var(--orange-fill)}
+.ai-h{font-family:"Gothic A1",sans-serif;font-weight:900;font-size:15px}
+.ai ol{margin:8px 0 0;padding-left:22px}
+.ai-note{margin:8px 0 0;font-size:13px;color:var(--muted)}
+</style>
+<script>
+  (function () {
+    var ls = function (k) { try { return localStorage.getItem(k); } catch (e) { return null; } };
+    if (ls("samsaekpen-ga-optout") === "1") { window["ga-disable-G-5HJBBKMVE3"] = true; return; }
+    var s = document.createElement("script"); s.async = true; s.src = "https://www.googletagmanager.com/gtag/js?id=G-5HJBBKMVE3"; document.head.appendChild(s);
+    window.dataLayer = window.dataLayer || []; window.gtag = function () { dataLayer.push(arguments); };
+    var post = {"post_id":"plan-1","post_title":"생각하는 공방 AI 도우미 PRD (v1.0)","post_category":"기획","is_notice":false,"attachment_count":0,"view_source":"static","has_ai_summary":false};
+    gtag("js", new Date());
+    if (ls("samsaekpen-ga-internal") === "1") gtag("set", { traffic_type: "internal" });
+    gtag("config", "G-5HJBBKMVE3", { page_type: post.is_notice ? "notice" : "post", view_source: "static" });
+    gtag("event", "post_view", post);
+  })();
+</script>
+</head>
+<body>
+<header><div class="wrap"><a class="logo" href="../../"><img src="../../assets/logo.png" alt="" width="198" height="265">생각하는 공방</a></div></header>
+<main class="wrap">
+<article>
+  <div class="cat">기획</div>
+  <h1>생각하는 공방 AI 도우미 PRD (v1.0)</h1>
+  <div class="meta">2026.11.25 (KST)</div>
+  
+  <img class="fig" src="../../assets/posts/plan-1.jpg" alt="AI 도우미 PRD 첫 쪽">
+  <div class="body">AIPM 수업 AI 과제로 쓴 기획서입니다.
+글을 올리면 AI 가 제목 후보, 태그, SNS 문구, 3줄 요약을 미리 만들어 두는 AI 도우미와 포트폴리오 안내 챗봇을 다룹니다.
+문제 정의, 해결 방안, 가설과 지표, 요구사항, 일정을 A4 3쪽에 정리했습니다.
+아래 버튼으로 PDF 를 내려받을 수 있습니다.</div>
+  <p class="file"><a class="btn main" href="../../assets/files/ai-assist-prd-v1.0.pdf" download="생각하는공방_AI도우미_PRD_v1.0.pdf">PDF 내려받기</a> <span>PDF · A4 3쪽 · 0.5MB</span></p>
+  <div class="cta">
+    <a class="btn main" href="../../#post-plan-1">블로그에서 보고 댓글 달기</a>
+    <a class="btn" href="../../">생각하는 공방 첫 화면</a>
+  </div>
+</article>
+</main>
+</body>
+</html>
