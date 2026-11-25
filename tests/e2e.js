@@ -485,13 +485,15 @@ const tests = [
     const loaded = await page.evaluate(async () => { const i = new Image(); i.src = "assets/favicon-32.png"; await i.decode().catch(() => {}); return i.naturalWidth; });
     return expect(links.length >= 3 && links.every(h => h.startsWith("assets/")) && missing.length === 0 && loaded === 32, `연결 ${links.length}개, 없는 파일 ${missing.length}개, 32px 그림 너비 ${loaded}`);
   }],
-  ["K", "T110", "챗봇 답 파일이 준비되면 오른쪽 아래에 말풍선 버튼이 보이고, 누르면 인사와 준비된 질문이 나온다", async () => {
+  ["K", "T110", "챗봇 답 파일이 준비되면 오른쪽 아래에 블로그 로고와 '질문해주세요' 버튼이 보이고, 누르면 인사와 준비된 질문이 나온다", async () => {
     await goto(); await wait(300);
     const pos = await page.$eval("#chatFab", b => { const r = b.getBoundingClientRect(); return { right: innerWidth - r.right, bottom: innerHeight - r.bottom, h: r.height }; });
     await page.click("#chatFab"); await wait(200);
     const r = await page.evaluate(() => ({ open: !$("chatPanel").hidden, hello: $("chatLog").textContent, chips: document.querySelectorAll("#chatChips button").length }));
     await shot("chatbot-open");
-    return expect(pos.right < 40 && pos.bottom < 40 && pos.h >= 44 && r.open && r.hello.includes("포트폴리오 안내") && r.chips === 2, `오른쪽 ${pos.right}px, 아래 ${pos.bottom}px, 높이 ${pos.h}px, 질문 ${r.chips}개`);
+    const fab = await page.$eval("#chatFab", b => ({ text: b.textContent.trim(), logo: (b.querySelector(".fab-avatar img") || {}).getAttribute?.("src"), ok: !!b.querySelector(".fab-avatar img") && b.querySelector(".fab-avatar img").naturalWidth > 0 }));
+    return expect(pos.right < 40 && pos.bottom < 40 && pos.h >= 44 && r.open && r.hello.includes("포트폴리오 안내") && r.chips === 2 && fab.text === "질문해주세요" && fab.logo === "assets/logo.png" && fab.ok,
+      `오른쪽 ${pos.right}px, 아래 ${pos.bottom}px, 높이 ${pos.h}px, 질문 ${r.chips}개, 버튼 ${JSON.stringify(fab)}`);
   }],
   ["K", "T111", "준비된 질문을 누르면 그 답이 나오고, 답 속 HTML 기호는 글자로만 보인다", async () => {
     await page.click("#chatChips button >> nth=1"); await wait(150);

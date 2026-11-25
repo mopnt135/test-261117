@@ -126,8 +126,11 @@ nav.main a:hover{color:var(--orange)}
 .demo-strip b{color:var(--mint)}
 
 /* 포트폴리오 안내 챗봇: 오른쪽 아래 말풍선 버튼과 대화 창 */
-.chat-fab{position:fixed;right:20px;bottom:20px;z-index:60;display:flex;align-items:center;gap:8px;min-height:52px;padding:0 18px 0 14px;border:0;border-radius:999px;background:var(--orange-fill);color:var(--on-orange);font:inherit;font-weight:700;box-shadow:0 8px 24px rgba(0,0,0,.22);cursor:pointer}
-.chat-fab svg{width:22px;height:22px;flex:none}
+.chat-fab{position:fixed;right:20px;bottom:20px;z-index:60;display:flex;align-items:center;gap:10px;min-height:56px;padding:0 20px 0 6px;border:0;border-radius:999px;background:var(--orange-fill);color:var(--on-orange);font:inherit;font-weight:700;box-shadow:0 8px 24px rgba(0,0,0,.22);cursor:pointer}
+/* 11-25: 말풍선 그림 대신 블로그 로고를 둥근 얼굴(아바타)처럼. 로고와 대화하는 느낌 */
+.fab-avatar{flex:none;display:flex;align-items:center;justify-content:center;width:44px;height:44px;border-radius:50%;background:var(--bg);box-shadow:inset 0 0 0 2px var(--line)}
+.fab-avatar img{width:auto;height:32px;display:block}
+.chat-fab:hover .fab-avatar img{transform:rotate(-8deg);transition:transform .2s}
 .chat-fab[aria-expanded="true"]{background:var(--fg);color:var(--bg)}
 .chat-panel{position:fixed;right:20px;bottom:84px;z-index:61;width:min(380px,calc(100vw - 32px));max-height:min(560px,calc(100vh - 120px));display:flex;flex-direction:column;background:var(--bg);color:var(--fg);border:1px solid var(--line);border-radius:14px;box-shadow:0 16px 40px rgba(0,0,0,.24);overflow:hidden}
 .chat-panel[hidden],.chat-fab[hidden]{display:none}
@@ -469,7 +472,7 @@ nav.main a[hidden]{display:none}
 
 <!-- 포트폴리오 안내 챗봇(11-24). 답은 AI 가 자동 실행 때 미리 만든 ai/chatbot/qa.js 에서만 읽는다. 방문자가 물어도 AI 를 부르지 않는다 -->
 <button type="button" class="chat-fab" id="chatFab" aria-controls="chatPanel" aria-expanded="false" hidden>
-  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" aria-hidden="true"><path d="M4 5h16v11H9l-5 4z"/></svg><span>포트폴리오 안내</span>
+  <span class="fab-avatar" aria-hidden="true"><img src="assets/logo.png" alt="" width="198" height="265"></span><span>질문해주세요</span>
 </button>
 <section class="chat-panel" id="chatPanel" role="dialog" aria-labelledby="chatTitle" hidden>
   <div class="chat-head"><h2 id="chatTitle">포트폴리오 안내</h2><button type="button" class="chat-close" id="chatClose" aria-label="안내 닫기">×</button></div>
