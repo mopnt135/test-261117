@@ -471,7 +471,7 @@ const tests = [
     return expect(!a.hidden && a.exp === "true" && b.hidden && b.exp === "false" && b.text.includes("보기 (2개)") && b.h >= 44 && b.log > a.log
       && !c.hidden && c.exp === "true" && c.text.includes("접기") && !d.hidden, `처음 ${JSON.stringify(a)} / 고른 뒤 ${JSON.stringify(b)} / 다시 ${c.exp}`);
   }],
-  ["K", "T117", "버튼에 없는 숨은 질문도 다르게 묻는 말로 찾아 답하고, 글로 만든 답에는 '이 글 읽기' 링크가 붙는다. 블로그와 무관한 질문은 범위를 알리고 질문 버튼을 다시 연다", async () => {
+  ["K", "T117", "버튼에 없는 숨은 질문도 다르게 묻는 말로 찾아 답하고, 글로 만든 답에는 '이 글 읽기' 링크가 붙는다. 블로그와 무관한 질문은 범위를 알리고 질문 버튼을 다시 열되 안내 말은 보이게 둔다", async () => {
     writeChat({ ...CHAT_QA, items: [{ ...CHAT_QA.items[0], chip: true }, { ...CHAT_QA.items[1], chip: true },
       { q: "PRD 는 어떻게 쓰나요?", a: "문제를 먼저 적습니다.", keywords: ["PRD"], alts: ["기획서 쓰는 법"], post_id: "demo-1" },
       { q: "숨은 질문", a: "나쁜 링크", keywords: ["해킹"], post_id: "../x\" onclick=alert(1)" }] });
@@ -482,10 +482,11 @@ const tests = [
     await page.fill("#chatQ", "해킹 방법"); await page.press("#chatQ", "Enter"); await wait(150);
     const bad = await page.$$eval("#chatLog .chat-post", a => a.map(x => x.getAttribute("href")));
     await page.fill("#chatQ", "오늘 서울 날씨 어때"); await page.press("#chatQ", "Enter"); await wait(150);
-    const miss = await page.evaluate(() => ({ text: [...document.querySelectorAll("#chatLog .bubble.bot")].pop().textContent, open: !$("chatChips").hidden }));
+    const miss = await page.evaluate(() => { const l = $("chatLog"), last = [...l.querySelectorAll(".bubble.bot")].pop(), r = last.getBoundingClientRect(), lr = l.getBoundingClientRect();
+      return { text: last.textContent, open: !$("chatChips").hidden, seen: r.bottom <= lr.bottom + 1 && r.top >= lr.top - 1 }; });
     await page.click("#chatClose"); writeChat(CHAT_QA); await page.reload(); await wait(400);
-    return expect(chips === 2 && hit.text.includes("문제를 먼저") && hit.link === "#post-demo-1" && bad.length === 1 && miss.text.includes("블로그와 포트폴리오에 관한 질문에만") && miss.open,
-      `버튼 ${chips}, 맞춤 ${hit.text} ${hit.link}, 링크 ${JSON.stringify(bad)}, 무관 ${miss.open}`);
+    return expect(chips === 2 && hit.text.includes("문제를 먼저") && hit.link === "#post-demo-1" && bad.length === 1 && miss.text.includes("블로그와 포트폴리오에 관한 질문에만") && miss.open && miss.seen,
+      `버튼 ${chips}, 맞춤 ${hit.text} ${hit.link}, 링크 ${JSON.stringify(bad)}, 무관 ${miss.open} 보임 ${miss.seen}`);
   }],
   ["K", "T118", "적은 말은 끝의 조사와 어미를 떼고 맞추며, 적은 낱말의 절반도 맞지 않는 답이나 흔한 말로만 걸친 답은 내지 않는다", async () => {
     writeChat({ ready: true, greeting: "안녕", items: [

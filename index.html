@@ -1319,6 +1319,7 @@ const chatbot = (() => {
   function setChips(openIt) {
     chips.hidden = !openIt; fold.setAttribute("aria-expanded", String(openIt));
     fold.textContent = openIt ? "준비된 질문 접기" : `준비된 질문 보기 (${qa ? qa.items.filter(x => x.chip).length : 0}개)`;
+    log.scrollTop = log.scrollHeight; // 영역이 열리고 닫히며 대화 칸 높이가 바뀌어도 마지막 말이 보이게
   }
   const say = (who, text) => { const el = document.createElement("div"); el.className = `bubble ${who}`; el.textContent = text; log.appendChild(el); log.scrollTop = log.scrollHeight; };
   // 낱말 줄기: 끝의 조사와 어미(요, 는, 를, 했어 …)를 떼어 "얼마예요"와 "얼마"가 같게 한다
