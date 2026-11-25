@@ -263,7 +263,7 @@ const sniff = b => b[0] === 0x89 && b[1] === 0x50 && b[2] === 0x4E && b[3] === 0
   : b[0] === 0xFF && b[1] === 0xD8 && b[2] === 0xFF ? "image/jpeg"
   : b.slice(0, 4).toString("latin1") === "GIF8" ? "image/gif" : null;
 // 고정 글의 그림은 저장소 안 assets/ 의 파일만 읽는다
-const LOCAL_IMG = /^assets\/[A-Za-z0-9._-]+\.(png|jpe?g|gif)$/i;
+const LOCAL_IMG = /^assets\/([A-Za-z0-9_-]+\/)?[A-Za-z0-9._-]+\.(png|jpe?g|gif)$/i; // assets/ 바로 아래나 한 단계 아래 폴더만
 async function thumbImage(p) {
   if (typeof p.image === "string" && LOCAL_IMG.test(p.image)) {
     try { const buf = fs.readFileSync(path.join(__dirname, "..", p.image)); const type = sniff(buf);
@@ -326,8 +326,8 @@ function sitemap(entries) {
 const robots = () => `User-agent: *\nAllow: /\nSitemap: ${SITE_URL}sitemap.xml\n`;
 
 async function main() {
-  // 파일에 있는 글: 공지 둘과 고정 소개 글(11-25)
-  const notices = [readNotice("NOTICE_RULES"), readNotice("NOTICE"), readNotice("ABOUT")];
+  // 파일에 있는 글: 공지 둘, 고정 소개 글, 이미지 메뉴 글 셋(11-25)
+  const notices = [readNotice("NOTICE_RULES"), readNotice("NOTICE"), readNotice("ABOUT"), readNotice("IMAGE_1"), readNotice("IMAGE_2"), readNotice("IMAGE_3")];
   const fetched = (await loadPosts()).filter(p => p.visibility === undefined || p.visibility === "public");
   const all = [...notices, ...fetched].filter(p => safeId(p.id) && p.title && p.body && p.created_at);
 

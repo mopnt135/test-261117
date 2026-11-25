@@ -369,12 +369,13 @@ const tests = [
     const n = await count(".fun, .fun-card"), apis = /thecatapi|pokeapi|openweathermap/i.test(SOURCE);
     return expect(n === 0 && !apis, `쉬어가기 요소 ${n}개, 외부 API 코드 ${apis ? "남아 있음" : "없음"}`);
   }],
-  ["J", "T103", "공지 글 카드의 사진은 공지 그림이고, 고정 소개 글은 자기 그림, 일반 글은 공유 썸네일을 쓴다", async () => {
+  ["J", "T103", "공지 글 카드의 사진은 공지 그림이고, 파일에 있는 글(소개, 이미지 셋)은 자기 그림, 일반 글은 공유 썸네일을 쓴다", async () => {
     await goto("#list");
     const r = await page.$$eval(".post", a => a.map(li => ({ notice: !!li.querySelector(".badge.notice"), href: li.querySelector("h3 a").getAttribute("href"), src: (li.querySelector(".thumb img") || {}).getAttribute?.("src") || "" })));
-    const n = r.filter(x => x.notice), about = r.find(x => x.href === "#post-about"), o = r.filter(x => !x.notice && x.src && x !== about);
-    const ok = n.length >= 2 && n.every(x => x.src === "assets/notice-card.jpg") && about && about.src === "assets/about-cat.png" && o.every(x => /^p\/.+\/og\.png$/.test(x.src));
-    return expect(ok, `공지 ${n.length}개: ${[...new Set(n.map(x => x.src))].join(", ")} / 소개 ${about && about.src} / 일반 ${o.length}개`);
+    const own = { "#post-about": "assets/about-cat.png", "#post-image-1": "assets/posts/image-1.jpg", "#post-image-2": "assets/posts/image-2.jpg", "#post-image-3": "assets/posts/image-3.jpg" };
+    const n = r.filter(x => x.notice), fixed = r.filter(x => own[x.href]), o = r.filter(x => !x.notice && x.src && !own[x.href]);
+    const ok = n.length >= 2 && n.every(x => x.src === "assets/notice-card.jpg") && fixed.length === 4 && fixed.every(x => x.src === own[x.href]) && o.every(x => /^p\/.+\/og\.png$/.test(x.src));
+    return expect(ok, `공지 ${n.length}개: ${[...new Set(n.map(x => x.src))].join(", ")} / 파일 글 ${fixed.length}개 / 일반 ${o.length}개`);
   }],
   ["J", "T121", "고정 소개 글: 로그인 안 해도 목록에 보이고, 글에 PM 이 되고 싶은 이유와 이름의 뜻, 고양이 그림이 나오며, 관리자에게도 수정·삭제 버튼이 없다", async () => {
     await logout(); await goto("#post-about"); await wait(200);
@@ -384,6 +385,25 @@ const tests = [
     const edit = await page.$$eval(".article-actions", a => a.length);
     await logout();
     return expect(r.h1 === "생각하는 공방을 소개합니다" && r.img === "assets/about-cat.png" && r.alt && r.ok && r.why && r.name && edit === 0, `${JSON.stringify(r)}, 관리 버튼 ${edit}`);
+  }],
+  ["J", "T122", "글 메뉴 셋(기획, 이미지, 오늘의 프롬프트): 헤더와 첫 화면 그림 카드에 있고, 누르면 그 분류 글만 보이며, 이미지에는 그림 글 3편, 기획은 '아직 글이 없다' 고 안내한다", async () => {
+    await goto(); await wait(200);
+    const nav = await page.$$eval("nav.main a", a => a.map(x => x.textContent.trim()));
+    const cards = await page.$$eval(".menu-card", a => a.map(x => ({ href: x.getAttribute("href"), name: x.querySelector(".mc-name").textContent, img: !!x.querySelector("img"), h: x.getBoundingClientRect().height })));
+    await page.click('.menu-card[href="#m-image"]'); await wait(200);
+    const img = await page.evaluate(() => ({ h1: document.querySelector(".page h1, .page h2").textContent, n: document.querySelectorAll(".posts .post").length, cur: (document.querySelector('nav.main a[aria-current="page"]') || {}).textContent, chips: [...document.querySelectorAll(".chip")].map(c => c.dataset.c) }));
+    await goto("#m-plan"); await wait(200);
+    const plan = await page.evaluate(() => ({ n: document.querySelectorAll(".posts .post").length, empty: (document.querySelector(".empty") || {}).textContent || "" }));
+    await page.click('.chip[data-c="전체"]'); await wait(200);
+    const back = await page.evaluate(() => ({ hash: location.hash, n: document.querySelectorAll(".posts .post").length }));
+    await page.setViewportSize({ width: 390, height: 844 }); await goto(); await wait(200);
+    const over = await page.evaluate(() => document.documentElement.scrollWidth > innerWidth);
+    const mobileH = await page.$$eval(".menu-card", a => Math.min(...a.map(x => x.getBoundingClientRect().height)));
+    await page.setViewportSize({ width: 1280, height: 900 });
+    const ok = ["기획", "이미지", "오늘의 프롬프트"].every(t => nav.includes(t)) && cards.length === 3 && cards[1].img && !cards[0].img && cards.every(c => c.h >= 44)
+      && img.n === 3 && img.cur === "이미지" && ["기획", "이미지", "오늘의 프롬프트", "자기소개"].every(c => img.chips.includes(c))
+      && plan.n === 0 && plan.empty.includes("아직 글이 없습니다") && back.hash === "#list" && back.n > 3 && !over && mobileH >= 44;
+    return expect(ok, JSON.stringify({ nav, cards: cards.map(c => [c.name, c.img]), img, plan: plan.n, back, over, mobileH }));
   }],
   ["J", "T104", "헤더 로고는 전구와 톱니 그림(assets/logo.png)이고 제대로 보인다", async () => {
     await goto();
