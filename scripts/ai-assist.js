@@ -143,7 +143,7 @@ async function callModel(text, schema) {
 
 /* ---------- 포트폴리오 안내 챗봇: 질문과 답을 미리 만든다 ---------- */
 const NOT_READY = "[작성 필요]";
-const CHAT_VER = "4"; // 11-25: 블로그 글 내용까지, 질문 최대 40개, 다르게 묻는 말(alts), 대표 질문(chip) // 11-24: 사진, 영상 썸네일 붙이기. 만드는 방식이 바뀌면 올려서 다시 만들게 한다
+const CHAT_VER = "5"; // 11-25: 블로그 글 내용까지, 질문 최대 40개, 다르게 묻는 말(alts), 대표 질문(chip) // 11-24: 사진, 영상 썸네일 붙이기. 만드는 방식이 바뀌면 올려서 다시 만들게 한다
 // 자료의 그림 줄: ![설명](assets/portfolio/파일). 설명이 영상: 으로 시작하면 영상 썸네일(재생 안 함)
 const IMG_LINE = /^[ \t]*!\[([^\]\n]*)\]\(([^)\s]+)\)[ \t]*$/gm;
 const MEDIA_PATH = /^assets\/portfolio\/[A-Za-z0-9._-]+\.(jpe?g|png|gif|webp)$/i;
@@ -221,6 +221,13 @@ function mockChat(md, posts = []) {
     ]
   }, posts.map(p => p.id));
 }
+// "어떤 글이 있나요?" 답은 AI 가 아니라 코드가 공개글 제목으로 만든다(제목을 틀리게 옮길 일이 없다)
+function postListItem(posts) {
+  if (!posts.length) return null;
+  const names = posts.slice(0, 10).map(p => `"${clip(p.title, 40)}"`).join(", ");
+  return { q: "블로그에는 어떤 글이 있나요?", a: clip(`공개글은 ${posts.length}개입니다. ${names}${posts.length > 10 ? " 등이 있습니다." : " 가 있습니다."} 글 제목이나 내용을 물어보시면 더 알려 드릴게요.`, 400),
+    keywords: ["글목록", "목록", "최근글", "공개글", "게시글"], alts: ["어떤 글이 있어요?", "무슨 글 있어요?", "글 목록 보여 주세요", "최근 글은 뭐예요?", "글 몇 개 있어요?"] };
+}
 // 챗봇이 읽을 글: 공개글의 제목과 본문 앞부분만
 const postBlock = posts => posts.slice(0, 30).map(p => `[글 번호 ${p.id}] ${p.title}\n${String(p.body).slice(0, 1500)}`).join("\n\n");
 function chatPrompt(md, posts = []) {
@@ -229,6 +236,7 @@ function chatPrompt(md, posts = []) {
     "블로그 방문자(채용 담당자, 수업 동기, 지인)가 블로그, 포트폴리오, 블로그 글에 관해 물어볼 만한 질문 25~40개와 답을 만든다. 블로그와 상관없는 질문은 만들지 않는다.",
     "그중 처음 보는 사람에게 가장 먼저 보여 줄 대표 질문 6~8개에만 chip 을 true 로, 나머지는 false 로 한다.",
     "alts 에는 같은 뜻을 다르게 묻는 짧은 말 2~5개를 적는다(예: 연락처 알려줘, 이메일 뭐예요). keywords 에는 그 질문을 찾을 핵심 낱말을 적는다.",
+    "블로그 주인을 소개하는 답의 alts 에는 '누가 만들었어요?', '누가 운영해요?', '만든 사람은 누구예요?' 처럼 누구인지 묻는 말을 꼭 넣는다. 글 목록은 따로 만드니 만들지 않는다.",
     "<글> 의 내용으로 만든 답은 post_id 에 그 글 번호를 글자 그대로 적고, 아니면 빈 글자로 둔다. topic 은 <글> 로 만든 답이면 빈 글자로 둔다.",
     "한국어, 존댓말, 쉬운 말. 자료에 없는 사실, 숫자, 경력은 지어내지 않는다. 답은 300자 이내. 이모지를 쓰지 않는다.",
     "JSON 하나만 답한다. 설명이나 ``` 표시를 붙이지 않는다. 모양:",
@@ -252,6 +260,8 @@ async function buildChatbot(dir, posts = []) {
   try {
     const ids = posts.map(p => p.id);
     const out = attachMedia(MOCK ? mockChat(md, posts) : cleanChat(await callModel(chatPrompt(md, posts), CHAT_SCHEMA), ids), md);
+    const list = postListItem(posts);
+    if (list) out.items.push(list);
     const data = { hash, mode: MOCK ? "mock" : PROVIDER, model: MOCK ? "mock" : MODEL, generated_at: kstNow(), ready: !md.replace(/<!--[\s\S]*?-->/g, "").includes(NOT_READY) /* 설명 주석 속 낱말은 세지 않는다 */, ...out };
     fs.writeFileSync(file, JSON.stringify(data, null, 2) + "\n");
     // 화면은 파일 주소(file://)에서도 읽을 수 있게 스크립트 모양으로도 저장한다. 데이터뿐이고 다른 코드는 없다
@@ -383,4 +393,4 @@ async function main() {
 }
 
 if (require.main === module) main().catch(e => { console.error(e.message); process.exit(1); });
-module.exports = { clean, mockAi, prompt, reportHtml, hashOf, cleanChat, mockChat, chatPrompt, sections, mediaOf, attachMedia };
+module.exports = { clean, mockAi, prompt, reportHtml, hashOf, cleanChat, mockChat, chatPrompt, sections, mediaOf, attachMedia, postListItem };

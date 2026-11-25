@@ -255,6 +255,17 @@ const server = http.createServer((req, res) => {
     && mk.items.length === 2 && mk.items[0].chip === true && !mk.items[1].chip && mk.items[1].post_id === "21" && mk.items[1].a.startsWith("PRD 는")
     && noChip.items.every(x => x.chip), JSON.stringify({ n: cc.items.length, chips: cc.items.filter(x => x.chip).length, mk: mk.items.map(x => [x.q, !!x.chip, x.post_id]) }));
 
+  // C12: "어떤 글이 있나요?" 는 코드가 공개글 제목으로 만들고, 글이 없으면 만들지 않는다. AI 에게 주인 소개에 "누가 만들었어요?" 를 넣으라고 한다
+  const li = ai.postListItem([{ id: "21", title: "PRD 쓰는 법" }, { id: "22", title: "프롬프트 습관" }]);
+  const outL = path.join(tmp, "list");
+  writePosts(basePosts);
+  fs.writeFileSync(prof, "# 자료\n\n## 블로그\n\n복습 노트입니다.\n");
+  await run(outL, ["--profile", prof]);
+  const ql = readQa(outL), last = ql.items[ql.items.length - 1];
+  check("C12", "공개글 목록 답을 코드가 만들어 맨 뒤에 붙이고(비공개 글 제외), 글이 없으면 붙이지 않으며, AI 에게 주인 소개 답에 '누가 만들었어요?' 를 넣으라고 한다",
+    li.a.includes("공개글은 2개") && li.a.includes('"PRD 쓰는 법"') && li.alts.includes("어떤 글이 있어요?") && ai.postListItem([]) === null
+    && last.q === "블로그에는 어떤 글이 있나요?" && !last.a.includes("초안") && ai.chatPrompt("## a\n\nb", []).includes("누가 만들었어요?"), JSON.stringify(last));
+
   server.close();
   fs.rmSync(tmp, { recursive: true, force: true });
   for (const r of results) console.log(`${r.pass ? "PASS" : "FAIL"} ${r.id} ${r.name}${r.detail ? ` — ${r.detail}` : ""}`);
