@@ -236,10 +236,10 @@ const server = http.createServer((req, res) => {
   const loose = ai.attachMedia({ greeting: "", items: [{ q: "작품도 있나요?", a: "예시 작품이 있습니다.", topic: "작품", keywords: [] }] }, mdM);
   check("C10", "AI 가 주제 이름의 괄호 부분을 빼고 적어도 그림이 그 답에 붙고, 같은 주제 질문을 덧붙이지 않는다",
     loose.items.length === 1 && loose.items[0].media && loose.items[0].media.length === 2, JSON.stringify(loose.items.map(x => [x.q, (x.media || []).length])));
-  check("C9", "자료의 그림 줄에서 사진과 영상 썸네일을 뽑아 해당 답에 붙이고, 이상한 주소는 버리며, AI 에게는 주소 대신 설명만 준다",
+  check("C9", "자료의 그림 줄에서 사진과 영상 썸네일을 뽑아 해당 답에 붙이고(그 답은 '포트폴리오' 로도 찾게 함), 이상한 주소는 버리며, AI 에게는 주소 대신 설명만 준다",
     m1.code === 0 && withMedia.length === 1 && withMedia[0].media.length === 2 && withMedia[0].media[1].video === true && !withMedia[0].media[0].video
     && withMedia[0].media.every(m => m.src.startsWith("assets/portfolio/") && !m.src.includes("..")) && !withMedia[0].a.includes("assets/")
-    && !pr.includes("assets/") && pr.includes("(그림: 영상 예시 3 장면)") && att.items.length === 2 && att.items[1].q.startsWith("작품") && att.items[1].media.length === 2 && !("topic" in att.items[0]),
+    && withMedia[0].keywords.includes("포트폴리오") && withMedia[0].alts.includes("포트폴리오 몇 개예요?") && att.items[1].keywords.includes("포트폴리오") && !pr.includes("assets/") && pr.includes("(그림: 영상 예시 3 장면)") && att.items.length === 2 && att.items[1].q.startsWith("작품") && att.items[1].media.length === 2 && !("topic" in att.items[0]),
     JSON.stringify(withMedia[0] && withMedia[0].media) + " / " + m1.log.trim().slice(0, 200));
 
   // C11: 블로그 글까지 자료로 쓰고, 숨은 질문(chip 아님), 다르게 묻는 말, 글 번호를 다룬다

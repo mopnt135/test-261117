@@ -501,6 +501,18 @@ const tests = [
     const out = t => t.includes("관한 질문에만");
     return expect(r.mail.includes("이메일로") && out(r.lunch) && out(r.weather) && r.tag.includes("태그"), JSON.stringify(r));
   }],
+  ["K", "T119", "여러 답에 두루 나오는 주제어(포트폴리오)로만 물어도 답하고, 질문에 없던 낱말은 답 글에서도 찾는다", async () => {
+    writeChat({ ready: true, greeting: "안녕", items: [
+      { q: "누구인가요?", a: "PM 을 꿈꿉니다.", keywords: ["자기소개"], alts: ["포트폴리오 주인은?"], chip: true },
+      { q: "작품이 있나요?", a: "예시 작품 세 개가 있습니다.", keywords: ["포트폴리오", "작품"], alts: ["포트폴리오 몇 개예요?"], chip: true },
+      { q: "블로그 기능은요?", a: "기기가 다크 모드면 블로그도 어두워집니다.", keywords: ["기능"] }] });
+    await page.reload(); await wait(400); await page.click("#chatFab"); await wait(200);
+    const ask = async q => { await page.fill("#chatQ", q); await page.press("#chatQ", "Enter"); await wait(100);
+      return page.evaluate(() => [...document.querySelectorAll("#chatLog .bubble.bot")].pop().textContent); };
+    const r = { pf: await ask("포트폴리오 있어?"), dark: await ask("다크 모드 돼?"), out: await ask("주식 투자 어떻게 해") };
+    await page.click("#chatClose"); writeChat(CHAT_QA); await page.reload(); await wait(400);
+    return expect(r.pf.includes("예시 작품") && r.dark.includes("다크 모드") && r.out.includes("관한 질문에만"), JSON.stringify(r));
+  }],
   ["J", "T101", "로그인하면 헤더의 '내 계정'을 눌러 계정 상자를 연다", async () => {
     await logout(); await login("boss@test.kr", true); await goto();
     const closed = await page.$eval(".acct-menu", d => d.open);

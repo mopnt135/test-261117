@@ -143,7 +143,7 @@ async function callModel(text, schema) {
 
 /* ---------- 포트폴리오 안내 챗봇: 질문과 답을 미리 만든다 ---------- */
 const NOT_READY = "[작성 필요]";
-const CHAT_VER = "6"; // 11-25: 글의 핵심 개념마다 질문 하나, 대표 질문 정확히 8개 // 11-25: 블로그 글 내용까지, 질문 최대 40개, 다르게 묻는 말(alts), 대표 질문(chip) // 11-24: 사진, 영상 썸네일 붙이기. 만드는 방식이 바뀌면 올려서 다시 만들게 한다
+const CHAT_VER = "7"; // 11-25: 글의 핵심 개념마다 질문 하나, 대표 질문 정확히 8개 // 11-25: 블로그 글 내용까지, 질문 최대 40개, 다르게 묻는 말(alts), 대표 질문(chip) // 11-24: 사진, 영상 썸네일 붙이기. 만드는 방식이 바뀌면 올려서 다시 만들게 한다
 // 자료의 그림 줄: ![설명](assets/portfolio/파일). 설명이 영상: 으로 시작하면 영상 썸네일(재생 안 함)
 const IMG_LINE = /^[ \t]*!\[([^\]\n]*)\]\(([^)\s]+)\)[ \t]*$/gm;
 const MEDIA_PATH = /^assets\/portfolio\/[A-Za-z0-9._-]+\.(jpe?g|png|gif|webp)$/i;
@@ -190,6 +190,10 @@ function sections(md) {
 }
 // 그림 붙이기: AI 가 고른 topic 이 그림 있는 주제와 같으면 그 답에 붙인다.
 // 어느 답에도 안 붙은 주제는 "OO 보여 주세요" 질문을 하나 더 만든다(AI 가 빠뜨려도 그림은 반드시 나온다)
+// 그림이 붙은 답(예시 작품)은 AI 가 빠뜨려도 "포트폴리오" 로 찾을 수 있게 낱말과 묻는 말을 코드가 더한다
+const MEDIA_ALTS = ["포트폴리오 보여 주세요", "포트폴리오 몇 개예요?", "작품 몇 개 있어요?"];
+const withMediaWords = x => ({ ...x, keywords: [...new Set([...(x.keywords || []), "포트폴리오", "작품"])].slice(0, 8),
+  alts: [...new Set([...(x.alts || []), ...MEDIA_ALTS])].slice(0, 8) });
 const normTopic = x => String(x || "").replace(/\([^)]*\)/g, "").replace(/[\s#]/g, "").toLowerCase();
 function attachMedia(out, md) {
   const secs = sections(md).filter(x => x.media.length);
@@ -200,12 +204,13 @@ function attachMedia(out, md) {
     const sec = t && (secs.find(s => normTopic(s.title) === t) || secs.find(s => { const n = normTopic(s.title); return n.length >= 2 && t.length >= 2 && (n.includes(t) || t.includes(n)); }));
     if (!sec || used.has(sec.title)) return x;
     used.add(sec.title);
-    return { ...x, media: sec.media };
+    return withMediaWords({ ...x, media: sec.media });
   });
   for (const sec of secs.filter(s => !used.has(s.title))) {
     items.push({ chip: true, q: clip(`${sec.title.replace(/\s*\(.*\)\s*$/, "")} 보여 주세요`, 60),
       a: clip(sec.text.split(/(?<=[.!?])\s+|\n+/).map(t => t.trim()).filter(Boolean).slice(0, 2).join(" "), 400),
       keywords: sec.title.replace(/[()]/g, " ").split(/[\s,]+/).filter(w => w.length >= 2).slice(0, 6), media: sec.media });
+    items[items.length - 1] = withMediaWords(items[items.length - 1]);
   }
   return { ...out, items: items.slice(0, CHAT_MAX + 5) };
 }
@@ -237,6 +242,7 @@ function chatPrompt(md, posts = []) {
     "그중 처음 보는 사람에게 가장 먼저 보여 줄 대표 질문 정확히 8개에만 chip 을 true 로, 나머지는 false 로 한다.",
     "<글> 은 글마다 핵심 개념(예: 성공 기준, 하지 않을 것 목록, 답의 모양)마다 질문을 따로 하나씩 만든다. 개념 이름을 keywords 에, '~ 예시', '~ 쓰는 법', '~ 이 뭐예요' 같은 말을 alts 에 넣는다. 답에는 글에 나온 예시와 숫자를 그대로 쓴다.",
     "alts 에는 같은 뜻을 다르게 묻는 짧은 말 2~5개를 적는다(예: 연락처 알려줘, 이메일 뭐예요). keywords 에는 그 질문을 찾을 핵심 낱말을 적는다.",
+    "숫자를 묻는 말(몇 개, 몇 번, 몇 줄)도 alts 에 넣는다. 예시 작품 답의 alts 에는 '포트폴리오 몇 개예요?', '포트폴리오 보여 주세요', '작품 있어요?' 를 꼭 넣는다.",
     "블로그 주인을 소개하는 답의 alts 에는 '누가 만들었어요?', '누가 운영해요?', '만든 사람은 누구예요?' 처럼 누구인지 묻는 말을 꼭 넣는다. 글 목록은 따로 만드니 만들지 않는다.",
     "<글> 의 내용으로 만든 답은 post_id 에 그 글 번호를 글자 그대로 적고, 아니면 빈 글자로 둔다. topic 은 <글> 로 만든 답이면 빈 글자로 둔다.",
     "한국어, 존댓말, 쉬운 말. 자료에 없는 사실, 숫자, 경력은 지어내지 않는다. 답은 300자 이내. 이모지를 쓰지 않는다.",

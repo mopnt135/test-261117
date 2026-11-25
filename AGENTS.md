@@ -34,7 +34,7 @@ AI 코딩 에이전트가 이 저장소에서 일할 때 가장 먼저 읽는 �
 | `.github/workflows/seo-pages.yml` | 생성기를 하루 2번 돌려 커밋하는 GitHub Actions |
 | `.github/workflows/docs-check.yml` | `CLAUDE.md`, `AGENTS.md` 가 바뀔 때만 `docs_test.js` 를 돌리는 GitHub Actions |
 | `supabase-setup.sql` | 서버 표, 권한 규칙(RLS), 파일 보관함 설정. 여러 번 실행해도 안전해야 함 |
-| `tests/e2e.js` | 화면 테스트 81건 (Playwright, 체험 모드, 측정 ID 를 비운 복사본으로 실행) |
+| `tests/e2e.js` | 화면 테스트 82건 (Playwright, 체험 모드, 측정 ID 를 비운 복사본으로 실행) |
 | `tests/rls_test.py` | 서버 권한 테스트 25건 (로컬 PostgreSQL) |
 | `tests/pages_test.js` | 검색·공유 페이지 생성기 테스트 20건 |
 | `scripts/ai-assist.js` | 공개글마다 AI 결과(요약, 제목 후보, 태그, 홍보 문구)를 `ai/<글번호>.json` 에 미리 만드는 AI 도우미 |
