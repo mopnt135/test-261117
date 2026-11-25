@@ -45,7 +45,7 @@ AI 코딩 에이전트가 이 저장소에서 일할 때 가장 먼저 읽는 �
 | `tests/docs_test.js` | `CLAUDE.md` 와 `AGENTS.md` 가 같은 규칙인지 확인하는 테스트 6건 |
 | `tests/stub_supabase.sql` | 로컬에서 Supabase 를 흉내 내는 준비 파일 |
 | `tests/fixtures/` | 첨부 테스트용 파일 |
-| `docs/reports/` | 테스트 보고서 PDF. 최신은 `2026-11-25-test-report.pdf`(블로그 과제 기획서 8장 일정표 1~9번 기준, 2쪽, 177건 통과). 11-17 보고서는 지난 기록 |
+| `docs/reports/` | 테스트 보고서 PDF. 최신은 `2026-11-25-test-report.pdf`(블로그 과제 기획서 8장 일정표 1~9번 기준, 2쪽, 177건 통과). 과제 결과보고서는 `2026-11-25-result-report.pdf`(2쪽). 11-17 보고서는 지난 기록 |
 
 ## 꼭 지킬 규칙
 
