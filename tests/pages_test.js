@@ -128,6 +128,14 @@ check("G21", "고정 소개 글(about)의 그림이 검색 페이지에 들어�
   const inIndex = /const ABOUT = \{[\s\S]*?id:"about"[\s\S]*?image:"assets\/about-cat\.png"/.test(fs.readFileSync(path.join(ROOT, "index.html"), "utf8")) && fs.existsSync(path.join(ROOT, "assets/about-cat.png"));
   return [ok && bad && inIndex, `그림 ${ok}, 이상한 주소 막음 ${bad}, index.html 의 ABOUT 과 파일 ${inIndex}`];
 });
+check("G23", "기획 글(PDF)의 검색 페이지에 내려받기 링크가 들어가고, assets/files/ 밖이나 PDF 가 아닌 파일은 넣지 않는다", () => {
+  const base = { id: "plan-x", title: "기획", body: "본문", category: "기획", created_at: "2026-11-25T04:00:00Z" };
+  const ok = gen.postPage({ ...base, file: "assets/files/a.pdf", fileName: "<a>.pdf", fileInfo: "PDF · 3쪽" }).includes('href="../../assets/files/a.pdf" download="&lt;a&gt;.pdf"');
+  const bad = ["assets/files/a.html", "../x.pdf", "https://x.test/a.pdf", "assets/a.pdf", "assets/files/../a.pdf"].every(file => !gen.postPage({ ...base, file }).includes('class="file"'));
+  const idx = fs.readFileSync(path.join(ROOT, "index.html"), "utf8");
+  const real = ["PLAN_1", "PLAN_2"].every(n => idx.includes(`const ${n} = {`)) && ["assets/files/ai-assist-prd-v1.0.pdf", "assets/files/hero-plan.pdf"].every(f => fs.existsSync(path.join(ROOT, f)));
+  return [ok && bad && real, `링크 ${ok}, 이상한 경로 막음 ${bad}, PLAN 글과 파일 ${real}`];
+});
 check("G20", "썸네일 카드에 예전 세 줄 색 띠가 없고, 로고가 들어가며, 목록 점은 강조색 하나다", () => {
   const h = gen.cardHtml({ title: "띠 확인", label: "실습 기록", lines: ["한 줄"] });
   const ok = !h.includes('class="bars"') && h.includes("data:image/png;base64,") && !/li:nth-child/.test(h) && h.includes("li i{background:#E5584B}");

@@ -181,6 +181,7 @@ h1{font-family:"Gothic A1",sans-serif;font-weight:900;font-size:clamp(28px,5vw,4
 .btn.main{background:var(--orange-fill);color:var(--on-orange);border-color:var(--orange-fill)}
 .demo-note{flex-basis:100%;margin:0;font-size:14px;color:var(--muted)}
 a:focus-visible{outline:3px solid var(--orange);outline-offset:3px}
+.file{display:flex;flex-wrap:wrap;align-items:center;gap:8px 14px;margin:20px 0 0}.file span{font-size:14px;color:#6B6760}
 .fig{display:block;max-width:360px;width:100%;height:auto;margin:20px 0 0;border:1px solid #C1C5C6;border-radius:12px}
 .ai{margin:24px 0 0;padding:16px 18px;background:var(--mint-fill);border-left:6px solid var(--orange-fill)}
 .ai-h{font-family:"Gothic A1",sans-serif;font-weight:900;font-size:15px}
@@ -198,6 +199,7 @@ a:focus-visible{outline:3px solid var(--orange);outline-offset:3px}
   ${aiBox(ai)}
   ${typeof p.image === "string" && LOCAL_IMG.test(p.image) ? `<img class="fig" src="../../${esc(p.image)}" alt="${esc(p.imageAlt || "")}">` : ""}
   <div class="body">${esc(p.body)}</div>
+  ${typeof p.file === "string" && /^assets\/files\/[A-Za-z0-9._-]+\.pdf$/.test(p.file) ? `<p class="file"><a class="btn main" href="../../${esc(p.file)}" download="${esc(p.fileName || "")}">PDF 내려받기</a> <span>${esc(p.fileInfo || "")}</span></p>` : ""}
   <div class="cta">
     ${p.demo ? `<p class="demo-note">시연용 글이라 댓글은 달 수 없어요. 블로그 첫 화면에서 다른 글을 볼 수 있어요.</p>` : `<a class="btn main" href="../../#post-${esc(id)}">블로그에서 보고 댓글 달기</a>`}
     <a class="btn" href="../../">${SITE_NAME} 첫 화면</a>
@@ -326,8 +328,8 @@ function sitemap(entries) {
 const robots = () => `User-agent: *\nAllow: /\nSitemap: ${SITE_URL}sitemap.xml\n`;
 
 async function main() {
-  // 파일에 있는 글: 공지 둘, 고정 소개 글, 이미지 메뉴 글 셋(11-25)
-  const notices = [readNotice("NOTICE_RULES"), readNotice("NOTICE"), readNotice("ABOUT"), readNotice("IMAGE_1"), readNotice("IMAGE_2"), readNotice("IMAGE_3")];
+  // 파일에 있는 글: 공지 둘, 고정 소개 글, 기획 메뉴 글 둘(PDF), 이미지 메뉴 글 셋(11-25)
+  const notices = [readNotice("NOTICE_RULES"), readNotice("NOTICE"), readNotice("ABOUT"), readNotice("PLAN_1"), readNotice("PLAN_2"), readNotice("IMAGE_1"), readNotice("IMAGE_2"), readNotice("IMAGE_3")];
   const fetched = (await loadPosts()).filter(p => p.visibility === undefined || p.visibility === "public");
   const all = [...notices, ...fetched].filter(p => safeId(p.id) && p.title && p.body && p.created_at);
 

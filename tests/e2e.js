@@ -372,12 +372,12 @@ const tests = [
     const n = await count(".fun, .fun-card"), apis = /thecatapi|pokeapi|openweathermap/i.test(SOURCE);
     return expect(n === 0 && !apis, `쉬어가기 요소 ${n}개, 외부 API 코드 ${apis ? "남아 있음" : "없음"}`);
   }],
-  ["J", "T103", "공지 글 카드의 사진은 공지 그림이고, 파일에 있는 글(소개, 이미지 셋)은 자기 그림, 일반 글은 공유 썸네일을 쓴다", async () => {
+  ["J", "T103", "공지 글 카드의 사진은 공지 그림이고, 파일에 있는 글(소개, 기획 둘, 이미지 셋)은 자기 그림, 일반 글은 공유 썸네일을 쓴다", async () => {
     await goto("#list");
     const r = await page.$$eval(".post", a => a.map(li => ({ notice: !!li.querySelector(".badge.notice"), href: li.querySelector("h3 a").getAttribute("href"), src: (li.querySelector(".thumb img") || {}).getAttribute?.("src") || "" })));
-    const own = { "#post-about": "assets/about-cat.png", "#post-image-1": "assets/posts/image-1.jpg", "#post-image-2": "assets/posts/image-2.jpg", "#post-image-3": "assets/posts/image-3.jpg" };
+    const own = { "#post-about": "assets/about-cat.png", "#post-image-1": "assets/posts/image-1.jpg", "#post-image-2": "assets/posts/image-2.jpg", "#post-image-3": "assets/posts/image-3.jpg", "#post-plan-1": "assets/posts/plan-1.jpg", "#post-plan-2": "assets/posts/plan-2.jpg" };
     const n = r.filter(x => x.notice), fixed = r.filter(x => own[x.href]), o = r.filter(x => !x.notice && x.src && !own[x.href]);
-    const ok = n.length >= 2 && n.every(x => x.src === "assets/notice-card.jpg") && fixed.length === 4 && fixed.every(x => x.src === own[x.href]) && o.every(x => /^p\/.+\/og\.png$/.test(x.src));
+    const ok = n.length >= 2 && n.every(x => x.src === "assets/notice-card.jpg") && fixed.length === 6 && fixed.every(x => x.src === own[x.href]) && o.every(x => /^p\/.+\/og\.png$/.test(x.src));
     return expect(ok, `공지 ${n.length}개: ${[...new Set(n.map(x => x.src))].join(", ")} / 파일 글 ${fixed.length}개 / 일반 ${o.length}개`);
   }],
   ["J", "T121", "고정 소개 글: 로그인 안 해도 목록에 보이고, 글에 PM 이 되고 싶은 이유와 이름의 뜻, 고양이 그림이 나오며, 관리자에게도 수정·삭제 버튼이 없다", async () => {
@@ -389,7 +389,7 @@ const tests = [
     await logout();
     return expect(r.h1 === "생각하는 공방을 소개합니다" && r.img === "assets/about-cat.png" && r.alt && r.ok && r.why && r.name && edit === 0, `${JSON.stringify(r)}, 관리 버튼 ${edit}`);
   }],
-  ["J", "T122", "글 메뉴 셋(기획, 이미지, 오늘의 프롬프트): 헤더 '글 목록' 의 소메뉴와 첫 화면 글씨 카드(그림 없음)에 있고, 누르면 그 분류 글만 보이며, 이미지에는 그림 글 3편, 기획은 '아직 글이 없다' 고 안내한다", async () => {
+  ["J", "T122", "글 메뉴 셋(기획, 이미지, 오늘의 프롬프트): 헤더 '글 목록' 의 소메뉴와 첫 화면 글씨 카드(그림 없음)에 있고, 누르면 그 분류 글만 보이며, 이미지에는 그림 글 3편, 글 없는 오늘의 프롬프트는 '아직 글이 없다' 고 안내한다", async () => {
     await goto(); await wait(200);
     const nav = await page.$$eval("nav.main a", a => a.map(x => x.textContent.trim()));
     const cards = await page.$$eval(".menu-card", a => a.map(x => ({ href: x.getAttribute("href"), name: x.querySelector(".mc-name").textContent, img: !!x.querySelector("img"), h: x.getBoundingClientRect().height })));
@@ -398,7 +398,7 @@ const tests = [
     const shown = await page.$eval(".nav-group .sub", el => getComputedStyle(el).display !== "none" && el.getBoundingClientRect().height > 100);
     await page.click('.menu-card[href="#m-image"]'); await wait(200);
     const img = await page.evaluate(() => ({ h1: document.querySelector(".page h1, .page h2").textContent, n: document.querySelectorAll(".posts .post").length, cur: (document.querySelector('nav.main a[aria-current="page"]') || {}).textContent, chips: [...document.querySelectorAll(".chip")].map(c => c.dataset.c) }));
-    await goto("#m-plan"); await wait(200);
+    await goto("#m-prompt"); await wait(200);
     const plan = await page.evaluate(() => ({ n: document.querySelectorAll(".posts .post").length, empty: (document.querySelector(".empty") || {}).textContent || "" }));
     await page.click('.chip[data-c="전체"]'); await wait(200);
     const back = await page.evaluate(() => ({ hash: location.hash, n: document.querySelectorAll(".posts .post").length }));
@@ -428,6 +428,18 @@ const tests = [
     await logout();
     return expect(!form.email && form.pw && bad.msg.includes("비밀번호가 맞지 않습니다") && bad.still && firstNotAdmin && ok && !src.includes("test1125"),
       `칸 ${JSON.stringify(form)}, 틀림 ${bad.msg}, 첫 이메일 관리자 아님 ${firstNotAdmin}, 비밀번호로 관리자 ${ok}, 코드에 글자 없음 ${!src.includes("test1125")}`);
+  }],
+  ["J", "T124", "기획 메뉴에 PDF 글 2편이 있고, 글에 'PDF 내려받기' 버튼(저장소 안 PDF, 파일 이름 지정)이 있으며, 용사 키우기 PDF 에는 작성자 실명이 없다", async () => {
+    await goto("#m-plan"); await wait(200);
+    const list = await page.$$eval(".posts .post h3 a", a => a.map(x => x.getAttribute("href")));
+    await goto("#post-plan-2"); await wait(200);
+    const dl = await page.evaluate(() => { const a = document.querySelector(".post-file a"); return a && { href: a.getAttribute("href"), name: a.getAttribute("download"), info: document.querySelector(".post-file span").textContent }; });
+    const files = ["assets/files/ai-assist-prd-v1.0.pdf", "assets/files/hero-plan.pdf"].map(f => fs.readFileSync(path.join(ROOT, f)));
+    const pdf = files.every(b => b.slice(0, 5).toString() === "%PDF-");
+    const raw = files[1].toString("latin1"), noName = !raw.includes("박형준") && !files[1].toString("utf8").includes("박형준");
+    const res = await page.evaluate(async h => (await fetch(h)).ok, dl && dl.href).catch(() => false);
+    return expect(list.join() === "#post-plan-1,#post-plan-2" && dl && dl.href === "assets/files/hero-plan.pdf" && dl.name.endsWith(".pdf") && dl.info.includes("5쪽") && pdf && noName,
+      `목록 ${list}, 버튼 ${JSON.stringify(dl)}, PDF ${pdf}, 실명 없음 ${noName}, 파일 열림 ${res}`);
   }],
   ["J", "T104", "헤더 로고는 전구와 톱니 그림(assets/logo.png)이고 제대로 보인다", async () => {
     await goto();

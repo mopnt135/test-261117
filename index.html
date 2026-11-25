@@ -281,6 +281,8 @@ fieldset.field{border:0;padding:0;margin:0}
 .mc-name{color:var(--orange);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .mc-n{flex:none;min-width:24px;padding:1px 8px;border-radius:999px;background:var(--mint-fill);color:var(--muted);font-family:var(--f-mono);font-size:12px;font-weight:500;text-align:center}
 @media (max-width:640px){.menu-cards{gap:6px;margin-top:16px}.menu-card{padding:6px 10px;font-size:13px;min-height:44px;border-radius:14px}.mc-name{white-space:normal;line-height:1.25}.mc-n{padding:1px 6px;font-size:11px}} /* 휴대폰: 긴 이름(오늘의 프롬프트)은 두 줄로 */
+.post-file{display:flex;flex-wrap:wrap;align-items:center;gap:8px 14px;margin:20px 0 0}
+.post-file span{font-size:14px;color:var(--muted)}
 .post-figure{margin:20px 0 0}
 .post-figure img{display:block;max-width:100%;width:auto;height:auto;border:1px solid var(--line);border-radius:12px} /* 그림 크기 그대로, 칸보다 크면 칸에 맞춘다 */
 .notice-box{max-width:560px;padding:24px;border:2px solid var(--fg);margin-top:28px;display:flex;flex-direction:column;gap:14px}
@@ -781,7 +783,31 @@ const IMAGE_3 = {
   body:`헬멧을 쓴 고양이가 윙크하며 엄지를 들어 올린 그림입니다.
 소개 글의 헬멧 고양이와 같은 캐릭터입니다.`
 };
-const FIXED_POSTS = [ABOUT, IMAGE_1, IMAGE_2, IMAGE_3];
+/* 기획 메뉴 글(11-25, 사용자 제공 PDF 2개). PDF 는 assets/files/, 카드 그림은 PDF 첫 쪽 윗부분.
+   용사 키우기 기획서는 사용자 요청으로 작성자 실명을 지운 파일이다 */
+const PLAN_1 = {
+  id:"plan-1", fixed:true, category:"기획", visibility:"public",
+  created_at:"2026-11-25T13:10:00+09:00",
+  image:"assets/posts/plan-1.jpg", imageAlt:"AI 도우미 PRD 첫 쪽",
+  file:"assets/files/ai-assist-prd-v1.0.pdf", fileName:"생각하는공방_AI도우미_PRD_v1.0.pdf", fileInfo:"PDF · A4 3쪽 · 0.5MB",
+  title:"생각하는 공방 AI 도우미 PRD (v1.0)",
+  body:`AIPM 수업 AI 과제로 쓴 기획서입니다.
+글을 올리면 AI 가 제목 후보, 태그, SNS 문구, 3줄 요약을 미리 만들어 두는 AI 도우미와 포트폴리오 안내 챗봇을 다룹니다.
+문제 정의, 해결 방안, 가설과 지표, 요구사항, 일정을 A4 3쪽에 정리했습니다.
+아래 버튼으로 PDF 를 내려받을 수 있습니다.`
+};
+const PLAN_2 = {
+  id:"plan-2", fixed:true, category:"기획", visibility:"public",
+  created_at:"2026-11-25T13:00:00+09:00",
+  image:"assets/posts/plan-2.jpg", imageAlt:"용사 키우기 진행 기획서 첫 쪽",
+  file:"assets/files/hero-plan.pdf", fileName:"용사키우기_진행기획서.pdf", fileInfo:"PDF · A4 5쪽 · 0.4MB",
+  title:"용사 키우기 진행 기획서",
+  body:`개인 프로젝트로 만들고 있는 세로 화면 방치형 게임 "용사 키우기" 의 진행 기획서입니다.
+지금까지 정한 게임 규칙과 진행 상황, 먼저 고쳐야 할 문제, 최소 기능 범위(MVP)를 A4 5쪽에 정리했습니다.
+아래 버튼으로 PDF 를 내려받을 수 있습니다.`
+};
+const FIXED_POSTS = [ABOUT, PLAN_1, PLAN_2, IMAGE_1, IMAGE_2, IMAGE_3];
+const FILE_PATH = /^assets\/files\/[A-Za-z0-9._-]+\.pdf$/; // 파일 글의 내려받기 파일은 저장소 안 PDF 만
 const FIXED_IDS = new Set(["notice", "notice-rules", ...FIXED_POSTS.map(p => p.id)]); // 파일에 있는 글. 서버를 기다리지 않고 바로 보여 준다
 const allPosts = () => [NOTICE_RULES, NOTICE, ...FIXED_POSTS, ...posts];
 /* 글 메뉴(11-25): 헤더와 첫 화면 그림 메뉴. 누르면 그 분류의 글만 모아 보여 준다 */
@@ -1065,6 +1091,7 @@ const views = {
       </div>
       ${p.image ? `<figure class="post-figure"><img src="${esc(p.image)}" alt="${esc(p.imageAlt || "")}"></figure>` : ""}
       <p class="article-body">${esc(p.body)}</p>
+      ${p.file && FILE_PATH.test(p.file) ? `<div class="post-file"><a class="btn" href="${esc(p.file)}" download="${esc(p.fileName || "")}">PDF 내려받기</a><span>${esc(p.fileInfo || "")}</span></div>` : ""}
       ${attachmentsBlock(p)}
       ${p.visibility !== "private" ? `<div class="share"><button type="button" class="btn line" data-act="copyShare" data-id="${esc(p.id)}">공유 링크 복사</button>
         <p class="msg" id="shareMsg" role="status"></p></div>` : ""}
