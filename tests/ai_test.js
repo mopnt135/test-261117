@@ -269,9 +269,9 @@ const server = http.createServer((req, res) => {
   const fixed = readQa(outL).items.slice(-1)[0].a, keptAt = readQa(outL).generated_at === "옛 시각";
   check("C13", "글 목록 답의 문구만 바뀌면 AI 를 다시 부르지 않고 그 답만 고친다(조사 \"가 있습니다\" 오류 없음)",
     keptAt && fixed.startsWith("공개글은") && !fixed.includes("\" 가 있습니다") && lf.log.includes("글 목록 답만 고침"), `챗봇 그대로 ${keptAt}, ${fixed}`);
-  check("C12", "공개글 목록 답을 코드가 만들어 맨 뒤에 붙이고(비공개 글 제외), 글이 없으면 붙이지 않으며, AI 에게 주인 소개 답에 '누가 만들었어요?' 를 넣으라고 한다",
+  check("C12", "공개글 목록 답을 코드가 만들어 맨 뒤에 붙이고(비공개 글 제외), 글이 없으면 붙이지 않으며, AI 에게 주인 소개 답에 '누가 만들었어요?' 를, 글의 핵심 개념마다 질문을, 대표 질문 정확히 8개를 요구한다",
     li.a.includes("공개글은 2개") && li.a.includes('"PRD 쓰는 법"') && li.alts.includes("어떤 글이 있어요?") && ai.postListItem([]) === null
-    && last.q === "블로그에는 어떤 글이 있나요?" && !last.a.includes("초안") && ai.chatPrompt("## a\n\nb", []).includes("누가 만들었어요?"), JSON.stringify(last));
+    && last.q === "블로그에는 어떤 글이 있나요?" && !last.a.includes("초안") && ai.chatPrompt("## a\n\nb", []).includes("누가 만들었어요?") && ai.chatPrompt("## a\n\nb", []).includes("핵심 개념") && ai.chatPrompt("## a\n\nb", []).includes("정확히 8개"), JSON.stringify(last));
 
   server.close();
   fs.rmSync(tmp, { recursive: true, force: true });
