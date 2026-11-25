@@ -192,6 +192,7 @@ body.has-chat .foot{padding-bottom:88px} /* 말풍선 버튼이 푸터 링크를
 .post:hover{box-shadow:0 10px 28px rgba(0,0,0,.10);transform:translateY(-2px)}
 .post .thumb{position:relative;display:block;min-height:200px;background:var(--mint-fill);overflow:hidden} /* 컴퓨터: 카드 높이만큼 채운다 */
 .post .thumb img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;display:block}
+.post .thumb img.fit{object-fit:contain} /* 고정 글의 그림(정사각형에 가까움)은 잘리지 않게 통째로 */
 .post .thumb .ch{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;font-family:var(--f-display);font-weight:900;font-size:56px;color:var(--orange)}
 .post .body{padding:22px 24px;display:flex;flex-direction:column;min-width:0}
 .post .body .read{display:block;margin-top:auto;padding-top:10px;border-top:1px solid var(--line)}
@@ -786,7 +787,7 @@ function postItem(p){
      없으면(새 글, 나만보기) 제목 첫 글자를 보여 준다 */
   const ch = esc((p.title || "?").trim().charAt(0) || "?");
   const src = p.image || (p.notice ? "assets/notice-card.jpg" : p.visibility === "private" ? "" : `p/${encodeURIComponent(p.id)}/og.png`);
-  const img = src ? `<img src="${src}" alt="" loading="lazy" decoding="async">` : "";
+  const img = src ? `<img${p.image ? ' class="fit"' : ""} src="${src}" alt="" loading="lazy" decoding="async">` : "";
   return `<li class="post">
     <a class="thumb" href="#post-${esc(p.id)}" tabindex="-1" aria-hidden="true"><span class="ch">${ch}</span>${img}</a>
     <div class="body">
@@ -932,7 +933,7 @@ const views = {
         <div class="sec-head"><h1 id="recentTitle" tabindex="-1">최근 글</h1></div>
         ${loading ? `<p class="empty">글을 불러오는 중입니다.</p>`
           : loadError ? `<p class="empty"><strong>글을 불러오지 못했습니다.</strong>잠시 뒤 새로고침해 주세요.</p>`
-          : `<ul class="posts">${recent.map(postItem).join("")}</ul>${posts.length ? "" : `<p class="empty">${isAdmin() ? "<strong>아직 올라온 글이 없습니다.</strong>글쓰기에서 첫 글을 올려 보세요." : "<strong>아직 올라온 글이 없습니다.</strong>지금은 공지만 있어요."}</p>`}`}
+          : `<ul class="posts">${recent.map(postItem).join("")}</ul>${posts.length ? "" : `<p class="empty">${isAdmin() ? "<strong>아직 올라온 글이 없습니다.</strong>글쓰기에서 첫 글을 올려 보세요." : "<strong>아직 올라온 글이 없습니다.</strong>지금은 공지와 소개 글만 있어요."}</p>`}`}
       </section>
       <div class="all-posts"><a class="btn" href="#list">전체 글 보기</a></div>
     </div>`;
