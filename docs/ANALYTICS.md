@@ -63,7 +63,7 @@
 | `member_action` | 관리자가 경고, 추방, 되돌림을 할 때 | action=`warn`/`auto_ban`/`ban`/`unban`, warn_count | 운영 기록 |
 | `share_link_copy` | 글 상세에서 "공유 링크 복사"를 누를 때 | post_id | 어떤 글이 공유되나 |
 | `chatbot_open` | 오른쪽 아래 포트폴리오 안내 말풍선을 열 때 | 없음 | 챗봇을 쓰는가 |
-| `chatbot_question` | 챗봇에서 질문을 고르거나 적어 보낼 때 | q_index(1~10), source=`chip`/`typed`, matched=`true`/`false`. 적은 글자는 보내지 않는다 | 어떤 질문이 많은가, 준비 안 된 질문이 얼마나 되나 |
+| `chatbot_question` | 챗봇에서 질문을 고르거나 적어 보낼 때 | q_index(1~45, 숨은 질문 포함), source=`chip`/`typed`, matched=`true`/`false`. 적은 글자는 보내지 않는다 | 어떤 질문이 많은가, 준비 안 된 질문이 얼마나 되나 |
 | `analytics_opt_out` / `analytics_opt_in` | 방문 통계 끄기와 켜기 | 없음 | |
 
 ### page_type 값과 경로
