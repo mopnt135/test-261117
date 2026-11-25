@@ -213,7 +213,7 @@ a:focus-visible{outline:3px solid var(--orange);outline-offset:3px}
  * 글마다 다르게: 제목 + 본문 앞 세 줄(점은 강조색) + 날짜.
  * 글에 사진(JPG, PNG, GIF)이 첨부돼 있으면 첫 사진을 오른쪽에 넣는다.
  */
-const CARD_DESIGN = "c8"; // 카드 디자인을 바꾸면 이 값을 바꾼다. 썸네일 주소의 ?v= 가 바뀌어 카카오톡이 새로 가져간다
+const CARD_DESIGN = "c9"; // 카드 디자인을 바꾸면 이 값을 바꾼다. 썸네일 주소의 ?v= 가 바뀌어 카카오톡이 새로 가져간다
 const LINE_MAX = 60;
 // 사진이 있으면 세 줄(두 줄까지 줄바꿈), 없으면 네 줄
 async function cardContent(p) { const image = await thumbImage(p); return { image, lines: excerptLines(p, image ? 3 : 4) }; }
@@ -243,7 +243,8 @@ li{display:flex;gap:16px;align-items:flex-start;font-size:${withImg ? 26 : 30}px
 li i{flex:none;width:14px;height:14px;margin-top:${withImg ? 12 : 14}px}
 li span{display:-webkit-box;-webkit-line-clamp:${withImg ? 2 : 1};-webkit-box-orient:vertical;overflow:hidden;word-break:keep-all}
 li i{background:#E5584B} /* 목록 점은 강조색 하나. 썸네일은 그림이라 밝은 모드 색만 쓴다 */
-.foot{margin-top:auto;display:flex;justify-content:space-between;font-size:22px;color:#6B6760}
+.foot{margin-top:auto;display:flex;justify-content:space-between;gap:20px;font-size:22px;color:#6B6760}
+.foot span{white-space:nowrap}.foot span:first-child{min-width:0;overflow:hidden;text-overflow:ellipsis} /* 11-25: 사진 있는 카드에서 줄이 꺾여 겹치던 것 */
 .pic{flex:none;width:400px;height:100%;border:3px solid #2B2622;background:#F3F3E8 center/cover no-repeat}
 </style></head><body>
 <div class="main">
