@@ -225,7 +225,7 @@ function mockChat(md, posts = []) {
 function postListItem(posts) {
   if (!posts.length) return null;
   const names = posts.slice(0, 10).map(p => `"${clip(p.title, 40)}"`).join(", ");
-  return { q: "블로그에는 어떤 글이 있나요?", a: clip(`공개글은 ${posts.length}개입니다. ${names}${posts.length > 10 ? " 등이 있습니다." : " 가 있습니다."} 글 제목이나 내용을 물어보시면 더 알려 드릴게요.`, 400),
+  return { q: "블로그에는 어떤 글이 있나요?", a: clip(`공개글은 ${posts.length}개입니다. 제목은 ${names}${posts.length > 10 ? " 등" : ""}입니다. 글 제목이나 내용을 물어보시면 더 알려 드릴게요.`, 400),
     keywords: ["글목록", "목록", "최근글", "공개글", "게시글"], alts: ["어떤 글이 있어요?", "무슨 글 있어요?", "글 목록 보여 주세요", "최근 글은 뭐예요?", "글 몇 개 있어요?"] };
 }
 // 챗봇이 읽을 글: 공개글의 제목과 본문 앞부분만
@@ -256,7 +256,17 @@ async function buildChatbot(dir, posts = []) {
   const file = path.join(cdir, "qa.json");
   let old = null;
   try { old = JSON.parse(fs.readFileSync(file, "utf8")); } catch (e) { old = null; }
-  if (old && old.hash === hash && (old.mode !== "mock" || MOCK)) return { note: "챗봇 그대로" };
+  if (old && old.hash === hash && (old.mode !== "mock" || MOCK)) {
+    // 글 목록 답은 AI 없이 코드가 만드니, 문구를 고쳤으면 AI 를 다시 부르지 않고 그 답만 바꾼다
+    const list = postListItem(posts), i = (old.items || []).findIndex(x => x.q === "블로그에는 어떤 글이 있나요?");
+    if (list && i >= 0 && JSON.stringify(old.items[i]) !== JSON.stringify(list)) {
+      old.items[i] = list;
+      fs.writeFileSync(file, JSON.stringify(old, null, 2) + "\n");
+      fs.writeFileSync(path.join(cdir, "qa.js"), `window.CHATBOT_QA = ${JSON.stringify(old)};\n`);
+      return { note: "챗봇 글 목록 답만 고침" };
+    }
+    return { note: "챗봇 그대로" };
+  }
   try {
     const ids = posts.map(p => p.id);
     const out = attachMedia(MOCK ? mockChat(md, posts) : cleanChat(await callModel(chatPrompt(md, posts), CHAT_SCHEMA), ids), md);
