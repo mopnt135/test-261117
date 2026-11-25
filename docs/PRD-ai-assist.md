@@ -85,4 +85,4 @@
 
 **리소스:** 관리자 1명과 AI 코딩 도구. GitHub Actions, GitHub Pages, 수업 제공 무료 Claude API 키(11-25 18:00 까지), GA4. 모두 0원.
 
-![일정표: 11-23 ~ 11-25 작업별 간트 차트, 오늘 11-25, 끝남 9건, 예정 4건](PRD-ai-assist-schedule.png)
+![일정표: 11-23 ~ 11-25 작업별 간트 차트, 오늘 11-25, 끝남 10건, 예정 2건](PRD-ai-assist-schedule.png)
