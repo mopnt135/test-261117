@@ -133,7 +133,7 @@ check("G23", "기획 글(PDF)의 검색 페이지에 내려받기 링크가 들�
   const ok = gen.postPage({ ...base, file: "assets/files/a.pdf", fileName: "<a>.pdf", fileInfo: "PDF · 3쪽" }).includes('href="../../assets/files/a.pdf" download="&lt;a&gt;.pdf"');
   const bad = ["assets/files/a.html", "../x.pdf", "https://x.test/a.pdf", "assets/a.pdf", "assets/files/../a.pdf"].every(file => !gen.postPage({ ...base, file }).includes('class="file"'));
   const idx = fs.readFileSync(path.join(ROOT, "index.html"), "utf8");
-  const real = ["PLAN_1", "PLAN_2"].every(n => idx.includes(`const ${n} = {`)) && ["assets/files/ai-assist-prd-v1.0.pdf", "assets/files/hero-plan.pdf"].every(f => fs.existsSync(path.join(ROOT, f)));
+  const real = ["PLAN_1", "PLAN_2"].every(n => idx.includes(`const ${n} = {`)) && ["assets/files/PRD-thinkandmake-v1.0.pdf", "assets/files/hero-plan.pdf"].every(f => fs.existsSync(path.join(ROOT, f)));
   return [ok && bad && real, `링크 ${ok}, 이상한 경로 막음 ${bad}, PLAN 글과 파일 ${real}`];
 });
 check("G24", "오늘의 프롬프트 글의 검색 페이지에 프롬프트가 줄바꿈 그대로 들어가고, HTML 기호는 글자로 바뀐다", () => {

@@ -434,7 +434,7 @@ const tests = [
     const list = await page.$$eval(".posts .post h3 a", a => a.map(x => x.getAttribute("href")));
     await goto("#post-plan-2"); await wait(200);
     const dl = await page.evaluate(() => { const a = document.querySelector(".post-file a"); return a && { href: a.getAttribute("href"), name: a.getAttribute("download"), info: document.querySelector(".post-file span").textContent }; });
-    const files = ["assets/files/ai-assist-prd-v1.0.pdf", "assets/files/hero-plan.pdf"].map(f => fs.readFileSync(path.join(ROOT, f)));
+    const files = ["assets/files/PRD-thinkandmake-v1.0.pdf", "assets/files/hero-plan.pdf"].map(f => fs.readFileSync(path.join(ROOT, f)));
     const pdf = files.every(b => b.slice(0, 5).toString() === "%PDF-");
     const raw = files[1].toString("latin1"), noName = !raw.includes("박형준") && !files[1].toString("utf8").includes("박형준");
     const res = await page.evaluate(async h => (await fetch(h)).ok, dl && dl.href).catch(() => false);
